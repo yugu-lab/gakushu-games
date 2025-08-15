@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>桃太郎の九九タイムアタック</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      font-family:'Noto Sans JP',sans-serif;
+      background:linear-gradient(135deg,#87CEEB 0%,#98FB98 100%);
+      min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px;
+    }
+    .game-container{
+      background:#fff;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.2);
+      padding:30px;max-width:1000px;width:100%;text-align:center;
+    }
+    .title{font-size:2.5rem;color:#FF6B6B;margin-bottom:20px;text-shadow:2px 2px 4px rgba(0,0,0,.1);}
+    .stats{display:flex;justify-content:space-between;margin-bottom:30px;background:#f8f9fa;padding:15px;border-radius:10px;}
+    .stat-item{text-align:center;}
+    .stat-label{font-size:.9rem;color:#666;margin-bottom:5px;}
+    .stat-value{font-size:1.5rem;font-weight:bold;color:#333;}
+    .question-area{background:#FFF8DC;border-radius:15px;padding:30px;margin-bottom:30px;border:3px solid #FFD700;}
+    .animal-question{font-size:1.2rem;color:#8B4513;margin-bottom:15px;}
+    .question{font-size:2.8rem;color:#FF6B6B;margin:20px 0;font-weight:bold;}
+    .input-area{margin:20px 0;}
+    .answer-input{
+      font-size:2.2rem;padding:15px;border:3px solid #4ECDC4;border-radius:12px;width:180px;text-align:center;outline:none;
+    }
+    .answer-input:focus{border-color:#FF6B6B;box-shadow:0 0 10px rgba(255,107,107,.3);}
+    .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;max-width:450px;margin:30px auto;}
+    .key-btn{
+      font-size:1.5rem;padding:18px;border:none;border-radius:12px;background:#4ECDC4;color:#fff;cursor:pointer;transition:.2s;min-height:65px;
+    }
+    .key-btn:hover{background:#45B7B8;transform:translateY(-2px);}
+    .key-btn:active{transform:translateY(0);}
+    .submit-btn{background:#FF6B6B;grid-column:span 2;}
+    .submit-btn:hover{background:#FF5252;}
+    .clear-btn{background:#FFA726;}
+    .clear-btn:hover{background:#FF9800;}
+    .companions-area{
+      background:#f8f9fa;border-radius:10px;padding:10px 15px;margin-bottom:20px;
+      display:flex;align-items:center;justify-content:center;gap:15px;
+    }
+    .companions-label{font-size:.9rem;color:#666;white-space:nowrap;}
+    .companions{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:8px;max-width:100%;flex-wrap:wrap;}
+    .momotaro{font-size:2.5rem;}
+    .companion{font-size:2rem;animation:joinParty 1s ease-in-out;transition:all .3s ease;}
+    .companion:hover{transform:scale(1.2);}
+    .companion.walking{animation:walkingAnimation 1.5s ease-in-out infinite;}
+    @keyframes joinParty{0%{transform:scale(0);opacity:0;}50%{transform:scale(1.3);opacity:1;}100%{transform:scale(1);opacity:1;}}
+    @keyframes walkingAnimation{
+      0%{transform:translateX(-3px) rotate(-2deg);}
+      25%{transform:translateX(0px) rotate(0deg) scale(1.05);}
+      50%{transform:translateX(3px) rotate(2deg);}
+      75%{transform:translateX(0px) rotate(0deg) scale(0.95);}
+      100%{transform:translateX(-3px) rotate(-2deg);}
+    }
+    .start-btn,.restart-btn{
+      font-size:1.2rem;padding:15px 30px;border:none;border-radius:10px;background:#4ECDC4;color:#fff;cursor:pointer;transition:.3s;margin:10px;
+    }
+    .start-btn:hover,.restart-btn:hover{background:#45B7B8;transform:translateY(-2px);}
+    .new-record{
+      position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      background:linear-gradient(45deg,#FFD700,#FFA500);color:#8B4513;font-size:2rem;font-weight:bold;
+      padding:20px 30px;border-radius:20px;box-shadow:0 0 30px rgba(255,215,0,.8);z-index:1000;
+      animation:newRecordAnim 2s ease-in-out;display:none;white-space:nowrap;
+    }
+    @keyframes newRecordAnim{0%{transform:translate(-50%,-50%) scale(0);opacity:0;}50%{transform:translate(-50%,-50%) scale(1.2);opacity:1;}100%{transform:translate(-50%,-50%) scale(1);opacity:1;}}
+    .game-over{background:#E8F5E8;border-radius:15px;padding:30px;margin-top:20px;}
+    .final-time{font-size:2rem;color:#4CAF50;font-weight:bold;margin:15px 0;}
+    @media (min-width:768px) and (max-width:1024px) and (orientation:landscape){
+      .game-container{max-width:95vw;padding:20px;}
+      .title{font-size:2.8rem;margin-bottom:15px;}
+      .stats{margin-bottom:20px;padding:12px;}
+      .companions-area{margin-bottom:15px;padding:8px 12px;}
+      .question-area{padding:25px;margin-bottom:20px;}
+      .question{font-size:3.2rem;margin:15px 0;}
+      .answer-input{font-size:2.5rem;padding:18px;width:200px;}
+      .keypad{max-width:420px;gap:15px;margin:25px auto;}
+      .key-btn{font-size:1.8rem;padding:22px;min-height:75px;}
+    }
+    @media (max-width:600px){
+      .title{font-size:2rem;}
+      .question{font-size:2.5rem;}
+      .keypad{max-width:250px;}
+      .key-btn{font-size:1.2rem;padding:12px;min-height:60px;}
+      .answer-input{font-size:2rem;padding:15px;width:150px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container" id="container" tabindex="0">
+    <h1 class="title">🍑 桃太郎の九九タイムアタック 🍑</h1>
+    
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-label">問題数</div>
+        <div class="stat-value" id="questionCount">0/10</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">経過時間</div>
+        <div class="stat-value" id="timer">0.00秒</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">ベストスコア</div>
+        <div class="stat-value" id="bestScore">--</div>
+      </div>
+    </div>
+    
+    <div class="companions-area">
+      <div class="companions-label">仲間たち:</div>
+      <div class="companions" id="companions"></div>
+    </div>
+    
+    <div id="gameArea">
+      <div class="question-area" id="questionArea" style="display:none;">
+        <div class="animal-question" id="animalQuestion"></div>
+        <div class="question" id="question"></div>
+        <div class="input-area">
+          <input type="text" class="answer-input" id="answerInput" readonly>
+        </div>
+        <div class="keypad">
+          <button class="key-btn" onclick="inputNumber(7)">7</button>
+          <button class="key-btn" onclick="inputNumber(8)">8</button>
+          <button class="key-btn" onclick="inputNumber(9)">9</button>
+          <button class="key-btn" onclick="inputNumber(4)">4</button>
+          <button class="key-btn" onclick="inputNumber(5)">5</button>
+          <button class="key-btn" onclick="inputNumber(6)">6</button>
+          <button class="key-btn" onclick="inputNumber(1)">1</button>
+          <button class="key-btn" onclick="inputNumber(2)">2</button>
+          <button class="key-btn" onclick="inputNumber(3)">3</button>
+          <button class="key-btn clear-btn" onclick="clearInput()">クリア</button>
+          <button class="key-btn" onclick="inputNumber(0)" style="grid-column:span 2;">0</button>
+        </div>
+        <div style="margin-top:20px;">
+          <button type="button" class="restart-btn" onclick="restartGame()">最初から始める</button>
+        </div>
+      </div>
+      
+      <div id="startScreen">
+        <p style="font-size:1.2rem;margin-bottom:20px;color:#666;">
+          桃太郎と一緒に九九の冒険に出かけよう！<br>
+          動物たちが問題を持ってくるよ。正解して仲間にしよう！
+        </p>
+        <button id="startButton" type="button" class="start-btn" onclick="startGame()" autofocus>ゲーム開始</button>
+      </div>
+      
+      <div id="gameOverScreen" class="game-over" style="display:none;">
+        <h2 style="color:#4CAF50;margin-bottom:15px;">🎉 ゲーム終了！</h2>
+        <div class="final-time" id="finalTime"></div>
+        <div id="finalCompanions" style="font-size:1.5rem;margin:15px 0;"></div>
+        <button id="restartButton" type="button" class="restart-btn" onclick="restartGame()">もう一度挑戦</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="new-record" id="newRecord">✨ NEW RECORD! ✨</div>
+
+  <script>
+    let gameState={
+      currentQuestion:0,startTime:null,questions:[],companions:['🍑'],isGameActive:false,currentAnswer:''
+    };
+    
+    const animals=['🐶','🐵','🐱','🐻','🦊','🐰','🐸','🐷','🐼','🦝'];
+    const animalNames=['犬','猿','猫','熊','狐','うさぎ','カエル','豚','パンダ','たぬき'];
+    
+    function generateQuestions(){
+      const questions=[];
+      for(let i=0;i<10;i++){
+        const a=Math.floor(Math.random()*9)+1;
+        const b=Math.floor(Math.random()*9)+1;
+        questions.push({a:a,b:b,answer:a*b,animal:animals[i],animalName:animalNames[i]});
+      }
+      return questions;
+    }
+    
+    function startGame(){
+      gameState.questions=generateQuestions();
+      gameState.currentQuestion=0;
+      gameState.startTime=Date.now();
+      gameState.isGameActive=true;
+      gameState.companions=['🍑'];
+      gameState.currentAnswer='';
+      
+      document.getElementById('startScreen').style.display='none';
+      document.getElementById('gameOverScreen').style.display='none';
+      document.getElementById('questionArea').style.display='block';
+      
+      updateDisplay();
+      showNextQuestion();
+      updateTimer();
+      document.getElementById('container')?.focus();
+    }
+    
+    function showNextQuestion(){
+      if(gameState.currentQuestion>=gameState.questions.length){
+        endGame();
+        return;
+      }
+      
+      const q=gameState.questions[gameState.currentQuestion];
+      document.getElementById('animalQuestion').textContent=`${q.animal} ${q.animalName}からの問題：`;
+      document.getElementById('question').textContent=`${q.a} × ${q.b} = ?`;
+      document.getElementById('answerInput').value='';
+      gameState.currentAnswer='';
+      
+      updateCompanions();
+    }
+    
+    function inputNumber(num){
+      if(!gameState.isGameActive)return;
+      
+      if(gameState.currentAnswer.length<3){
+        gameState.currentAnswer+=num.toString();
+        document.getElementById('answerInput').value=gameState.currentAnswer;
+        
+        // 自動判定
+        const q=gameState.questions[gameState.currentQuestion];
+        const userAnswer=parseInt(gameState.currentAnswer);
+        
+        if(userAnswer===q.answer){
+          setTimeout(()=>{
+            gameState.companions.push(q.animal);
+            updateCompanions();
+            
+            gameState.currentQuestion++;
+            updateDisplay();
+            
+            if(gameState.currentQuestion<gameState.questions.length){
+              setTimeout(showNextQuestion,50);
+            }else{
+              setTimeout(endGame,50);
+            }
+          },50);
+        }
+      }
+    }
+    
+    function clearInput(){
+      gameState.currentAnswer='';
+      document.getElementById('answerInput').value='';
+    }
+    
+    function submitAnswer(){
+      if(!gameState.isGameActive)return;
+      if(gameState.currentAnswer==='')return;
+      
+      const q=gameState.questions[gameState.currentQuestion];
+      const userAnswer=parseInt(gameState.currentAnswer);
+      
+      if(userAnswer===q.answer){
+        // 正解の場合は既に自動処理されているのでスキップ
+        return;
+      }else{
+        clearInput();
+        document.getElementById('answerInput').style.borderColor='#FF5252';
+        setTimeout(()=>{
+          document.getElementById('answerInput').style.borderColor='#4ECDC4';
+        },500);
+      }
+    }
+    
+    function updateCompanions(){
+      const companionsDiv=document.getElementById('companions');
+      companionsDiv.innerHTML='';
+      
+      gameState.companions.forEach((companion,index)=>{
+        const span=document.createElement('span');
+        span.textContent=companion;
+        
+        if(index===0){
+          span.className='companion momotaro';
+          if(gameState.isGameActive){
+            span.classList.add('walking');
+          }
+        }else{
+          span.className='companion';
+          span.style.animationDelay=`${index*0.1}s`;
+        }
+        
+        companionsDiv.appendChild(span);
+      });
+    }
+    
+    function updateDisplay(){
+      document.getElementById('questionCount').textContent=`${gameState.currentQuestion}/10`;
+    }
+    
+    function updateTimer(){
+      if(!gameState.isGameActive)return;
+      
+      const elapsed=(Date.now()-gameState.startTime)/1000;
+      document.getElementById('timer').textContent=`${elapsed.toFixed(2)}秒`;
+      
+      setTimeout(updateTimer,100);
+    }
+    
+    function endGame(){
+      gameState.isGameActive=false;
+      const finalTime=(Date.now()-gameState.startTime)/1000;
+      
+      const bestScore=localStorage.getItem('bestScore');
+      let isNewRecord=false;
+      
+      if(!bestScore||finalTime<parseFloat(bestScore)){
+        localStorage.setItem('bestScore',finalTime.toString());
+        isNewRecord=true;
+        showNewRecord();
+      }
+      
+      document.getElementById('questionArea').style.display='none';
+      document.getElementById('gameOverScreen').style.display='block';
+      document.getElementById('finalTime').textContent=`${finalTime.toFixed(2)}秒`;
+      document.getElementById('finalCompanions').innerHTML=`仲間たち: ${gameState.companions.join(' ')}`;
+      
+      updateBestScore();
+      focusRestart();
+    }
+    
+    function showNewRecord(){
+      const newRecordDiv=document.getElementById('newRecord');
+      newRecordDiv.style.display='block';
+      
+      setTimeout(()=>{
+        newRecordDiv.style.display='none';
+      },2000);
+    }
+    
+    function updateBestScore(){
+      const bestScore=localStorage.getItem('bestScore');
+      if(bestScore){
+        document.getElementById('bestScore').textContent=`${parseFloat(bestScore).toFixed(2)}秒`;
+      }
+    }
+    
+    function restartGame(){
+      gameState.isGameActive=false;
+      gameState.currentQuestion=0;
+      gameState.startTime=null;
+      gameState.questions=[];
+      gameState.companions=['🍑'];
+      gameState.currentAnswer='';
+      
+      document.getElementById('questionArea').style.display='none';
+      document.getElementById('gameOverScreen').style.display='none';
+      document.getElementById('startScreen').style.display='block';
+      
+      document.getElementById('questionCount').textContent='0/10';
+      document.getElementById('timer').textContent='0.00秒';
+      updateCompanions();
+      focusStart();
+    }
+    
+    // ---- フォーカス補助 ----
+    function focusStart(){
+      const b = document.getElementById('startButton');
+      if (b){ b.focus(); setTimeout(()=>b.focus(), 0); }
+    }
+    function focusRestart(){
+      const b = document.getElementById('restartButton');
+      if (b){ b.focus(); setTimeout(()=>b.focus(), 0); }
+    }
+
+    // ---- キー入力（1か所に集約）----
+    function handleKey(e){
+      if (e.isComposing) return; // IME変換中は無視
+
+      const isEnter = (e.key === 'Enter' || e.code === 'Enter');
+      if (isEnter){
+        e.preventDefault();
+        const startVisible = document.getElementById('startScreen').style.display !== 'none';
+        const gameOverVisible = document.getElementById('gameOverScreen').style.display === 'block';
+
+        // 開始画面 → 直接開始（click()ではなく関数を直呼び）
+        if (startVisible && !gameState.isGameActive){ startGame(); return; }
+
+        // 終了画面 → 直接再スタート
+        if (!gameState.isGameActive && gameOverVisible){ restartGame(); return; }
+
+        // ゲーム中 → 回答送信
+        if (gameState.isGameActive){ submitAnswer(); return; }
+        return;
+      }
+
+      // ゲーム中の数字/消去のみ処理（開始画面・終了画面では数字入力を無視）
+      if (gameState.isGameActive){
+        if (e.key >= '0' && e.key <= '9'){ e.preventDefault(); inputNumber(parseInt(e.key,10)); }
+        else if (e.key === 'Backspace' || e.key === 'Delete'){ e.preventDefault(); clearInput(); }
+      }
+    }
+
+    // キーボードイベントリスナーを1つだけ設定
+    document.addEventListener('keydown', handleKey);
+    
+    // 入力欄内の Enter（保険）
+    document.getElementById('answerInput').addEventListener('keydown', (e)=>{
+      if (e.key === 'Enter'){ e.preventDefault(); submitAnswer(); }
+    });
+
+    // 初期化時のフォーカス
+    window.addEventListener('load', ()=>{ focusStart(); });
+    
+    updateBestScore();
+    updateCompanions();
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96f642f0d33dd3fd',t:'MTc1NTIzNTQyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
