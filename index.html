@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>学習ゲーム集 – 100日チャレンジ</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <meta name="description" content="CanvaAIなどで作った学習ゲームを毎日公開。科目や学年帯で探せます。" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand">
+        <img src="./assets/logos/logo.svg" alt="" class="logo" />
+        <div>
+          <h1>学習ゲーム集</h1>
+          <p class="tagline">1日1作 × 100日チャレンジ</p>
+        </div>
+      </div>
+      <nav class="header-actions">
+        <!-- ↓ GitHubリンクは必要に応じて差し替え -->
+        <a class="btn" href="https://github.com/USERNAME/gakushu-games" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="controls container">
+    <div class="filters">
+      <div class="control">
+        <label for="subject">科目</label>
+        <select id="subject">
+          <option value="all">すべて</option>
+          <option value="japanese">国語</option>
+          <option value="math">算数</option>
+          <option value="social">社会</option>
+          <option value="science">理科</option>
+          <option value="english">外国語</option>
+        </select>
+      </div>
+
+      <div class="control">
+        <span class="label">学年帯</span>
+        <div class="segmented" role="tablist" aria-label="学年帯">
+          <button class="seg active" data-grade="all" role="tab">すべて</button>
+          <button class="seg" data-grade="g1-3" role="tab">1–3年</button>
+          <button class="seg" data-grade="g4-6" role="tab">4–6年</button>
+          <button class="seg" data-grade="jhs" role="tab">中学生</button>
+        </div>
+      </div>
+
+      <div class="control grow">
+        <label for="q">キーワード</label>
+        <input id="q" type="search" placeholder="ゲーム名や説明で検索…" enterkeyhint="search" />
+      </div>
+    </div>
+
+    <div class="summary">
+      <span id="count">0</span> 件表示中
+      <span class="dot">•</span>
+      <span>Day <span id="dayNum">1</span> / 100</span>
+    </div>
+  </section>
+
+  <main class="container">
+    <div id="grid" class="card-grid">
+      <!-- サンプルカード（差し替えOK） -->
+      <a class="card" href="./games/math-times01.html"
+         data-subject="math" data-grade="g1-3" data-keywords="九九 かけ算 タイムアタック">
+        <img src="./assets/thumbs/math-times01.jpg" alt="九九タイムアタック" loading="lazy">
+        <div class="card-body">
+          <h3>九九タイムアタック</h3>
+          <p>時間内に答えよう！記録を更新していこう。</p>
+          <div class="meta"><span class="pill g1-3">1–3年</span><span class="pill math">算数</span></div>
+        </div>
+      </a>
+
+      <a class="card" href="./games/jp-kanji01.html"
+         data-subject="japanese" data-grade="g4-6" data-keywords="漢字 ドリル 音読み 訓読み">
+        <img src="./assets/thumbs/jp-kanji01.jpg" alt="漢字しりとり" loading="lazy">
+        <div class="card-body">
+          <h3>漢字しりとり</h3>
+          <p>読みと意味を手がかりに、つなげて覚える。</p>
+          <div class="meta"><span class="pill g4-6">4–6年</span><span class="pill japanese">国語</span></div>
+        </div>
+      </a>
+
+      <a class="card" href="./games/sci-planets01.html"
+         data-subject="science" data-grade="jhs" data-keywords="惑星 太陽系 理科 クイズ">
+        <img src="./assets/thumbs/sci-planets01.jpg" alt="惑星クイズ" loading="lazy">
+        <div class="card-body">
+          <h3>惑星クイズ</h3>
+          <p>太陽系の基本をサクッと確認しよう。</p>
+          <div class="meta"><span class="pill jhs">中学生</span><span class="pill science">理科</span></div>
+        </div>
+      </a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© <span id="year"></span> 学習ゲーム集. Made with CanvaAI & GitHub Pages.</p>
+      <div class="links">
+        <a href="#" aria-disabled="true">利用規約（準備中）</a>
+        <a href="#" aria-disabled="true">プライバシー（準備中）</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./script.js" defer></script>
+</body>
+</html>
