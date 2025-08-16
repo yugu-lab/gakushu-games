@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>神経衰弱で敬語を覚えよう！！</title>
+  <style>
+    :root{ --accent:#38bdf8; }
+    *{ box-sizing:border-box; }
+    body{ margin:0; font-family:'Hiragino Sans','Yu Gothic','Segoe UI',sans-serif; background:linear-gradient(135deg,#0f172a,#1e293b); color:#e5e7eb; display:flex; flex-direction:column; align-items:center; min-height:100svh; padding:20px; overflow-x:hidden; }
+    h1{ font-size:2rem; color:var(--accent); margin:0 0 16px; text-shadow:0 0 10px rgba(56,189,248,.5);}    
+
+    /* 共通ボタン */
+    .btn{ appearance:none; border:none; cursor:pointer; border-radius:999px; padding:12px 20px; font-weight:800; }
+    .btn-primary{ background:#38bdf8; color:#0b1220; }
+    .btn-ghost{ background:transparent; color:#e5e7eb; border:2px solid rgba(229,231,235,.25); }
+    .btn-row{ display:flex; gap:12px; justify-content:center; align-items:center; margin-top:14px; }
+
+    /* スタート & ゲーム画面 */
+    #start, #game{ width:100%; max-width:1600px; }
+    #game{ display:none; }
+
+    /* スタート画面（わくわくポップ） */
+    .panel{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12); border-radius:18px; padding:18px; position:relative; overflow:hidden; }
+    .rules{ line-height:1.7; color:#cbd5e1; }
+    .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .field{ display:flex; flex-direction:column; gap:6px; }
+    label{ font-size:.98rem; font-weight:900; color:#e2e8f0; }
+    input, select{ padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:#0b1220; color:#e5e7eb; font-size:1rem; }
+
+    .blob{ position:absolute; border-radius:50%; filter:blur(8px); opacity:.45; pointer-events:none; }
+    .blob.yellow{ width:280px; height:280px; right:-60px; top:-40px; background:radial-gradient(closest-side,#fde68a,transparent 70%);} 
+    .blob.blue{ width:320px; height:320px; left:-40px; bottom:-60px; background:radial-gradient(closest-side,#93c5fd,transparent 70%);} 
+
+    .lead{ display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+    .lead-emoji{ font-size:28px; }
+    .lead-title{ font-size:1.2rem; font-weight:900; letter-spacing:.5px; }
+    small.note{ color:#cbd5e1; opacity:.9; margin-top:6px; display:block; }
+
+    /* モードボタン（広く使う） */
+    .mode-field{ grid-column:1/-1; }
+    .mode-select{ display:flex; gap:16px; flex-wrap:wrap; width:100%; }
+    .mode-btn{ padding:14px 24px; border-radius:999px; border:2px solid rgba(229,231,235,.25); background:transparent; color:#e5e7eb; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-size:1.06rem; }
+    .mode-btn small{ opacity:.85; font-weight:700; }
+    .mode-btn.active{ background:#38bdf8; color:#0b1220; border-color:transparent; }
+
+    /* プレイヤー情報 */
+    .players{ width:100%; display:flex; gap:10px; justify-content:center; align-items:stretch; margin:10px 0 6px; }
+    .player{ flex:1; min-width:0; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:10px; display:flex; align-items:center; gap:10px; }
+    .player.active{ outline:3px solid var(--accent); box-shadow:0 0 0 4px rgba(56,189,248,.18) inset; }
+    .avatar{ width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#64748b,#334155); display:grid; place-items:center; font-weight:800; }
+    .pname{ font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .pscore{ margin-left:auto; font-weight:900; color:#f8fafc; }
+
+    /* タイマー（一人モードのみ表示） */
+    .timerbar{ display:none; width:100%; justify-content:center; align-items:center; gap:10px; margin:4px 0 10px; }
+    .timerbar span{ opacity:.9; font-weight:900; }
+    .timer{ background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:6px 12px; font-weight:900; color:#e5e7eb; font-variant-numeric:tabular-nums; letter-spacing:.5px; }
+
+    /* 盤面（左右3x4, 仕切り） */
+    .board-wrapper{ display:grid; grid-template-columns:1fr 4px 1fr; gap:20px; width:100%; align-items:start; }
+    .divider{ width:4px; height:100%; background:var(--accent); border-radius:2px; }
+    .column{ display:grid; grid-template-rows:repeat(3,1fr); grid-template-columns:repeat(4,1fr); gap:16px; }
+
+    /* ================= カード（新しい見た目 & 中央配置） ================= */
+    .card{ width:100%; aspect-ratio:3/4; border-radius:16px; cursor:pointer; perspective:1000px; overflow:visible; box-shadow:0 8px 20px rgba(0,0,0,.28);} 
+    .card.cleared{ visibility:hidden; pointer-events:none; }
+
+    .card-inner{ position:relative; width:100%; height:100%; transform-style:preserve-3d; transition:transform .6s; }
+    .flipped .card-inner{ transform:rotateY(180deg); }
+
+    .card-front, .card-back{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      text-align:center; padding:10px 12px;
+      background:#ffffff; color:#0f172a;
+      border-radius:16px; border:3px solid rgba(15,23,42,.25);
+      box-shadow: 0 8px 20px rgba(0,0,0,.12), 0 0 0 1px rgba(255,255,255,.06) inset;
+      font-weight:900; font-size:clamp(12px,1.25vw,20px); line-height:1.2;
+      backface-visibility:hidden;
+      white-space:pre-line; word-break:keep-all;
+    }
+
+    /* 面の向き */
+    .card-front{ transform:none; }
+    .card-back { transform:rotateY(180deg); }
+
+    /* 左列/右列のアクセント枠（frontに色クラスが付く） */
+    .front-normal{ box-shadow: 0 8px 20px rgba(0,0,0,.12), 0 0 0 6px #f43f5e inset; }
+    .front-keigo { box-shadow: 0 8px 20px rgba(0,0,0,.12), 0 0 0 6px #22c55e inset; }
+
+    .labels{ display:flex; justify-content:space-between; width:100%; margin-top:10px; font-size:14px; font-weight:700; color:#cbd5e1; }
+
+    /* 例文ポップアップ */
+    .popup{ position:fixed; inset:50% auto auto 50%; transform:translate(-50%,-50%) scale(.8); background:#fff0f6; color:#111827; padding:18px 24px; border-radius:18px; border:3px solid #fb7185; box-shadow:0 16px 40px rgba(0,0,0,.4); font-size:15px; font-weight:800; text-align:center; white-space:pre-line; z-index:1000; opacity:0; transition:transform .28s ease, opacity .28s ease; pointer-events:none; }
+    .popup.show{ transform:translate(-50%,-50%) scale(1); opacity:1; pointer-events:auto; }
+
+    /* 確認ダイアログ / 終了ポップアップ */
+    .overlay{ position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.45); z-index:1200; }
+    .overlay.show{ display:grid; }
+    .dialog{ background:#0b1220; color:#e5e7eb; padding:20px; border-radius:16px; border:1px solid rgba(255,255,255,.12); min-width:300px; max-width:90vw; text-align:center; }
+    .dialog h3{ margin:0 0 10px; font-size:1.1rem; color:#e2e8f0; }
+    .rank-list{ list-style:none; padding:0; margin:8px 0 0; text-align:left; }
+    .rank-list li{ padding:6px 10px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:10px; margin:6px 0; font-weight:800; display:flex; justify-content:space-between; }
+
+    /* フッターアクション */
+    .footer-actions{ width:100%; display:flex; justify-content:center; gap:10px; margin-top:16px; }
+  </style>
+</head>
+<body>
+  <h1>神経衰弱で敬語を覚えよう！！</h1>
+
+  <!-- スタート画面 -->
+  <section id="start" class="panel">
+    <div class="blob yellow" aria-hidden="true"></div>
+    <div class="blob blue"   aria-hidden="true"></div>
+
+    <div class="lead">
+      <div class="lead-emoji">🎴✨</div>
+      <div>
+        <div class="lead-title">楽しみながら敬語をマスターしよう</div>
+        <div class="rules">左は <b>常体</b>、右は <b>敬語表現</b>。同じペアを見つけてポイントゲット！</div>
+      </div>
+    </div>
+
+    <div class="grid2" style="align-items:start;">
+      <div class="field">
+        <label>プレイ人数（1〜4人）</label>
+        <select id="count">
+          <option value="1">1人</option>
+          <option value="2">2人</option>
+          <option value="3">3人</option>
+          <option value="4">4人</option>
+        </select>
+        <small class="note">人数を選ぶと下の名前欄が自動で出ます。</small>
+      </div>
+
+      <div class="field">
+        <label>名前をいれよう</label>
+        <div class="grid2" id="nameFields" style="grid-template-columns:1fr 1fr; gap:8px;"></div>
+        <small class="note">そのままゲームスタートでもOK</small>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:12px;">
+      <div class="field mode-field">
+        <label>モード</label>
+        <div class="mode-select" id="modeSelect">
+          <button class="mode-btn active" data-mode="normal">Normal</button>
+          <button class="mode-btn" data-mode="easy">Easy <small>（カードが最初から全部オープン）</small></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="startBtn" style="display:inline-flex; align-items:center; gap:8px;">
+        <span>ゲームスタート！</span><span>▶️</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ゲーム画面（同一HTML内で切替） -->
+  <section id="game">
+    <div class="players" id="players"></div>
+    <div class="timerbar" id="timerBar"><span>TIME</span><div class="timer" id="timer">00:00.0</div></div>
+    <div class="board-wrapper">
+      <div class="column" id="left"></div>
+      <div class="divider"></div>
+      <div class="column" id="right"></div>
+    </div>
+    <div class="labels">
+      <div>常体</div>
+      <div>敬語表現</div>
+    </div>
+    <div class="footer-actions">
+      <button class="btn btn-ghost" id="backBtn">最初に戻る</button>
+      <button class="btn btn-primary" id="replayBtn" style="display:none;">もう一度遊ぶ</button>
+    </div>
+  </section>
+
+  <!-- 例文ポップアップ -->
+  <div class="popup" id="popup"></div>
+
+  <!-- 確認ダイアログ / 終了ポップアップ -->
+  <div class="overlay" id="confirmOverlay">
+    <div class="dialog">
+      <h3>本当にやめますか？</h3>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn btn-primary" id="confirmYes">はい</button>
+        <button class="btn btn-ghost" id="confirmNo">いいえ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="rankOverlay">
+    <div class="dialog" id="rankDialog">
+      <h3>順位発表</h3>
+      <ol class="rank-list" id="rankList"></ol>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn btn-primary" id="rankReplay">もう一度遊ぶ</button>
+        <button class="btn btn-ghost" id="rankBack">最初に戻る</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== スタート画面：人数に応じて名前欄を生成 ======
+    const countSel = document.getElementById('count');
+    const nameWrap = document.getElementById('nameFields');
+    const startSec = document.getElementById('start');
+    const gameSec  = document.getElementById('game');
+    const startBtn = document.getElementById('startBtn');
+    const modeSelect = document.getElementById('modeSelect');
+    let gameMode = 'normal';
+
+    function renderNameInputs(){
+      const n = parseInt(countSel.value, 10);
+      nameWrap.innerHTML = '';
+      for(let i=1; i<=n; i++){
+        const input = document.createElement('input');
+        input.id = `n${i}`;
+        input.value = `プレイヤー${i}`;
+        input.addEventListener('focus', e => e.target.select());
+        input.addEventListener('mouseup', e => e.preventDefault());
+        nameWrap.appendChild(input);
+      }
+    }
+    countSel.addEventListener('change', renderNameInputs);
+    renderNameInputs();
+
+    // モードボタンの切替
+    modeSelect.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.mode-btn');
+      if(!btn) return;
+      document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      gameMode = btn.dataset.mode; // 'normal' | 'easy'
+    });
+
+    startBtn.addEventListener('click', ()=>{
+      const n = parseInt(countSel.value,10);
+      const names = [];
+      for(let i=1;i<=n;i++){
+        const v = (document.getElementById(`n${i}`).value || '').trim();
+        names.push(v || `プレイヤー${i}`);
+      }
+      sessionStorage.setItem('keigo_memory_playerCount', String(n));
+      sessionStorage.setItem('keigo_memory_playerNames', JSON.stringify(names));
+      sessionStorage.setItem('keigo_memory_mode', gameMode);
+      startGame(n, names);
+      startSec.style.display='none';
+      gameSec.style.display='block';
+    });
+
+    // ====== ゲームデータ ======
+    const pairs = [
+      {front:`言う
+(尊敬語)`, back:`おっしゃる`, example:`先生のおっしゃる通りです。`},
+      {front:`行く
+(尊敬語)`, back:`いらっしゃる
+おいでになる
+お越しになる`, example:`先生が東京にいらっしゃいます。`},
+      {front:`する
+(尊敬語)`, back:`なさる`, example:`先生は研究をなさっています。`},
+      {front:`見る
+(尊敬語)`, back:`ご覧になる`, example:`先生が作品をご覧になります。`},
+      {front:`聞く
+(尊敬語)`, back:`お聞きになる`, example:`先生が講義をお聞きになります。`},
+      {front:`食べる
+(尊敬語)`, back:`召し上がる`, example:`先生がケーキを召し上がります。`},
+
+      {front:`言う
+(謙譲語)`, back:`申す
+申し上げる`, example:`私は山田と申します。
+ご成功をお祈り申し上げます。`},
+      {front:`行く
+(謙譲語)`, back:`参る
+伺う`, example:`明日、ご自宅に伺います。`},
+      {front:`する
+(謙譲語)`, back:`いたす`, example:`準備をいたしました。`},
+      {front:`見る
+(謙譲語)`, back:`拝見する`, example:`レポートを拝見します。`},
+      {front:`聞く
+(謙譲語)`, back:`伺う
+拝聴する`, example:`お話を伺います。
+講演を拝聴しました。`},
+      {front:`食べる
+(謙譲語)`, back:`いただく`, example:`お菓子をいただきます。`}
+    ];
+
+    // ====== ゲーム本体 ======
+    const playersEl = document.getElementById('players');
+    const leftEl = document.getElementById('left');
+    const rightEl = document.getElementById('right');
+    const popup = document.getElementById('popup');
+    const backBtn = document.getElementById('backBtn');
+    const replayBtn = document.getElementById('replayBtn');
+    const confirmOverlay = document.getElementById('confirmOverlay');
+    const rankOverlay = document.getElementById('rankOverlay');
+    const rankList = document.getElementById('rankList');
+    const rankReplay = document.getElementById('rankReplay');
+    const rankBack = document.getElementById('rankBack');
+    const timerBar = document.getElementById('timerBar');
+    const timerEl = document.getElementById('timer');
+
+    let playerCount=1; let players=[]; let turn=0; let flipped=[];
+    let timerInt=null, timerStart=0, timerRunning=false, elapsedMs=0;
+
+    function renderPlayers(){
+      playersEl.innerHTML = '';
+      players.forEach((p,i)=>{
+        const wrap = document.createElement('div');
+        wrap.className = 'player' + (i===turn? ' active':'');
+        wrap.dataset.id = String(p.id);
+        wrap.innerHTML = `
+          <div class="avatar">${i+1}</div>
+          <div class="pname">${p.name}</div>
+          <div class="pscore">${p.score}枚</div>
+        `;
+        playersEl.appendChild(wrap);
+      })
+    }
+
+    function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]];} return arr; }
+
+    function mountCards(){
+      leftEl.innerHTML=''; rightEl.innerHTML='';
+      const all=[]; pairs.forEach(p=>{ all.push({text:p.front, side:'front', pair:p, colorClass:'front-normal'}); all.push({text:p.back, side:'back', pair:p, colorClass:'front-keigo'}); });
+      const leftCards = shuffle(all.filter(c=>c.side==='front'));
+      const rightCards= shuffle(all.filter(c=>c.side==='back'));
+      const makeCard=(c)=>{
+        const el=document.createElement('div'); el.className='card';
+        const frontContent = (gameMode==='easy') ? c.text : '?';
+        el.innerHTML=`<div class="card-inner">
+          <div class="card-front ${c.colorClass}">${frontContent}</div>
+          <div class="card-back"><div class="ans">${c.text}</div></div>
+        </div>`;
+        el.addEventListener('click',()=>flipCard(el,c));
+        return el;
+      };
+      leftCards.forEach(c=> leftEl.appendChild(makeCard(c)));
+      rightCards.forEach(c=> rightEl.appendChild(makeCard(c)));
+    }
+
+    function startGame(count, names){
+      playerCount = count; turn=0; flipped=[];
+      players = names.map((n,i)=>({ id:i, name:n, score:0 }));
+      renderPlayers();
+      mountCards();
+      replayBtn.style.display='none';
+      if(playerCount===1){ timerBar.style.display='flex'; resetTimer(); } else { timerBar.style.display='none'; stopTimer(); }
+    }
+
+    function flipCard(el,c){
+      if(el.classList.contains('flipped') || el.classList.contains('cleared') || flipped.length===2) return;
+      if(playerCount===1 && !timerRunning){ startTimer(); }
+      el.classList.add('flipped');
+      flipped.push({el,c});
+      if(flipped.length===2){ setTimeout(checkMatch, 650); }
+    }
+
+    function nextTurn(){ if(playerCount>1){ turn=(turn+1)%playerCount; renderPlayers(); } }
+
+    function checkGameEnd(){
+      const total = document.querySelectorAll('.card').length;
+      const cleared = document.querySelectorAll('.card.cleared').length;
+      if(cleared===total){
+        if(playerCount===1) stopTimer();
+        const ranking = players.map(p=>({name:p.name,score:p.score}))
+                               .sort((a,b)=> b.score - a.score);
+        rankList.innerHTML='';
+        if(playerCount===1){
+          const liT=document.createElement('li');
+          liT.innerHTML = `<span>⏱️ タイム</span><span>${formatTime(elapsedMs)}</span>`;
+          rankList.appendChild(liT);
+        }
+        ranking.forEach((r,idx)=>{
+          const li=document.createElement('li');
+          li.innerHTML = `<span>${(playerCount>1? ['🥇','🥈','🥉','🎖️'][idx]||'・':'👤')} ${r.name}</span><span>${r.score} ペア</span>`;
+          rankList.appendChild(li);
+        });
+        rankOverlay.classList.add('show');
+        replayBtn.style.display='inline-flex';
+      }
+    }
+
+    function checkMatch(){
+      const [a,b]=flipped; if(!a||!b) return;
+      if(a.c.pair===b.c.pair && a.c.side!==b.c.side){
+        showPopup(a.c.pair.example);
+        players[turn].score += 1; renderPlayers();
+        a.el.classList.add('cleared'); b.el.classList.add('cleared');
+        checkGameEnd();
+      }else{
+        a.el.classList.remove('flipped'); b.el.classList.remove('flipped'); nextTurn();
+      }
+      flipped=[];
+    }
+
+    // 例文ポップアップ
+    function showPopup(text){ popup.textContent=text; popup.classList.add('show'); setTimeout(()=>popup.classList.remove('show'), 2000); }
+
+    // タイムアタック：タイマー
+    function resetTimer(){ elapsedMs=0; timerEl.textContent='00:00.0'; timerRunning=false; if(timerInt){clearInterval(timerInt); timerInt=null;} }
+    function startTimer(){ if(timerRunning) return; timerRunning=true; timerStart=Date.now(); timerInt=setInterval(()=>{ elapsedMs=Date.now()-timerStart; timerEl.textContent = formatTime(elapsedMs); }, 100); }
+    function stopTimer(){ if(timerInt){ clearInterval(timerInt); timerInt=null; } timerRunning=false; }
+    function formatTime(ms){ const t=Math.floor(ms/100); const ds=t%10; const s=Math.floor(t/10)%60; const m=Math.floor(t/600); const pad=n=>String(n).padStart(2,'0'); return `${pad(m)}:${pad(s)}.${ds}`; }
+
+    // 「最初に戻る」確認
+    backBtn.addEventListener('click',()=> confirmOverlay.classList.add('show'));
+    document.getElementById('confirmYes').addEventListener('click',()=>{
+      confirmOverlay.classList.remove('show');
+      gameSec.style.display='none'; startSec.style.display='block';
+    });
+    document.getElementById('confirmNo').addEventListener('click',()=> confirmOverlay.classList.remove('show'));
+
+    // リプレイ（ゲーム内ボタン）
+    replayBtn.addEventListener('click',()=>{
+      mountCards(); flipped=[]; turn=0; players.forEach(p=>p.score=0); renderPlayers(); rankOverlay.classList.remove('show'); replayBtn.style.display='none'; resetTimer(); if(playerCount===1){ timerBar.style.display='flex'; }
+    });
+
+    // 終了ポップアップのボタン
+    rankReplay.addEventListener('click',()=>{ replayBtn.click(); });
+    rankBack.addEventListener('click',()=>{
+      rankOverlay.classList.remove('show');
+      gameSec.style.display='none'; startSec.style.display='block';
+    });
+
+    // セッションからの自動復元（任意）
+    (function autoLoad(){
+      const countSS = parseInt(sessionStorage.getItem('keigo_memory_playerCount')||'');
+      const namesSS = JSON.parse(sessionStorage.getItem('keigo_memory_playerNames')||'[]');
+      const modeSS = sessionStorage.getItem('keigo_memory_mode')||'normal';
+      if(countSS){ countSel.value = String(countSS); renderNameInputs(); }
+      if(namesSS.length){ namesSS.forEach((name,i)=>{ const el=document.getElementById(`n${i+1}`); if(el) el.value=name; }); }
+      if(modeSS){
+        gameMode = modeSS;
+        document.querySelectorAll('.mode-btn').forEach(b=>{
+          b.classList.toggle('active', b.dataset.mode===gameMode);
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
