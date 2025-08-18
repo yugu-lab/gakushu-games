@@ -21,19 +21,18 @@
             66% { background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); }
         }
         
-   　   .game-container {
- 　　　　　 max-width: 100%;
-　　　　　  width: min(1100px, 100%);         
-　　　　　  margin: 0 auto;
-　　　　　  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-　　　　　  border-radius: 15px;
-　　　　　  padding: 15px;
-  　　　　  box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
- 　　　　   min-height: calc(100vh - 20px); 
-  　　　　  display: flex;
- 　　　　   flex-direction: column;
- 　　　　   border: 2px solid #3498db;
-　　　　  }
+        .game-container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            height: calc(100vh - 20px);
+            display: flex;
+            flex-direction: column;
+            border: 2px solid #3498db;
+        }
         
         .title {
             text-align: center;
@@ -50,39 +49,36 @@
             100% { text-shadow: 3px 3px 6px rgba(0,0,0,0.5), 0 0 30px rgba(52, 152, 219, 0.6); }
         }
         
-　　　　  .game-board {
-　　　　    display: grid;
-　　　　    grid-template-columns: repeat(10, 1fr);
- 　　　　   grid-template-rows: repeat(3, 1fr);
-　　　　    gap: 8px;
- 　　　　   margin: 10px 0;
- 　　　　   padding: 15px;
- 　　　　   background: linear-gradient(45deg, #34495e, #2c3e50);
-　　　　    border-radius: 15px;
-　　　　    border: 3px solid #3498db;
-　　　　    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
-　　　　    height: auto;                 
-　　　　    aspect-ratio: 10 / 3;         
-　　　　    overflow: visible;
-　　　　  }
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 8px;
+            margin: 10px 0;
+            padding: 15px;
+            background: linear-gradient(45deg, #34495e, #2c3e50);
+            border-radius: 15px;
+            border: 3px solid #3498db;
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+            height: 220px;
+            overflow: visible;
+        }
         
-　　　　  .cell {
-  
- 　　　　   background: #fff;
- 　　　　   border: 1px solid #ddd;
-　　　　    border-radius: 6px;
-　　　　    display: flex;
-　　　　    align-items: center;
-　　　　    justify-content: center;
-　　　　    width: 100%;                  
-　　　　    height: 100%;                  
-　　　　    align-self: stretch;           
-　　　　    font-weight: bold;
-　　　　    position: relative;
-　　　　    transition: all 0.3s ease;
- 　　　　   font-size: 0.8rem;
-　　　　  }
-    
+        .cell {
+            aspect-ratio: 1;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: relative;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+            min-height: 30px;
+        }
+        
         .cell:hover {
             transform: scale(1.05);
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
@@ -2508,5 +2504,5 @@
         // ゲーム初期化
         initializeBoard();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'970a8fe3f3c219c9',t:'MTc1NTQ0ODI5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9710c63ad621966b',t:'MTc1NTUxMzQzMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
