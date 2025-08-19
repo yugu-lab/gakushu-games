@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>因数分解タイムアタック</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:'Noto Sans JP',sans-serif;
+      background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+      min-height:100vh;display:flex;flex-direction:column;align-items:center;
+      padding:20px;color:#fff;overflow-x:auto;
+    }
+    .game-container{max-width:1200px;width:100%;text-align:center}
+    .header{margin-bottom:20px}
+    .title{font-size:2.5rem;font-weight:700;margin-bottom:10px;text-shadow:2px 2px 4px rgba(0,0,0,.3)}
+    .level-selector{display:flex;justify-content:center;gap:10px;margin:10px 0 5px}
+    .level-btn{
+      padding:10px 18px;border:none;border-radius:20px;font-size:1rem;font-weight:700;cursor:pointer;
+      transition:.2s;background:rgba(255,255,255,.2);color:#fff;border:2px solid rgba(255,255,255,.3)
+    }
+    .level-btn:hover{background:rgba(255,255,255,.3);transform:translateY(-2px)}
+    .level-btn.active{background:#ff6b6b;border-color:#ff6b6b}
+    .level-btn:disabled{opacity:.6;cursor:not-allowed;filter:grayscale(.2)}
+    .level-btn:disabled:hover{transform:none;background:rgba(255,255,255,.2)}
+    .score{font-size:1.2rem;font-weight:600;margin:8px 0 20px}
+
+    .game-layout{display:flex;gap:30px;align-items:flex-start;justify-content:flex-start;min-height:65vh;max-height:65vh}
+    .left-section{flex:0 0 45%;max-width:450px}
+    .right-section{flex:0 0 55%;max-width:500px}
+
+    .bomb-container{position:relative;height:120px;margin-bottom:15px;overflow:hidden;background:rgba(255,255,255,.1);border-radius:20px;border:2px dashed rgba(255,255,255,.3)}
+    .bomb{position:absolute;left:50%;transform:translateX(-50%);font-size:5rem;transition:top .1s linear;top:-100px}
+    .bomb.falling{animation:fall 30s linear}
+    @keyframes fall{from{top:-100px} to{top:100px}}
+    .timer{
+      position:absolute;bottom:10px;right:20px;font-size:2rem;font-weight:700;
+      background:rgba(255,255,255,.9);color:#ff6b6b;padding:8px 16px;border-radius:15px;text-shadow:2px 2px 4px rgba(0,0,0,.1)
+    }
+
+    .problem-area{background:rgba(255,255,255,.95);color:#333;padding:20px;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+    .problem{font-size:2.2rem;font-weight:700;margin-bottom:20px}
+    .answer-display{
+      font-size:1.6rem;min-height:70px;background:#f8f9fa;border:3px solid #dee2e6;border-radius:10px;
+      padding:15px;margin-bottom:20px;display:flex;align-items:center;justify-content:center
+    }
+    .feedback-ok{background:#d4edda !important;color:#155724 !important}
+    .feedback-ng{background:#f8d7da !important;color:#721c24 !important}
+    .feedback-warn{background:#fff3cd !important;color:#856404 !important}
+
+    .keypad{background:rgba(255,255,255,.95);padding:20px;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+    .factor-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;max-width:100%}
+    .input-btn{
+      padding:16px 8px;border:none;border-radius:12px;font-size:1.05rem;font-weight:700;cursor:pointer;
+      transition:.2s;background:#4CAF50;color:#fff;box-shadow:0 4px 8px rgba(0,0,0,.1);min-height:56px;aspect-ratio:1
+    }
+    .input-btn:hover{transform:translateY(-2px);box-shadow:0 6px 12px rgba(0,0,0,.2)}
+    .factor-btn{font-size:1rem;padding:12px 6px}
+    .factor-btn-positive{background:#2196F3}.factor-btn-positive:hover{background:#1976D2}
+    .factor-btn-negative{background:#f44336}.factor-btn-negative:hover{background:#d32f2f}
+    .variable-btn{background:#9C27B0;font-size:1.6rem}.variable-btn:hover{background:#7B1FA2}
+    .skip-btn{background:#FF9800;font-size:1.1rem;padding:16px 12px}.skip-btn:hover{background:#F57C00}
+
+    .action-buttons{display:flex;justify-content:center;gap:15px;margin-top:10px}
+    .action-btn{padding:12px 24px;border:none;border-radius:25px;font-size:1rem;font-weight:700;cursor:pointer;transition:.2s}
+    .submit-btn{background:#ff6b6b;color:#fff}.submit-btn:hover{background:#ff5252;transform:translateY(-2px)}
+    .clear-btn{background:#ffa726;color:#fff}.clear-btn:hover{background:#ff9800;transform:translateY(-2px)}
+    .start-btn{background:#4CAF50;color:#fff;font-size:1.2rem;padding:15px 30px}.start-btn:hover{background:#45a049;transform:translateY(-2px)}
+
+    /* 追加: ルールカード & ホームボタン */
+    .rules-card{background:rgba(255,255,255,.95);color:#333;padding:16px 20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.2);text-align:left;max-width:720px;margin:0 auto 16px}
+    .rules-card h2{margin-bottom:8px;font-size:1.4rem}
+    .rules-card ul{padding-left:1.2rem}
+    .rules-card li{margin:6px 0;line-height:1.6}
+    .home-btn{background:#6c757d;color:#fff}
+    .home-btn:hover{background:#5a6268;transform:translateY(-2px)}
+
+    .game-over{background:rgba(255,107,107,.95);color:#fff;padding:30px;border-radius:20px;max-width:680px;margin:20px auto;display:flex;flex-direction:column;align-items:center;text-align:center}
+    .hidden{display:none}
+
+    .footer-bar{position:fixed;left:0;right:0;bottom:12px;display:flex;justify-content:center;z-index:9999}
+    .footer-bar .home-btn{ /* クリック可（念のため残す）*/ pointer-events:auto}
+    .footer-bar .home-btn{pointer-events:auto}
+
+    @media (max-width:768px){
+      .title{font-size:2rem}
+      .level-selector{flex-direction:column;align-items:center}
+      .problem{font-size:1.8rem}
+      .answer-display{font-size:1.3rem}
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="header">
+      <h1 class="title">🧮 因数分解タイムアタック 💣</h1>
+
+      <div class="level-selector">
+        <button class="level-btn" data-level="EASY">Ｅａｓｙ</button>
+        <button class="level-btn active" data-level="NORMAL">Ｎｏｒｍａｌ</button>
+      </div>
+
+      <div class="score">スコア: <span id="score">0</span> | ハイスコア(<span id="hsModeLabel">Ｎｏｒｍａｌ</span>): <span id="highScore">0</span></div>
+    </div>
+
+    <div id="gameArea" class="hidden">
+      <div class="game-layout">
+        <div class="left-section">
+          <div class="bomb-container">
+            <div class="bomb" id="bomb">💣</div>
+            <div class="timer" id="timer">30</div>
+          </div>
+
+          <div class="problem-area">
+            <div class="problem" id="problem">𝓍² + 5𝓍 + 6</div>
+            <div class="answer-display" id="answerDisplay">ここに答えを入力してください</div>
+
+            <div class="action-buttons">
+              <button class="action-btn clear-btn" id="clearBtn">クリア</button>
+              <button class="action-btn submit-btn" id="submitBtn">解答</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="right-section">
+          <div class="keypad">
+            <div class="factor-grid" id="factorGrid">
+              <!-- (x±1..9) ボタン（data-k で段階制御） -->
+              <button class="input-btn factor-btn factor-btn-positive" data-token="(𝓍+1)" data-k="1">(𝓍+1)</button>
+              <button class="input-btn factor-btn factor-btn-negative" data-token="(𝓍-1)" data-k="1">(𝓍-1)</button>
+              <button class="input-btn factor-btn factor-btn-positive" data-token="(𝓍+2)" data-k="2">(𝓍+2)</button>
+              <button class="input-btn factor-btn factor-btn-negative" data-token="(𝓍-2)" data-k="2">(𝓍-2)</button>
+              <button class="input-btn factor-btn factor-btn-positive" data-token="(𝓍+3)" data-k="3">(𝓍+3)</button>
+              <button class="input-btn factor-btn factor-btn-negative" data-token="(𝓍-3)" data-k="3">(𝓍-3)</button>
+              <button class="input-btn factor-btn factor-btn-positive" data-token="(𝓍+4)" data-k="4">(𝓍+4)</button>
+              <button class="input-btn factor-btn factor-btn-negative" data-token="(𝓍-4)" data-k="4">(𝓍-4)</button>
+              <button class="input-btn factor-btn factor-btn-positive" data-token="(𝓍+5)" data-k="5">(𝓍+5)</button>
+              <button class="input-btn factor-btn factor-btn-negative" data-token="(𝓍-5)" data-k="5">(𝓍-5)</button>
+              <button class="input-btn factor-btn factor-btn-positive" data-token="(𝓍+6)" data-k="6">(𝓍+6)</button>
+              <button class="input-btn factor-btn factor-btn-negative" data-token="(𝓍-6)" data-k="6">(𝓍-6)</button>
+              <button class="input-btn factor-btn factor-btn-positive" data-token="(𝓍+7)" data-k="7">(𝓍+7)</button>
+              <button class="input-btn factor-btn factor-btn-negative" data-token="(𝓍-7)" data-k="7">(𝓍-7)</button>
+              <button class="input-btn factor-btn factor-btn-positive" data-token="(𝓍+8)" data-k="8">(𝓍+8)</button>
+              <button class="input-btn factor-btn factor-btn-negative" data-token="(𝓍-8)" data-k="8">(𝓍-8)</button>
+              <button class="input-btn factor-btn factor-btn-positive" data-token="(𝓍+9)" data-k="9">(𝓍+9)</button>
+              <button class="input-btn factor-btn factor-btn-negative" data-token="(𝓍-9)" data-k="9">(𝓍-9)</button>
+              <!-- x と スキップ -->
+              <button class="input-btn variable-btn" data-token="𝓍">𝓍</button>
+              <button class="input-btn skip-btn" id="skipBtn">スキップ</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="footerBar" class="footer-bar hidden">
+      <button class="action-btn home-btn" id="homeBtn" onclick="confirmBackToHome()">🏠 最初に戻る</button>
+    </div>
+
+    <div id="startScreen">
+      <div class="rules-card">
+        <h2>遊び方</h2>
+        <ul>
+          <li>表示された二次式を、一次式2つの積に因数分解して答えます（例：<code>(𝓍+2)(𝓍+3)</code>）。</li>
+          <li>制限時間は30秒。正解で+10点。スキップ可。</li>
+          <li>ゲーム中は「🏠 最初に戻る」でホームに戻れます。</li>
+        </ul>
+      </div>
+      <button class="action-btn start-btn" id="startBtn">ゲーム開始</button>
+    </div>
+
+    <div id="gameOver" class="game-over hidden">
+      <h2>💥 タイムアップ！ 💥</h2>
+      <p>最終スコア: <span id="finalScore">0</span></p>
+      <button class="action-btn start-btn" id="retryBtn" style="margin-top:20px;">もう一度プレイ</button>
+    </div>
+  </div>
+
+  <script>
+    // ============== ユーティリティ ==============
+    const FANCY_X = '𝓍';
+    const toPlainX = s => (s || '').replace(/𝓍/g, 'x');
+    const strip = s => toPlainX(String(s)).replace(/\s+/g, '');
+
+    function signStr(n){
+      return n>=0?'+':'-';
+    }
+    function abs(n){return Math.abs(n)|0;}
+
+    // 現在レベルに応じた最大k（Easy:5, Normal:9）
+    function getMaxK(){ return currentLevel==='EASY' ? 5 : 9; }
+
+    // 因数トークン化： 'x' or '(x±k)'（1<=k<=9）だけ許可。2個ちょうど。
+    function parseFactors(raw){
+      const s = strip(raw);
+      const tokens = [];
+      let i = 0;
+      while(i < s.length){
+        if(s[i] === 'x'){
+          tokens.push('x'); i += 1; continue;
+        }
+        if(s[i] === '('){
+          const m = s.slice(i).match(/^\((x)([+-])(\d{1,2})\)/);
+          if(!m) return {ok:false, reason:'形式が違います', tokens:[]};
+          const n = parseInt(m[3],10);
+          if(!(n>=1 && n<=getMaxK())) return {ok:false, reason:'定数は1〜'+getMaxK()+'です', tokens:[]};
+          tokens.push(`x${m[2]}${n}`);
+          i += m[0].length;
+          continue;
+        }
+        // 不許可文字
+        return {ok:false, reason:'使えるのは x, (x±1..9) のみ', tokens:[]};
+      }
+      if(tokens.length !== 2) return {ok:false, reason:'因数はちょうど2つです', tokens};
+      return {ok:true, tokens};
+    }
+
+    // トークン → a (x+a) の a 値
+    function tokenToA(t){
+      if(t==='x') return 0;
+      const m = t.match(/^x([+-])(\d+)$/);
+      return m ? (m[1]==='+'? +m[2] : -m[2]) : NaN;
+    }
+
+    // 2因数の a,b から多項式表示（𝓍表記）
+    function polyFromAB(a,b){
+      const B = a + b, C = a * b;
+      let s = `${FANCY_X}²`;
+      if(B !== 0){ const bx = (Math.abs(B)===1) ? `${FANCY_X}` : `${abs(B)}${FANCY_X}`; s += ` ${signStr(B)} ${bx}`; }
+      if(C !== 0) s += ` ${signStr(C)} ${abs(C)}`;
+      if(B===0 && C===0) s += ''; // 𝓍²のみ
+      return s.replace(/\+\s-/g,'- ');
+    }
+
+    // 因数表示（𝓍表記）
+    function displayFactors(a,b){
+      const f = v => v===0 ? `${FANCY_X}` : `(${FANCY_X}${v>0?'+':'-'}${Math.abs(v)})`;
+      return f(a) + f(b);
+    }
+
+    // ============== ゲーム状態 ==============
+    let currentLevel = 'NORMAL';
+    let score = 0, highScore = 0;
+    let timeLeft = 30, gameTimer = null, gameActive = false;
+    let current = { a:2, b:3, question:`${FANCY_X}² + 5${FANCY_X} + 6`, answer: `( ${FANCY_X}+2 )( ${FANCY_X}+3 )`.replace(/\s/g,'') };
+    const seen = new Set(); // 重複回避キー: "B|C"
+
+    // ============== スコア/タイマー ==============
+    function getHSKey(level){ return 'factorization-high-score-' + (level || currentLevel); }
+    function loadHighScoreUI(){
+      const saved = localStorage.getItem(getHSKey());
+      highScore = saved ? (parseInt(saved,10)||0) : 0;
+      document.getElementById('highScore').textContent = highScore;
+      const label = (currentLevel==='EASY' ? 'Ｅａｓｙ' : 'Ｎｏｒｍａｌ');
+      const el = document.getElementById('hsModeLabel'); if(el) el.textContent = label;
+    }
+
+    function saveHighScore(){
+      localStorage.setItem(getHSKey(), String(highScore));
+    }
+    function updateHighScore(){
+      if(score > highScore){
+        highScore = score; saveHighScore();
+        document.getElementById('highScore').textContent = highScore;
+        return true;
+      }
+      return false;
+    }
+
+    function updateScore(){ document.getElementById('score').textContent = score; }
+
+    function startTimer(){
+      clearInterval(gameTimer);
+      document.getElementById('timer').textContent = timeLeft;
+      gameTimer = setInterval(()=>{
+        timeLeft--;
+        document.getElementById('timer').textContent = timeLeft;
+        if(timeLeft<=0){ endGame(); }
+      },1000);
+    }
+
+    function startBombAnimation(){
+      document.getElementById('bomb').classList.add('falling');
+    }
+    function resetBomb(){
+      const bomb = document.getElementById('bomb');
+      bomb.classList.remove('falling');
+      bomb.style.top = '-100px';
+    }
+
+    // ============== 出題生成 ==============
+    function pickAB(level){
+      const max = (level==='EASY') ? 5 : 9;
+      let a=0,b=0,attempt=0;
+      while(attempt<1000){
+        attempt++;
+        a = randInt(-max,max);
+        b = randInt(-max,max);
+        if(a===0 && b===0) continue; // x^2 は避ける
+        const B=a+b, C=a*b, key=`${B}|${C}`;
+        if(!seen.has(key)){ seen.add(key); return {a,b}; }
+      }
+      return {a:2,b:3};
+    }
+
+    function randInt(min,max){ // inclusive
+      return Math.floor(Math.random()*(max-min+1))+min;
+    }
+    function randIntExcept(min,max,except){
+      let n; do{ n=randInt(min,max); }while(n===except);
+      return n;
+    }
+
+    function makeProblem(level){
+      const {a,b} = pickAB(level);
+      const q = polyFromAB(a,b);
+      const ans = displayFactors(a,b).replace(/\s/g,'');
+      return {a,b,question:q,answer:ans};
+    }
+
+    function generateNewProblem(){
+      current = makeProblem(currentLevel);
+      document.getElementById('problem').textContent = current.question;
+      clearAnswer(true);
+    }
+
+    // ============== 入力と判定 ==============
+    let currentAnswer = '';
+
+    function setFeedback(className,text,holdMs=1000){
+      const disp = document.getElementById('answerDisplay');
+      disp.classList.remove('feedback-ok','feedback-ng','feedback-warn');
+      if(className) disp.classList.add(className);
+      disp.textContent = text;
+      if(holdMs>0){
+        setTimeout(()=>{
+          disp.classList.remove('feedback-ok','feedback-ng','feedback-warn');
+          disp.textContent = currentAnswer || 'ここに答えを入力してください';
+        },holdMs);
+      }
+    }
+
+    function updateAnswerDisplay(){
+      const disp = document.getElementById('answerDisplay');
+      disp.textContent = currentAnswer || 'ここに答えを入力してください';
+    }
+
+    function addToken(token){
+      if(!gameActive) return;
+      const tentative = (currentAnswer + token);
+      const parsed = parseFactors(tentative);
+      if(!parsed.ok && parsed.tokens.length >= 2){
+        // 3つ以上などを抑制
+        setFeedback('feedback-warn', '因数は2つまで（x と (x±1..9)）', 800);
+        return;
+      }
+      currentAnswer = tentative;
+      updateAnswerDisplay();
+      checkAnswerAutomatically();
+    }
+
+    function clearAnswer(silent=false){
+      currentAnswer = '';
+      if(!silent) setFeedback(null,'ここに答えを入力してください',0);
+      else updateAnswerDisplay();
+    }
+
+    function isCorrectAnswer(user, correct){
+      // 双方を解析→a,b を比較（順不同）
+      const u = parseFactors(user);
+      const c = parseFactors(correct);
+      if(!u.ok) return false;
+      if(!c.ok) return false;
+      const ua = [tokenToA(u.tokens[0]), tokenToA(u.tokens[1])].sort((x,y)=>x-y);
+      const ca = [tokenToA(c.tokens[0]), tokenToA(c.tokens[1])].sort((x,y)=>x-y);
+      return ua[0]===ca[0] && ua[1]===ca[1];
+    }
+
+    function checkAnswerAutomatically(){
+      if(!gameActive || !currentAnswer) return;
+      if(isCorrectAnswer(currentAnswer, current.answer)){
+        score += 10; updateScore();
+        setFeedback('feedback-ok','正解！', 600);
+        setTimeout(()=>{ generateNewProblem(); }, 620);
+      }
+    }
+
+    function submitAnswer(){
+      if(!gameActive || !currentAnswer) return;
+      const parsed = parseFactors(currentAnswer);
+      if(!parsed.ok){
+        setFeedback('feedback-warn', parsed.reason, 1000);
+        return;
+      }
+      if(isCorrectAnswer(currentAnswer, current.answer)){
+        // すでに自動判定で処理されるので何もしない
+        return;
+      }else{
+        setFeedback('feedback-ng','不正解', 800);
+      }
+    }
+
+    function skipProblem(){
+      if(!gameActive) return;
+      setFeedback('feedback-warn','スキップしました', 600);
+      setTimeout(()=>{ generateNewProblem(); }, 620);
+    }
+
+    // ============== 画面遷移 ==============
+    function startGame(){
+      gameActive = true; score = 0; timeLeft = 30; updateScore(); loadHighScoreUI();
+      document.getElementById('startScreen').classList.add('hidden');
+      document.getElementById('gameOver').classList.add('hidden');
+      document.getElementById('gameArea').classList.remove('hidden');
+      document.getElementById('footerBar').classList.remove('hidden');
+      seen.clear();
+      setLevelButtonsEnabled(false);
+      updateKeypadForLevel();
+      generateNewProblem();
+      startTimer(); startBombAnimation();
+    }
+
+    function endGame(){
+      gameActive = false; clearInterval(gameTimer); resetBomb();
+      document.getElementById('gameArea').classList.add('hidden');
+      document.getElementById('footerBar').classList.add('hidden');
+      document.getElementById('gameOver').classList.remove('hidden');
+      setLevelButtonsEnabled(true);
+      const isNew = updateHighScore();
+      document.getElementById('finalScore').textContent = isNew ? (score + ' 🎉 新記録！') : score;
+    }
+
+    function resetGame(){
+      resetBomb();
+      document.getElementById('gameOver').classList.add('hidden');
+      document.getElementById('startScreen').classList.remove('hidden');
+      document.getElementById('footerBar').classList.add('hidden');
+      setLevelButtonsEnabled(true);
+      document.getElementById('footerBar').classList.add('hidden');
+    }
+
+    // ============== レベルに応じてキーパッド更新 ==============
+    function updateKeypadForLevel(){
+      const max = getMaxK();
+      document.querySelectorAll('#factorGrid button[data-k]').forEach(btn=>{
+        const k = parseInt(btn.getAttribute('data-k'),10);
+        if(k>max) btn.classList.add('hidden'); else btn.classList.remove('hidden');
+      });
+    }
+    function setLevelButtonsEnabled(enabled){
+      document.querySelectorAll('.level-btn').forEach(btn=>{ btn.disabled = !enabled; });
+    }
+
+    // ============== ホーム確認 ==============
+    function confirmBackToHome(){
+      const ok = window.confirm('本当に最初の画面に戻りますか？現在のスコアは保存されません。');
+      if(!ok) return;
+      gameActive=false; clearInterval(gameTimer); resetBomb();
+      document.getElementById('gameArea').classList.add('hidden');
+      document.getElementById('gameOver').classList.add('hidden');
+      document.getElementById('startScreen').classList.remove('hidden');
+      document.getElementById('footerBar').classList.add('hidden');
+      setLevelButtonsEnabled(true);
+    }
+
+    // ============== イベント ==============
+    document.addEventListener('DOMContentLoaded', ()=>{
+      loadHighScoreUI();
+      updateKeypadForLevel();
+
+      // キーパッド（右側ボタン）
+      document.getElementById('factorGrid').addEventListener('click',(e)=>{
+        const btn = e.target.closest('button[data-token]');
+        if(!btn) return;
+        addToken(btn.getAttribute('data-token'));
+      });
+
+      // ボタン類
+      document.getElementById('startBtn').addEventListener('click', startGame);
+      document.getElementById('retryBtn').addEventListener('click', resetGame);
+      document.getElementById('clearBtn').addEventListener('click', ()=>clearAnswer(false));
+      document.getElementById('submitBtn').addEventListener('click', submitAnswer);
+      document.getElementById('skipBtn').addEventListener('click', skipProblem);
+      document.getElementById('homeBtn').addEventListener('click', confirmBackToHome);
+
+      // レベル切替（EASY/NORMAL）
+      document.querySelectorAll('.level-btn').forEach(b=>{
+        b.addEventListener('click', ()=>{
+          if (gameActive) { setFeedback('feedback-warn','ゲーム中は難易度を変更できません', 1000); return; }
+          document.querySelectorAll('.level-btn').forEach(x=>x.classList.remove('active'));
+          b.classList.add('active');
+          currentLevel = b.getAttribute('data-level');
+          updateKeypadForLevel();
+          loadHighScoreUI();
+        });
+      });
+
+      // キーボード入力（必要最小限）
+      document.addEventListener('keydown',(ev)=>{
+        const key = ev.key;
+        if(!gameActive){
+          if(!document.getElementById('startScreen').classList.contains('hidden') && key==='Enter'){ startGame(); }
+          else if(!document.getElementById('gameOver').classList.contains('hidden') && key==='Enter'){ resetGame(); }
+          return;
+        }
+        if(key==='Enter'){ submitAnswer(); }
+        else if(key==='Backspace'){ currentAnswer = currentAnswer.slice(0,-1); updateAnswerDisplay(); }
+        else if(key==='Escape'){ clearAnswer(false); }
+      });
+    });
+  </script>
+</body>
+</html>
