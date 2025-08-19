@@ -53,8 +53,8 @@
     .keypad{background:rgba(255,255,255,.95);padding:20px;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
     .factor-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;max-width:100%}
     .input-btn{
-      padding:16px 8px;border:none;border-radius:12px;font-size:1.05rem;font-weight:700;cursor:pointer;
-      transition:.2s;background:#4CAF50;color:#fff;box-shadow:0 4px 8px rgba(0,0,0,.1);min-height:56px;aspect-ratio:1
+      padding:16px 8px;border:none;border-radius:12px;font-size:1.2rem;font-weight:700;cursor:pointer;
+      transition:.2s;background:#4CAF50;color:#fff;box-shadow:0 4px 8px rgba(0,0,0,.1);min-height:60px;aspect-ratio:1
     }
     .input-btn:hover{transform:translateY(-2px);box-shadow:0 6px 12px rgba(0,0,0,.2)}
     .factor-btn{font-size:1rem;padding:12px 6px}
@@ -62,6 +62,7 @@
     .factor-btn-negative{background:#f44336}.factor-btn-negative:hover{background:#d32f2f}
     .variable-btn{background:#9C27B0;font-size:1.6rem}.variable-btn:hover{background:#7B1FA2}
     .skip-btn{background:#FF9800;font-size:1.1rem;padding:16px 12px}.skip-btn:hover{background:#F57C00}
+    .wide-btn{grid-column: span 2; aspect-ratio: auto !important; height: 60px; min-height: 60px; white-space: nowrap; display:flex; align-items:center; justify-content:center;}
 
     .action-buttons{display:flex;justify-content:center;gap:15px;margin-top:10px}
     .action-btn{padding:12px 24px;border:none;border-radius:25px;font-size:1rem;font-weight:700;cursor:pointer;transition:.2s}
@@ -80,7 +81,8 @@
     .game-over{background:rgba(255,107,107,.95);color:#fff;padding:30px;border-radius:20px;max-width:680px;margin:20px auto;display:flex;flex-direction:column;align-items:center;text-align:center}
     .hidden{display:none}
 
-    .footer-bar{position:fixed;left:0;right:0;bottom:12px;display:flex;justify-content:center;z-index:9999}
+    .footer-bar{position:fixed;left:0;right:0;bottom:12px;display:flex;justify-content:center;z-index:2147483647;pointer-events:auto}
+    .footer-bar .home-btn{pointer-events:auto}
     .footer-bar .home-btn{ /* クリック可（念のため残す）*/ pointer-events:auto}
     .footer-bar .home-btn{pointer-events:auto}
 
@@ -118,7 +120,7 @@
             <div class="answer-display" id="answerDisplay">ここに答えを入力してください</div>
 
             <div class="action-buttons">
-              <button class="action-btn clear-btn" id="clearBtn">クリア</button>
+              <button class="action-btn skip-btn" id="skipBtn">スキップ</button>
               <button class="action-btn submit-btn" id="submitBtn">解答</button>
             </div>
           </div>
@@ -148,7 +150,7 @@
               <button class="input-btn factor-btn factor-btn-negative" data-token="(𝓍-9)" data-k="9">(𝓍-9)</button>
               <!-- x と スキップ -->
               <button class="input-btn variable-btn" data-token="𝓍">𝓍</button>
-              <button class="input-btn skip-btn" id="skipBtn">スキップ</button>
+              <button class="input-btn operator-btn wide-btn" id="clearBtn">クリア</button>
             </div>
           </div>
         </div>
@@ -454,7 +456,7 @@
 
     // ============== ホーム確認 ==============
     function confirmBackToHome(){
-      const ok = window.confirm('本当に最初の画面に戻りますか？現在のスコアは保存されません。');
+      const ok = window.confirm('最初の画面に戻ります。現在の進行中のスコアはリセットされます（ハイスコアは保持されます）。よろしいですか？');
       if(!ok) return;
       gameActive=false; clearInterval(gameTimer); resetBomb();
       document.getElementById('gameArea').classList.add('hidden');
@@ -482,7 +484,15 @@
       document.getElementById('clearBtn').addEventListener('click', ()=>clearAnswer(false));
       document.getElementById('submitBtn').addEventListener('click', submitAnswer);
       document.getElementById('skipBtn').addEventListener('click', skipProblem);
-      document.getElementById('homeBtn').addEventListener('click', confirmBackToHome);
+      const hb = document.getElementById('homeBtn');
+      if(hb){
+        ['click','touchstart'].forEach(evt=>{
+          hb.addEventListener(evt,(ev)=>{ev.preventDefault(); confirmBackToHome();},{passive:false});
+        });
+      }
+      // フォールバック（動的に再生成されても拾う）
+      document.addEventListener('click',(ev)=>{ const t = ev.target && ev.target.closest('#homeBtn'); if(t){ confirmBackToHome(); }});
+      document.addEventListener('touchstart',(ev)=>{ const t = ev.target && ev.target.closest('#homeBtn'); if(t){ ev.preventDefault(); confirmBackToHome(); }},{passive:false});
 
       // レベル切替（EASY/NORMAL）
       document.querySelectorAll('.level-btn').forEach(b=>{
