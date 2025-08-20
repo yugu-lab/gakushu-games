@@ -425,7 +425,7 @@
                     <li><strong>ババカード：</strong>ペアにならない英語カードが1枚あります（秘密）</li>
                     <li><strong>ターン順：</strong>あなた → CPU1 → CPU2 → CPU3 の時計回り</li>
                     <li><strong>カード引き：</strong>次のプレイヤーからカードを1枚引きます</li>
-                    <li><strong>ペア提出：</strong>いつでも「ペア提出」ボタンでペアを作れます</li>
+                    <li><strong>ペア提出：</strong>いつでも「ペア提出」ボタンを押してペアを作ることができます</li>
                     <li><strong>間違いペナルティ：</strong>間違ったペアを2回作ると失格</li>
                 </ul>
                 
@@ -462,6 +462,7 @@
                     <li>上の対応表を参考に正しいペアを作りましょう</li>
                     <li>どのカードがババかを推理しましょう</li>
                     <li>間違いは2回までなので慎重に！</li>
+                    <li>いつでもペア提出ボタンを押してペアを作れます！</li>
                     <li>発音も聴こう！ペアが成立すると英語の発音が聞けます</li>
                 </ul>
                 
@@ -519,6 +520,29 @@
             english: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
         };
 
+        // タイマー管理ユーティリティ
+        const timers = new Set();
+        function later(fn, ms, expectedTicket = null) {
+            const id = setTimeout(() => { 
+                timers.delete(id);
+                // 手番トークンチェック：期待値があり、現在値と異なる場合は中断
+                if (expectedTicket !== null && gameState.turnTicket !== expectedTicket) {
+                    return;
+                }
+                // ゲーム状態チェック：ゲームが停止している場合は中断
+                if (!gameState.gameFlow || gameState.inPairPhase) {
+                    return;
+                }
+                fn(); 
+            }, ms);
+            timers.add(id);
+            return id;
+        }
+        function clearAllTimers() {
+            for (const id of timers) clearTimeout(id);
+            timers.clear();
+        }
+
         let gameState = {
             players: [
                 { name: 'player', cards: [], isHuman: true, rank: null },
@@ -538,7 +562,10 @@
             gameFlow: true,
             finishedPlayers: [],
             currentRank: 1,
-            soundOn: true
+            soundOn: true,
+            pausedPlayerIndex: null,
+            pausedWaitingState: false,
+            turnTicket: 0
         };
 
         function createDeck() {
@@ -591,13 +618,21 @@
             gameState.inPairPhase = false;
             gameState.gameFlow = true;
             
+            // ペア提出ボタンを有効化
+            const pairBtn = document.getElementById('player-pair-btn');
+            pairBtn.disabled = false;
+            pairBtn.style.opacity = '1';
+            pairBtn.textContent = 'ペア提出';
+            
             updateDisplay();
             updateMistakeCounter();
             setMessage(`ゲーム開始！どのカードがババかは秘密です。`);
             
-            setTimeout(() => {
+            gameState.turnTicket = 0; // 手番トークンをリセット
+            
+            later(() => {
                 nextTurn();
-            }, 2000);
+            }, 1000);
         }
         
         function distributeCardsWithoutPairs(deck) {
@@ -796,6 +831,24 @@
         function nextTurn() {
             if (!gameState.gameStarted || !gameState.gameFlow) return;
             
+            // 新しい手番トークンを発行
+            gameState.turnTicket++;
+            const currentTicket = gameState.turnTicket;
+            
+            // ペア提出ボタンの状態を更新
+            const pairBtn = document.getElementById('player-pair-btn');
+            if (gameState.waitingForPlayerChoice) {
+                // カード引き待ち中は無効化
+                pairBtn.disabled = true;
+                pairBtn.style.opacity = '0.5';
+                pairBtn.textContent = 'カード選択中...';
+            } else {
+                // 通常時は有効
+                pairBtn.disabled = false;
+                pairBtn.style.opacity = '1';
+                pairBtn.textContent = 'ペア提出';
+            }
+            
             // 失格チェック
             if (gameState.mistakes >= gameState.maxMistakes) {
                 endGameByMistakes();
@@ -812,20 +865,25 @@
                 return;
             }
             
-            const currentPlayer = gameState.players[gameState.currentPlayer];
-            
-            if (currentPlayer.cards.length === 0) {
-                // 現在のプレイヤーがカードを持っていない場合、次のプレイヤーへ
+            // 空手札プレイヤーのスキップ（同期処理で無限再帰を防ぐ）
+            let attempts = 0;
+            while (attempts < 4 && gameState.players[gameState.currentPlayer].cards.length === 0) {
                 gameState.currentPlayer = (gameState.currentPlayer + 1) % 4;
-                nextTurn();
+                attempts++;
+            }
+            
+            if (attempts >= 4) {
+                // 全員カードなし（通常は起こらない）
+                endGame();
                 return;
             }
             
+            const currentPlayer = gameState.players[gameState.currentPlayer];
             updateTurnIndicator();
             
             // カードを持っている次のプレイヤーを探す
             let nextPlayerIndex = (gameState.currentPlayer + 1) % 4;
-            let attempts = 0;
+            attempts = 0;
             while (attempts < 4) {
                 const nextPlayer = gameState.players[nextPlayerIndex];
                 if (nextPlayer.cards.length > 0) {
@@ -836,10 +894,9 @@
                         highlightSpecificCPU(nextPlayer.name);
                     } else {
                         setMessage(`${currentPlayer.name.toUpperCase()}のターン`);
-                        setTimeout(() => {
-                            if (!gameState.gameFlow || gameState.inPairPhase) return; // ★ガード
+                        later(() => {
                             cpuTurn(currentPlayer, nextPlayer);
-                        }, 1000);
+                        }, 2000, currentTicket);
                     }
                     return;
                 }
@@ -925,8 +982,18 @@
             const cpu = gameState.players.find(p => p.name === cpuName);
             if (cpu.cards.length === 0 || cardIndex >= cpu.cards.length) return;
             
+            // 状態を完全にクリア（カードを引いた時点で全ての一時停止状態を解除）
             gameState.waitingForPlayerChoice = false;
+            gameState.pausedWaitingState = false;
+            gameState.pausedPlayerIndex = null;
+            gameState.inPairPhase = false;
             removeHighlight();
+            
+            // カード引き中はペア提出ボタンを無効化
+            const pairBtn = document.getElementById('player-pair-btn');
+            pairBtn.disabled = true;
+            pairBtn.style.opacity = '0.5';
+            pairBtn.textContent = '処理中...';
             
             // 指定されたカードを引く
             const drawnCard = cpu.cards.splice(cardIndex, 1)[0];
@@ -942,15 +1009,18 @@
             // 引いたカードを読み上げ
             speakCard(drawnCard);
             
-            setTimeout(() => {
+            // カードを引いた瞬間に次のプレイヤーに移る
+            gameState.currentPlayer = (gameState.currentPlayer + 1) % 4;
+            
+            later(() => {
                 updateDisplay();
-                
-                // 3秒後に自動的に次のターンに進む
-                setTimeout(() => {
-                    gameState.currentPlayer = (gameState.currentPlayer + 1) % 4;
-                    nextTurn();
-                }, 3000);
-            }, 1000);
+                // カード引き完了後にペア提出ボタンを再有効化
+                pairBtn.disabled = false;
+                pairBtn.style.opacity = '1';
+                pairBtn.textContent = 'ペア提出';
+                // 次のターンを開始
+                nextTurn();
+            }, 2000);
         }
         
         function showCardDrawAnimation(fromPlayer, card, cardIndex) {
@@ -1009,7 +1079,16 @@
         }
 
         function cpuTurn(cpu, targetPlayer) {
-            if (!gameState.gameStarted || !gameState.gameFlow || gameState.inPairPhase) return; // ★
+            if (!gameState.gameStarted || !gameState.gameFlow || gameState.inPairPhase) return;
+            
+            const currentTicket = gameState.turnTicket;
+            
+            // CPUターン中はペア提出ボタンを無効化
+            const pairBtn = document.getElementById('player-pair-btn');
+            pairBtn.disabled = true;
+            pairBtn.style.opacity = '0.5';
+            pairBtn.textContent = 'CPUのターン中...';
+            
             // カードを持っているプレイヤーからカードを引く
             if (!targetPlayer || targetPlayer.cards.length === 0) {
                 // ターゲットプレイヤーがいない場合、次のターンへ
@@ -1026,11 +1105,11 @@
             const targetName = targetPlayer.isHuman ? 'あなた' : targetPlayer.name.toUpperCase();
             setMessage(`${cpu.name.toUpperCase()}が${targetName}からカードを引きました`);
             
-            setTimeout(() => {
+            later(() => {
                 const foundPair = checkAndRemovePairs(cpu);
                 updateDisplay();
                 
-                setTimeout(() => {
+                later(() => {
                     // 次のプレイヤーに移る
                     let nextPlayerIndex = (gameState.currentPlayer + 1) % 4;
                     let attempts = 0;
@@ -1046,8 +1125,8 @@
                     }
                     
                     nextTurn();
-                }, foundPair ? 2000 : 1000);
-            }, 2000);
+                }, foundPair ? 2000 : 2000, currentTicket);
+            }, 2000, currentTicket);
         }
 
         function updateDisplay() {
@@ -1096,6 +1175,7 @@
         }
 
         function endGame() {
+            clearAllTimers(); // ★ 終了時に全破棄（亡霊防止）
             // 残ったプレイヤーに最下位を付ける
             const playersWithCards = gameState.players.filter(p => p.cards.length > 0 && p.rank === null);
             playersWithCards.forEach(player => {
@@ -1147,6 +1227,7 @@
         }
         
         function endGameByMistakes() {
+            clearAllTimers(); // ★ 終了時に全破棄（亡霊防止）
             const gameOverDiv = document.createElement('div');
             gameOverDiv.className = 'game-over';
             
@@ -1184,6 +1265,7 @@
         }
 
         function resetGame() {
+            clearAllTimers(); // ★ リセット時に全破棄
             gameState = {
                 players: [
                     { name: 'player', cards: [], isHuman: true, rank: null },
@@ -1203,8 +1285,17 @@
                 gameFlow: true,
                 finishedPlayers: [],
                 currentRank: 1,
-                soundOn: true
+                soundOn: true,
+                pausedPlayerIndex: null,
+                pausedWaitingState: false,
+                turnTicket: 0
             };
+            
+            // ペア提出ボタンを有効化
+            const pairBtn = document.getElementById('player-pair-btn');
+            pairBtn.disabled = false;
+            pairBtn.style.opacity = '1';
+            pairBtn.textContent = 'ペア提出';
             
             updateDisplay();
             updateMistakeCounter();
@@ -1252,6 +1343,7 @@
         }
         
         function confirmBackToRules() {
+            clearAllTimers(); // ★ 確認時に全破棄
             closeConfirmDialog();
             resetGame();
             showRules();
@@ -1300,7 +1392,14 @@
         }
         
         function handlePairButton() {
-            if (!gameState.gameStarted) return;
+            if (!gameState.gameStarted || gameState.players[0].cards.length === 0) return;
+            
+            // ボタンが無効化されている場合は何もしない
+            const pairBtn = document.getElementById('player-pair-btn');
+            if (pairBtn.disabled) return;
+            
+            // カード引き待ち中は無効
+            if (gameState.waitingForPlayerChoice) return;
             
             if (!gameState.inPairPhase) {
                 // ゲームを一時停止してペア提出フェーズに入る
@@ -1313,6 +1412,7 @@
                 } else {
                     // ペア提出をキャンセルしてゲーム再開
                     exitPairPhase();
+                    resumeAfterCancel();
                 }
             }
         }
@@ -1320,6 +1420,9 @@
         function enterPairPhase() {
             if (!gameState.gameStarted || gameState.inPairPhase) return;
             
+            clearAllTimers(); // ★ フェーズ入る前に予約を全破棄
+            gameState.pausedPlayerIndex = gameState.currentPlayer; // ★誰の手番で止めたか
+            gameState.pausedWaitingState = gameState.waitingForPlayerChoice; // ★カード引き待ち状態を保存
             gameState.inPairPhase = true;
             gameState.gameFlow = false;
             gameState.selectedCards = [];
@@ -1354,6 +1457,31 @@
             updateDisplay();
             updateSelectedCardsDisplay();
         }
+        
+        function resumeAfterPairPhase() {
+            const paused = gameState.pausedPlayerIndex ?? gameState.currentPlayer;
+            const pausedPlayer = gameState.players[paused];
+            // 人間の手番で割り込んでペア提出 → 手番を消費して「次の人」へ
+            if (paused === 0) {
+                gameState.currentPlayer = (paused + 1) % 4;
+            } else {
+                // CPUの手番を一時停止しただけ → そのCPUに返す（手札0なら次へ）
+                gameState.currentPlayer = pausedPlayer.cards.length > 0 ? paused : (paused + 1) % 4;
+            }
+            gameState.pausedPlayerIndex = null;
+            nextTurn();
+        }
+        
+        function resumeAfterCancel() {
+            // キャンセル時は即座にコンピューターのターンに移る
+            gameState.pausedPlayerIndex = null;
+            gameState.pausedWaitingState = false;
+            
+            // 次のターンを開始（既に currentPlayer は次のプレイヤーに設定済み）
+            nextTurn();
+        }
+        
+
         
         function updateSelectedCardsDisplay() {
             const selectedCardsDiv = document.getElementById('selected-cards');
@@ -1409,7 +1537,7 @@
             
             // 失格チェック
             if (gameState.mistakes >= gameState.maxMistakes) {
-                setTimeout(() => {
+                later(() => {
                     endGameByMistakes();
                 }, 1000);
                 return;
@@ -1421,28 +1549,20 @@
             // ゲーム終了チェック
             const playersWithCards = gameState.players.filter(p => p.cards.length > 0 && p.rank === null);
             if (playersWithCards.length <= 1) {
-                setTimeout(() => {
+                later(() => {
                     endGame();
                 }, 1000);
                 return;
             }
             
-            // ゲームフローを再開して次のターンへ
+            // ゲームフローを再開
             gameState.gameFlow = true;
             
             // 正しいペアの場合は演出終了まで待ってから、間違いの場合はすぐに次のターンへ
-            const delay = isCorrectPair ? 3200 : 1000;
+            const delay = isCorrectPair ? 3000 : 3000;
             
-            setTimeout(() => {
-                // プレイヤーがまだカードを持っている場合、ターンを継続
-                if (gameState.players[0].cards.length > 0) {
-                    nextTurn();
-                } else {
-                    // プレイヤーのカードがなくなった場合、次のプレイヤーに移る
-                    gameState.currentPlayer = (gameState.currentPlayer + 1) % 4;
-                    nextTurn();
-                }
-            }, delay);
+            const currentTicket = gameState.turnTicket;
+            later(() => { resumeAfterPairPhase(); }, delay, currentTicket); // ★手番の受け渡しを一元化
         }
 
         function showRules() {
@@ -1474,5 +1594,5 @@
         // 初期状態でルール画面を表示
         showRules();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9722bd1dc732d3f1',t:'MTc1NTcwMTgwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'972309a8a4bb9693',t:'MTc1NTcwNDkzNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
