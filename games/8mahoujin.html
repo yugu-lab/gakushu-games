@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔法陣パズル</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            margin: 0;
+            padding: 10px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: backgroundShift 10s ease-in-out infinite alternate;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+                align-items: flex-start;
+            }
+        }
+        
+        @media (orientation: landscape) and (max-height: 600px) {
+            body {
+                padding: 5px;
+                align-items: flex-start;
+            }
+        }
+        
+        @keyframes backgroundShift {
+            0% { background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); }
+            100% { background: linear-gradient(135deg, #f093fb 0%, #667eea 50%, #764ba2 100%); }
+        }
+        
+        .game-container {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.8);
+            text-align: center;
+            max-width: 900px;
+            width: 100%;
+            border: 3px solid transparent;
+            background-clip: padding-box;
+            position: relative;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 20px;
+                border-radius: 20px;
+                max-height: 98vh;
+            }
+        }
+        
+        @media (orientation: landscape) and (max-height: 600px) {
+            .game-container {
+                padding: 15px;
+                border-radius: 15px;
+                max-height: 95vh;
+                display: flex;
+                flex-direction: column;
+            }
+        }
+        
+        .game-container::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #667eea);
+            border-radius: 28px;
+            z-index: -1;
+            animation: borderGlow 3s ease-in-out infinite alternate;
+        }
+        
+        @keyframes borderGlow {
+            0% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        h1 {
+            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            animation: titleGlow 2s ease-in-out infinite alternate;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+                margin-bottom: 5px;
+            }
+        }
+        
+        @media (orientation: landscape) and (max-height: 600px) {
+            h1 {
+                font-size: 1.8em;
+                margin-bottom: 5px;
+            }
+        }
+        
+        @keyframes titleGlow {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.2); }
+        }
+        
+        .subtitle {
+            color: #718096;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        
+
+        
+        .level-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .level-btn {
+            padding: 12px 24px;
+            border: 3px solid transparent;
+            border-radius: 15px;
+            background: linear-gradient(145deg, #ffffff, #f1f5f9);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .level-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+        
+        .level-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .level-btn:hover::before {
+            left: 100%;
+        }
+        
+        .level-btn.active {
+            background: linear-gradient(145deg, #667eea, #5a67d8);
+            color: white;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .level-btn:disabled,
+        .level-btn[disabled] {
+            background: #e2e8f0;
+            color: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            opacity: 0.6;
+        }
+        
+        .game-layout {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            flex-wrap: nowrap;
+        }
+        
+        .magic-square {
+            display: grid;
+            gap: 4px;
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 100%;
+            flex-shrink: 0;
+        }
+        
+        .used-numbers {
+            background: linear-gradient(145deg, #f8fafc, #e2e8f0);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+            min-width: 200px;
+            position: relative;
+        }
+        
+        .used-numbers h3 {
+            margin: 0 0 15px 0;
+            color: #4a5568;
+            font-size: 16px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .used-numbers-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .used-numbers-grid.size-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        .used-number {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            background: white;
+            color: #a0aec0;
+        }
+        
+        .used-number.filled {
+            background: #c6f6d5;
+            border-color: #38a169;
+            color: #2f855a;
+        }
+        
+        @media (orientation: landscape) and (max-height: 600px) {
+            .game-layout {
+                gap: 20px;
+            }
+            .magic-square {
+                max-width: 300px;
+                padding: 15px;
+            }
+            .used-numbers {
+                padding: 15px;
+                min-width: 150px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .game-layout {
+                flex-direction: row;
+                align-items: flex-start;
+                gap: 15px;
+                flex-wrap: nowrap;
+            }
+            .magic-square {
+                max-width: 200px;
+                padding: 10px;
+                flex-shrink: 0;
+            }
+            .used-numbers {
+                min-width: 150px;
+                flex-shrink: 0;
+            }
+        }
+        
+        .magic-square.size-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        
+        .magic-square.size-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        .cell {
+            border: 3px solid #e2e8f0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            aspect-ratio: 1;
+            min-height: 60px;
+        }
+        
+        @media (orientation: landscape) and (max-height: 600px) {
+            .cell {
+                min-height: 45px;
+                font-size: 18px;
+                border-width: 2px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .cell {
+                min-height: 50px;
+                font-size: 18px;
+            }
+        }
+        
+        .cell:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+        
+        .cell.given {
+            background: #e6fffa;
+            border-color: #38b2ac;
+            color: #2d3748;
+            cursor: not-allowed;
+        }
+        
+        .cell.filled {
+            background: #fff5f5;
+            border-color: #fc8181;
+            color: #2d3748;
+        }
+        
+        .cell.correct {
+            background: #c6f6d5;
+            border-color: #38a169;
+            animation: pulse 0.5s ease-in-out;
+        }
+        
+        .cell.error {
+            background: #fed7d7;
+            border-color: #e53e3e;
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        .cell.selected {
+            background: #ebf8ff;
+            border-color: #3182ce;
+            box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.3);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .numbers-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(145deg, #f8fafc, #e2e8f0);
+            border-radius: 20px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        @media (orientation: landscape) and (max-height: 600px) {
+            .numbers-panel {
+                padding: 15px;
+                margin-bottom: 15px;
+                gap: 6px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .numbers-panel {
+                padding: 15px;
+                gap: 6px;
+            }
+        }
+        
+        .numbers-panel::before {
+            content: '🎯 すべての数字を使って魔法陣を完成させよう！';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #667eea, #f093fb);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+        
+        .numbers-panel {
+            position: relative;
+            margin-top: 25px;
+        }
+        
+        .number-btn {
+            width: 50px;
+            height: 50px;
+            border: 3px solid transparent;
+            border-radius: 12px;
+            background: linear-gradient(145deg, #ffffff, #f1f5f9);
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        @media (orientation: landscape) and (max-height: 600px) {
+            .number-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+                border-width: 2px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .number-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 16px;
+            }
+        }
+        
+        .number-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.3), transparent);
+            transition: all 0.3s ease;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .number-btn:hover::after {
+            width: 100px;
+            height: 100px;
+        }
+        
+        .number-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .number-btn.used {
+            background: linear-gradient(145deg, #e2e8f0, #cbd5e0);
+            color: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .number-btn.used::before {
+            content: '✓';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #38a169;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .number-btn.selected {
+            background: linear-gradient(145deg, #667eea, #5a67d8);
+            color: white;
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+            animation: selectedPulse 1s ease-in-out infinite alternate;
+        }
+        
+        @keyframes selectedPulse {
+            0% { box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5); }
+            100% { box-shadow: 0 8px 35px rgba(102, 126, 234, 0.7); }
+        }
+        
+        .controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        @media (orientation: landscape) and (max-height: 600px) {
+            .controls {
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        @media (orientation: landscape) and (max-height: 600px) {
+            .btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(145deg, #667eea, #5a67d8);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(145deg, #f1f5f9, #e2e8f0);
+            color: #4a5568;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        
+        .btn-back {
+            background: linear-gradient(145deg, #f093fb, #f093fb);
+            color: white;
+        }
+        
+        .btn-back:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(240, 147, 251, 0.4);
+        }
+        
+        .status {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            min-height: 25px;
+        }
+        
+        .status.success {
+            color: #38a169;
+        }
+        
+        .status.error {
+            color: #e53e3e;
+        }
+        
+        .status.info {
+            color: #3182ce;
+        }
+        
+
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .score-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .score-item {
+            background: #f7fafc;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .score-item.score {
+            color: #2d3748;
+        }
+        
+        .score-item.time {
+            color: #3182ce;
+        }
+        
+        .score-item.hints {
+            color: #38a169;
+        }
+        
+        .score-item.best {
+            color: #805ad5;
+            border-color: #d6bcfa;
+        }
+        
+        .btn:disabled {
+            background: #e2e8f0;
+            color: #a0aec0;
+            cursor: not-allowed;
+        }
+        
+        /* 重複セル＆数字のやさしい注意色 */
+        .cell.dup {
+            background: #fffbea;
+            border-color: #ecc94b;
+            box-shadow: 0 0 0 3px rgba(236, 201, 75, 0.25);
+        }
+        
+        .used-number.dup {
+            background: #fffbea;
+            border-color: #ecc94b;
+            color: #744210;
+            position: relative;
+        }
+        
+        /* 何回重なってるかを小バッジで表示 */
+        .used-number.dup::after {
+            content: '×' attr(data-count);
+            position: absolute;
+            bottom: -6px;
+            right: -6px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #ecc94b;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        
+        /* 厳格モード時は使用済みボタンをクリック不能に */
+        .number-btn.used.strict {
+            pointer-events: none;
+        }
+        
+        .difficulty-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .difficulty-easy {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+        
+        .difficulty-normal {
+            background: #fed7a1;
+            color: #c05621;
+        }
+        
+        .rules-screen {
+            text-align: left;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .rules-content h2 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        
+        .rules-content h3 {
+            text-align: center;
+            color: #4a5568;
+            margin: 30px 0 20px 0;
+            font-size: 1.3em;
+        }
+        
+        .rules-text {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .rules-text p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            color: #2d3748;
+        }
+        
+        .rules-text ul {
+            margin: 10px 0 15px 20px;
+            color: #4a5568;
+        }
+        
+        .rules-text li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .level-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .high-score-display {
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(145deg, #f8fafc, #e2e8f0);
+            border-radius: 15px;
+            border: 2px solid #e2e8f0;
+            text-align: center;
+        }
+        
+        .high-score-display h4 {
+            margin: 0 0 15px 0;
+            color: #4a5568;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .high-score-item {
+            background: linear-gradient(145deg, #ffffff, #f1f5f9);
+            padding: 15px 25px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px solid #d6bcfa;
+        }
+        
+        .score-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #805ad5;
+        }
+        
+        .score-stars {
+            font-size: 1.2em;
+            color: #f6ad55;
+        }
+        
+        .game-screen .level-selector {
+            margin-bottom: 20px;
+        }
+        
+        .penalty-display {
+            margin-top: 15px;
+            text-align: center;
+            animation: penaltyFadeIn 0.5s ease-in-out;
+        }
+        
+        .penalty-text {
+            background: linear-gradient(145deg, #fed7d7, #fc8181);
+            color: #c53030;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            display: inline-block;
+            box-shadow: 0 2px 10px rgba(197, 48, 48, 0.3);
+            border: 2px solid #e53e3e;
+        }
+        
+        @keyframes penaltyFadeIn {
+            0% { opacity: 0; transform: translateY(-10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        .completion-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: popupFadeIn 0.3s ease-out;
+        }
+        
+        .completion-content {
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            border-radius: 25px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            border: 3px solid transparent;
+            background-clip: padding-box;
+            position: relative;
+        }
+        
+        .completion-content::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #667eea);
+            border-radius: 28px;
+            z-index: -1;
+            animation: borderGlow 3s ease-in-out infinite alternate;
+        }
+        
+        .completion-title {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .completion-score {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #2d3748;
+            font-weight: bold;
+        }
+        
+        .completion-stars {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        
+        .completion-record {
+            background: linear-gradient(145deg, #c6f6d5, #9ae6b4);
+            color: #2f855a;
+            padding: 10px 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .completion-best {
+            color: #805ad5;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        @keyframes popupFadeIn {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        /* アニメーション軽減設定 */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>✨ 魔法陣パズル</h1>
+        <p class="subtitle">空いているマス目を埋めて魔法陣を完成させよう！</p>
+        
+
+        
+        <div id="rulesScreen" class="rules-screen">
+            <div class="rules-content">
+                <h2>🎯 ゲームルール</h2>
+                <div class="rules-text">
+                    <p><strong>魔法陣とは？</strong><br>
+                    縦・横・斜めのすべての列の数字の合計が同じになる数字の配置です。</p>
+                    
+                    <p><strong>遊び方：</strong></p>
+                    <ul>
+                        <li>空いているマス目に数字を入れて魔法陣を完成させます</li>
+                        <li>各数字は1回だけ使用できます</li>
+                        <li>すべての行・列・対角線の合計が同じになるようにします</li>
+                    </ul>
+                    
+                    <p><strong>操作方法：</strong></p>
+                    <ul>
+                        <li><strong>マウス：</strong> 数字ボタンをクリック → マス目をクリック</li>
+                        <li><strong>キーボード：</strong> 十字キー（↑↓←→）でマス選択、テンキー（1-9/16）で数字入力</li>
+                        <li><strong>削除：</strong> Deleteキーまたは0キーで数字を削除</li>
+                    </ul>
+                    
+                    <p><strong>スコア：</strong></p>
+                    <ul>
+                        <li>基本点：1000点</li>
+                        <li>経過時間：1秒につき-1点</li>
+                        <li>ヒント使用：1回につき+100秒のペナルティ</li>
+                        <li>ヒントは2回まで、残りマス2個以下では使用不可</li>
+                    </ul>
+                </div>
+                
+                <div class="level-selector">
+                    <h3>難易度を選択してゲームスタート！</h3>
+                    <div class="level-buttons">
+                        <div class="level-btn" data-level="3x3-easy">3×3 初級</div>
+                        <div class="level-btn" data-level="3x3-normal">3×3 中級</div>
+                        <div class="level-btn" data-level="4x4-easy">4×4 中級</div>
+                        <div class="level-btn" data-level="4x4-normal">4×4 上級</div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        
+        <div id="gameScreen" class="game-screen" style="display: none;">
+            <div class="level-selector">
+                <div class="level-btn active" data-level="3x3-easy" disabled>3×3 初級</div>
+                <div class="level-btn" data-level="3x3-normal" disabled>3×3 中級</div>
+                <div class="level-btn" data-level="4x4-easy" disabled>4×4 中級</div>
+                <div class="level-btn" data-level="4x4-normal" disabled>4×4 上級</div>
+            </div>
+        
+
+        
+        <div class="game-info">
+            <div class="difficulty-badge difficulty-easy" id="difficultyBadge">簡単</div>
+        </div>
+        
+
+        
+        <div class="score-info">
+            <div class="score-item score" id="scoreDisplay">スコア: 1000</div>
+            <div class="score-item time" id="timeDisplay">時間: 0秒</div>
+            <div class="score-item hints" id="hintsDisplay">ヒント: 2回</div>
+            <div class="score-item best" id="bestDisplay">ベスト: 0</div>
+        </div>
+        
+        <div class="game-layout">
+            <div class="magic-square size-3" id="magicSquare"></div>
+            <div class="used-numbers" id="usedNumbers">
+                <h3>使用済み数字</h3>
+                <div class="used-numbers-grid size-3" id="usedNumbersGrid"></div>
+                <div class="controls">
+                    <button class="btn btn-back" onclick="backToStart()">🏠 最初に戻る</button>
+                    <button class="btn btn-secondary" onclick="resetPuzzle()">🔄 リセット</button>
+                    <button class="btn btn-secondary" id="hintBtn" onclick="showHint()">💡 ヒント</button>
+                    <button class="btn btn-primary" id="toggleDupBtn" onclick="toggleDuplicates()">重複許可: ON</button>
+                </div>
+                <div class="penalty-display" id="penaltyDisplay" style="display: none;">
+                    <div class="penalty-text">+100秒ペナルティ</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="numbers-panel" id="numbersPanel"></div>
+        
+        <div class="status" id="status" aria-live="polite">数字を選んでマス目をクリックしてください</div>
+        
+        </div>
+    </div>
+
+    <script>
+        let selectedNumber = null;
+        let currentLevel = '3x3-easy';
+        let board = [];
+        let solution = [];
+        let givenCells = [];
+        let usedNumbers = new Set();
+        let targetSum = 15;
+        let size = 3;
+        let startTime = null;
+        let gameTimer = null;
+        let hintsRemaining = 2;
+        let gameCompleted = false;
+        let selectedCell = { row: 0, col: 0 };
+        let gameStarted = false;
+        let hintPenalty = 0;
+        let keyBuffer = '';
+        let keyBufferTimer = null;
+        const KEY_COMMIT_DELAY = 150;
+        let allowDuplicates = true; // デフォはドラフト（重複許可）
+        
+        // スコア保存
+        const STORE = 'mahousquare:v1';
+        
+        function readStore() {
+            try {
+                return JSON.parse(localStorage.getItem(STORE) || '{}');
+            } catch {
+                return {};
+            }
+        }
+        
+        function writeStore(obj) {
+            localStorage.setItem(STORE, JSON.stringify(obj));
+        }
+        
+        function recordScore(level, score) {
+            const s = readStore();
+            s.best = s.best || {};
+            s.best[level] = Math.max(s.best[level] || 0, score);
+            writeStore(s);
+        }
+        
+        function getBestScore(level) {
+            const s = readStore();
+            return (s.best || {})[level] || 0;
+        }
+        
+
+        
+        // パズルデータベース
+        const puzzleDatabase = {
+            '3x3-easy': [
+                {
+                    solution: [[2, 7, 6], [9, 5, 1], [4, 3, 8]],
+                    given: [[1, 1, 1], [1, 1, 0], [0, 0, 0]]
+                },
+                {
+                    solution: [[8, 1, 6], [3, 5, 7], [4, 9, 2]],
+                    given: [[1, 0, 1], [0, 1, 0], [1, 1, 0]]
+                },
+                {
+                    solution: [[6, 1, 8], [7, 5, 3], [2, 9, 4]],
+                    given: [[1, 0, 1], [1, 1, 0], [0, 1, 0]]
+                },
+                {
+                    solution: [[4, 9, 2], [3, 5, 7], [8, 1, 6]],
+                    given: [[1, 1, 0], [0, 1, 1], [1, 0, 0]]
+                }
+            ],
+            '3x3-normal': [
+                {
+                    solution: [[8, 1, 6], [3, 5, 7], [4, 9, 2]],
+                    given: [[0, 0, 1], [0, 1, 0], [1, 0, 0]]
+                },
+                {
+                    solution: [[2, 7, 6], [9, 5, 1], [4, 3, 8]],
+                    given: [[0, 0, 0], [1, 1, 0], [0, 0, 1]]
+                },
+                {
+                    solution: [[6, 1, 8], [7, 5, 3], [2, 9, 4]],
+                    given: [[1, 0, 0], [0, 1, 0], [0, 0, 0]]
+                },
+                {
+                    solution: [[4, 3, 8], [9, 5, 1], [2, 7, 6]],
+                    given: [[0, 1, 0], [0, 1, 0], [0, 0, 0]]
+                }
+            ],
+            '4x4-easy': [
+                {
+                    solution: [[1, 15, 14, 4], [12, 6, 7, 9], [8, 10, 11, 5], [13, 3, 2, 16]],
+                    given: [[1, 0, 0, 1], [1, 1, 1, 0], [0, 1, 1, 1], [1, 0, 0, 1]]
+                },
+                {
+                    solution: [[16, 3, 2, 13], [5, 10, 11, 8], [9, 6, 7, 12], [4, 15, 14, 1]],
+                    given: [[1, 0, 0, 0], [0, 1, 1, 1], [1, 0, 1, 1], [1, 1, 0, 1]]
+                },
+                {
+                    solution: [[4, 14, 15, 1], [9, 7, 6, 12], [5, 11, 10, 8], [16, 2, 3, 13]],
+                    given: [[0, 1, 0, 1], [1, 1, 0, 0], [0, 0, 1, 1], [1, 0, 1, 1]]
+                },
+                {
+                    solution: [[13, 2, 3, 16], [8, 10, 11, 5], [12, 7, 6, 9], [1, 15, 14, 4]],
+                    given: [[0, 0, 1, 1], [1, 1, 0, 0], [0, 1, 1, 1], [1, 0, 1, 0]]
+                }
+            ],
+            '4x4-normal': [
+                {
+                    solution: [[16, 3, 2, 13], [5, 10, 11, 8], [9, 6, 7, 12], [4, 15, 14, 1]],
+                    given: [[0, 1, 0, 0], [1, 0, 0, 1], [0, 0, 1, 0], [0, 0, 0, 0]]
+                },
+                {
+                    solution: [[1, 15, 14, 4], [12, 6, 7, 9], [8, 10, 11, 5], [13, 3, 2, 16]],
+                    given: [[0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1]]
+                },
+                {
+                    solution: [[4, 14, 15, 1], [9, 7, 6, 12], [5, 11, 10, 8], [16, 2, 3, 13]],
+                    given: [[0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 1, 0], [1, 0, 0, 0]]
+                },
+                {
+                    solution: [[13, 2, 3, 16], [8, 10, 11, 5], [12, 7, 6, 9], [1, 15, 14, 4]],
+                    given: [[0, 0, 0, 0], [1, 0, 0, 1], [0, 1, 0, 0], [0, 0, 1, 0]]
+                }
+            ]
+        };
+        
+
+        
+        function generatePuzzle(level) {
+            const puzzleList = puzzleDatabase[level];
+            const randomIndex = Math.floor(Math.random() * puzzleList.length);
+            const selectedPuzzle = puzzleList[randomIndex];
+            
+            const size = level.includes('3x3') ? 3 : 4;
+            const targetSum = size === 3 ? 15 : 34;
+            const numbers = Array.from({length: size * size}, (_, i) => i + 1);
+            
+            // 問題をランダムに変化させる
+            const transformedPuzzle = randomTransformPuzzle(selectedPuzzle, size);
+            
+            return {
+                size: size,
+                targetSum: targetSum,
+                numbers: numbers,
+                solution: transformedPuzzle.solution,
+                given: transformedPuzzle.given
+            };
+        }
+        
+        function randomTransformPuzzle(puzzle, size) {
+            let solution = puzzle.solution.map(row => [...row]);
+            let given = puzzle.given.map(row => [...row]);
+            
+            // ランダム変換を適用
+            const transforms = [
+                () => rotateMatrix(solution, given, size),
+                () => flipHorizontal(solution, given, size),
+                () => flipVertical(solution, given, size),
+                () => transposeMatrix(solution, given, size)
+            ];
+            
+            // ランダムに1-3個の変換を適用
+            const numTransforms = Math.floor(Math.random() * 3) + 1;
+            for (let i = 0; i < numTransforms; i++) {
+                const transform = transforms[Math.floor(Math.random() * transforms.length)];
+                const result = transform();
+                solution = result.solution;
+                given = result.given;
+            }
+            
+            return { solution, given };
+        }
+        
+        function rotateMatrix(solution, given, size) {
+            const newSolution = Array(size).fill().map(() => Array(size).fill(0));
+            const newGiven = Array(size).fill().map(() => Array(size).fill(0));
+            
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    newSolution[j][size - 1 - i] = solution[i][j];
+                    newGiven[j][size - 1 - i] = given[i][j];
+                }
+            }
+            
+            return { solution: newSolution, given: newGiven };
+        }
+        
+        function flipHorizontal(solution, given, size) {
+            const newSolution = solution.map(row => [...row].reverse());
+            const newGiven = given.map(row => [...row].reverse());
+            return { solution: newSolution, given: newGiven };
+        }
+        
+        function flipVertical(solution, given, size) {
+            const newSolution = [...solution].reverse();
+            const newGiven = [...given].reverse();
+            return { solution: newSolution, given: newGiven };
+        }
+        
+        function transposeMatrix(solution, given, size) {
+            const newSolution = Array(size).fill().map(() => Array(size).fill(0));
+            const newGiven = Array(size).fill().map(() => Array(size).fill(0));
+            
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    newSolution[j][i] = solution[i][j];
+                    newGiven[j][i] = given[i][j];
+                }
+            }
+            
+            return { solution: newSolution, given: newGiven };
+        }
+        
+        function initGame() {
+            showRulesScreen();
+        }
+        
+        function showRulesScreen() {
+            document.getElementById('rulesScreen').style.display = 'block';
+            document.getElementById('gameScreen').style.display = 'none';
+            gameStarted = false;
+        }
+        
+        function startGame(level) {
+            currentLevel = level;
+            gameStarted = true;
+            document.getElementById('rulesScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            setupLevel(currentLevel);
+            updateLevelButtons();
+            startTimer();
+        }
+        
+        function setupLevel(level) {
+            const puzzle = generatePuzzle(level);
+            size = puzzle.size;
+            targetSum = puzzle.targetSum;
+            solution = puzzle.solution;
+            givenCells = puzzle.given;
+            
+            // ボードの初期化
+            board = Array(size).fill().map(() => Array(size).fill(0));
+            usedNumbers.clear();
+            selectedNumber = null;
+            hintsRemaining = 2;
+            gameCompleted = false;
+            selectedCell = { row: 0, col: 0 };
+            hintPenalty = 0;
+            
+            // タイマーリセット
+            if (gameTimer) {
+                clearInterval(gameTimer);
+            }
+            startTime = null;
+            
+            // 与えられた数字を配置
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (givenCells[i][j] === 1) {
+                        board[i][j] = solution[i][j];
+                        usedNumbers.add(solution[i][j]);
+                    }
+                }
+            }
+            
+            createBoard();
+            createNumbersPanel(puzzle.numbers);
+            updateUI();
+            updateCellSelection();
+            updateDuplicateHighlights();
+            updatePenaltyDisplay();
+        }
+        
+        function createBoard() {
+            const magicSquare = document.getElementById('magicSquare');
+            magicSquare.innerHTML = '';
+            magicSquare.className = `magic-square size-${size}`;
+            
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    cell.setAttribute('role', 'gridcell');
+                    cell.setAttribute('tabindex', '0');
+                    cell.setAttribute('aria-label', `行 ${i + 1}, 列 ${j + 1}`);
+                    
+                    if (givenCells[i][j] === 1) {
+                        cell.textContent = board[i][j];
+                        cell.classList.add('given');
+                        cell.setAttribute('aria-readonly', 'true');
+                    }
+                    
+                    cell.addEventListener('click', () => {
+                        selectedCell = { row: i, col: j };
+                        updateCellSelection();
+                        if (selectedNumber) {
+                            placeNumber(i, j);
+                        }
+                    });
+                    magicSquare.appendChild(cell);
+                }
+            }
+            
+            // 使用済み数字表示も更新
+            createUsedNumbersGrid();
+        }
+        
+        function createUsedNumbersGrid() {
+            const usedNumbersGrid = document.getElementById('usedNumbersGrid');
+            usedNumbersGrid.innerHTML = '';
+            usedNumbersGrid.className = `used-numbers-grid size-${size}`;
+            
+            const maxNumber = size * size;
+            for (let i = 1; i <= maxNumber; i++) {
+                const numberDiv = document.createElement('div');
+                numberDiv.className = 'used-number';
+                numberDiv.textContent = i;
+                numberDiv.dataset.number = i;
+                usedNumbersGrid.appendChild(numberDiv);
+            }
+            
+            updateUsedNumbersDisplay();
+        }
+        
+        function updateUsedNumbersDisplay() {
+            document.querySelectorAll('.used-number').forEach(numberDiv => {
+                const number = parseInt(numberDiv.dataset.number);
+                numberDiv.classList.toggle('filled', usedNumbers.has(number));
+            });
+        }
+        
+        function createNumbersPanel(numbers) {
+            const panel = document.getElementById('numbersPanel');
+            panel.innerHTML = '';
+            
+            numbers.forEach(num => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'number-btn';
+                btn.dataset.number = num;
+                btn.textContent = num;
+                btn.setAttribute('aria-label', `数字 ${num} を選択`);
+                btn.addEventListener('click', () => selectNumber(num));
+                panel.appendChild(btn);
+            });
+        }
+        
+        function updateUI() {
+            let difficultyText, difficultyClass;
+            if (currentLevel === '3x3-easy') {
+                difficultyText = '初級';
+                difficultyClass = 'difficulty-easy';
+            } else if (currentLevel === '3x3-normal') {
+                difficultyText = '中級';
+                difficultyClass = 'difficulty-normal';
+            } else if (currentLevel === '4x4-easy') {
+                difficultyText = '中級';
+                difficultyClass = 'difficulty-normal';
+            } else {
+                difficultyText = '上級';
+                difficultyClass = 'difficulty-normal';
+            }
+            const badge = document.getElementById('difficultyBadge');
+            badge.textContent = difficultyText;
+            badge.className = `difficulty-badge ${difficultyClass}`;
+            
+            updateNumbersPanel();
+            updateScoreDisplay();
+            updateHintButton();
+            updateStatus('数字を選んでマス目をクリック、またはテンキーで入力してください');
+        }
+        
+
+        
+        function updateCellSelection() {
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('selected');
+                cell.setAttribute('aria-selected', 'false');
+            });
+            
+            const selectedCellElement = document.querySelector(`[data-row="${selectedCell.row}"][data-col="${selectedCell.col}"]`);
+            if (selectedCellElement) {
+                selectedCellElement.classList.add('selected');
+                selectedCellElement.setAttribute('aria-selected', 'true');
+                selectedCellElement.focus();
+            }
+        }
+        
+        function startTimer() {
+            if (!startTime && gameStarted) {
+                startTime = Date.now();
+                gameTimer = setInterval(updateScoreDisplay, 1000);
+            }
+        }
+        
+
+        
+        function updateScoreDisplay() {
+            const currentTime = startTime ? Math.floor((Date.now() - startTime) / 1000) + hintPenalty : 0;
+            const currentScore = Math.max(0, 1000 - currentTime);
+            const bestScore = getBestScore(currentLevel);
+            
+            document.getElementById('timeDisplay').textContent = `時間: ${currentTime}秒`;
+            document.getElementById('scoreDisplay').textContent = `スコア: ${currentScore}`;
+            document.getElementById('hintsDisplay').textContent = `ヒント: ${hintsRemaining}回`;
+            document.getElementById('bestDisplay').textContent = `ベスト: ${bestScore}`;
+        }
+        
+        function updateHintButton() {
+            const hintBtn = document.getElementById('hintBtn');
+            const emptyCells = getEmptyCells();
+            
+            if (hintsRemaining <= 0 || emptyCells.length <= 2 || gameCompleted) {
+                hintBtn.disabled = true;
+                if (hintsRemaining <= 0) {
+                    hintBtn.textContent = '💡 ヒント (使用済)';
+                } else if (emptyCells.length <= 2) {
+                    hintBtn.textContent = '💡 ヒント (制限)';
+                } else {
+                    hintBtn.textContent = '💡 ヒント';
+                }
+            } else {
+                hintBtn.disabled = false;
+                hintBtn.textContent = '💡 ヒント';
+            }
+        }
+        
+        function getEmptyCells() {
+            const emptyCells = [];
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (givenCells[i][j] === 0 && board[i][j] === 0) {
+                        emptyCells.push([i, j]);
+                    }
+                }
+            }
+            return emptyCells;
+        }
+        
+        function updateLevelButtons() {
+            document.querySelectorAll('.level-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.level === currentLevel);
+            });
+        }
+        
+        function selectNumber(number) {
+            document.querySelectorAll('.number-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            selectedNumber = number;
+            document.querySelector(`[data-number="${number}"]`).classList.add('selected');
+            updateStatus(`数字 ${number} を選択中 - マス目をクリックしてください`);
+        }
+        
+        function placeNumber(row, col, number = selectedNumber) {
+            if (givenCells[row][col] === 1) {
+                updateStatus('そのマス目は変更できません');
+                return;
+            }
+            
+            if (!number) {
+                updateStatus('まず数字を選んでください');
+                return;
+            }
+            
+            // 厳格モードで重複チェック
+            if (!allowDuplicates && isNumberUsedElsewhere(number, row, col)) {
+                updateStatus(`数字 ${number} は既に使用されています（厳格モード）`, 'error');
+                return;
+            }
+            
+            // 既存の数字と同じ場合は何もしない
+            if (board[row][col] === number) {
+                return;
+            }
+            
+            // ゲーム開始時にタイマーを開始
+            startTimer();
+            
+            // 既に数字が入っている場合は削除
+            if (board[row][col] !== 0) {
+                usedNumbers.delete(board[row][col]);
+            }
+            
+            // 数字を配置
+            board[row][col] = number;
+            
+            // 使用済み数字を更新（盤面全体をスキャン）
+            usedNumbers.clear();
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (board[i][j] !== 0) {
+                        usedNumbers.add(board[i][j]);
+                    }
+                }
+            }
+            
+            // 表示を更新
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cell.textContent = number;
+            cell.classList.remove('error');
+            cell.classList.add('filled');
+            
+            // 選択をリセット（マウス操作の場合のみ）
+            if (number === selectedNumber) {
+                document.querySelectorAll('.number-btn').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                selectedNumber = null;
+            }
+            
+            updateNumbersPanel();
+            updateUsedNumbersDisplay();
+            updateDuplicateHighlights();
+            updateHintButton();
+            
+            // 完成チェック
+            if (isBoardComplete()) {
+                setTimeout(() => {
+                    checkSolution();
+                }, 500);
+            } else {
+                updateStatus('次の数字を選んでください');
+            }
+        }
+        
+        function deleteNumber(row, col) {
+            if (givenCells[row][col] === 1) {
+                updateStatus('そのマス目は変更できません');
+                return;
+            }
+            
+            if (board[row][col] !== 0) {
+                board[row][col] = 0;
+                
+                // 使用済み数字を更新（盤面全体をスキャン）
+                usedNumbers.clear();
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        if (board[i][j] !== 0) {
+                            usedNumbers.add(board[i][j]);
+                        }
+                    }
+                }
+                
+                const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                cell.textContent = '';
+                cell.classList.remove('filled', 'error');
+                
+                updateNumbersPanel();
+                updateUsedNumbersDisplay();
+                updateDuplicateHighlights();
+                updateHintButton();
+                updateStatus('数字を削除しました');
+            }
+        }
+        
+        function isBoardComplete() {
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (board[i][j] === 0) return false;
+                }
+            }
+            return true;
+        }
+        
+        function updateNumbersPanel() {
+            document.querySelectorAll('.number-btn').forEach(btn => {
+                const number = parseInt(btn.dataset.number, 10);
+                const used = usedNumbers.has(number);
+                
+                if (allowDuplicates) {
+                    // ドラフト：何度でも選べる
+                    btn.classList.remove('used', 'strict');
+                    btn.disabled = false;
+                } else {
+                    // 厳格：使った数字は使えない
+                    btn.classList.toggle('used', used);
+                    btn.classList.toggle('strict', used);
+                    btn.disabled = used;
+                }
+            });
+        }
+        
+        function checkSolution() {
+            let isCorrect = true;
+            const errors = [];
+            
+            // 行の合計をチェック
+            for (let i = 0; i < size; i++) {
+                const rowSum = board[i].reduce((sum, val) => sum + val, 0);
+                if (rowSum !== targetSum) {
+                    isCorrect = false;
+                    for (let j = 0; j < size; j++) {
+                        errors.push([i, j]);
+                    }
+                }
+            }
+            
+            // 列の合計をチェック
+            for (let j = 0; j < size; j++) {
+                let colSum = 0;
+                for (let i = 0; i < size; i++) {
+                    colSum += board[i][j];
+                }
+                if (colSum !== targetSum) {
+                    isCorrect = false;
+                    for (let i = 0; i < size; i++) {
+                        errors.push([i, j]);
+                    }
+                }
+            }
+            
+            // 対角線の合計をチェック
+            let diag1Sum = 0, diag2Sum = 0;
+            for (let i = 0; i < size; i++) {
+                diag1Sum += board[i][i];
+                diag2Sum += board[i][size - 1 - i];
+            }
+            
+            if (diag1Sum !== targetSum) {
+                isCorrect = false;
+                for (let i = 0; i < size; i++) {
+                    errors.push([i, i]);
+                }
+            }
+            
+            if (diag2Sum !== targetSum) {
+                isCorrect = false;
+                for (let i = 0; i < size; i++) {
+                    errors.push([i, size - 1 - i]);
+                }
+            }
+            
+            // ここで重複の有無を確認
+            const counts = getNumberCounts();
+            let hasDup = false;
+            counts.forEach(c => { if (c > 1) hasDup = true; });
+            
+            // 表示初期化
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('correct', 'error');
+            });
+            updateDuplicateHighlights(); // 常に最新表示
+            
+            if (isBoardComplete()) {
+                if (!allowDuplicates && hasDup) {
+                    // 厳格モード：重複があれば不正解
+                    isCorrect = false;
+                    updateStatus('❌ 重複している数字があります（黄色）を解消してください', 'error');
+                    return;
+                }
+                if (isCorrect) {
+                    // クリア
+                    gameCompleted = true;
+                    if (gameTimer) clearInterval(gameTimer);
+                    const finalTime = Math.floor((Date.now() - startTime) / 1000) + hintPenalty;
+                    const finalScore = Math.max(0, 1000 - finalTime);
+                    
+                    // スコア記録
+                    const oldBest = getBestScore(currentLevel);
+                    const isNewRecord = finalScore > oldBest;
+                    recordScore(currentLevel, finalScore);
+                    
+                    document.querySelectorAll('.cell').forEach(cell => {
+                        cell.classList.add('correct');
+                    });
+                    updateHintButton();
+                    updateScoreDisplay();
+                    
+                    // ポップアップ表示
+                    showCompletionPopup(finalScore, isNewRecord, oldBest);
+                } else {
+                    // 和の間違い
+                    updateStatus('❌ 間違いがあります。赤いマス目を確認してください', 'error');
+                    errors.forEach(([r, c]) => {
+                        const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                        if (cell) cell.classList.add('error');
+                    });
+                }
+            } else {
+                updateStatus('まだすべてのマス目が埋まっていません', 'info');
+            }
+        }
+        
+        function resetPuzzle() {
+            setupLevel(currentLevel);
+        }
+        
+        function showHint() {
+            if (hintsRemaining <= 0) {
+                updateStatus('❌ ヒントはすべて使用済みです', 'error');
+                return;
+            }
+            
+            const emptyCells = getEmptyCells();
+            
+            if (emptyCells.length <= 2) {
+                updateStatus('❌ 残りマスが2つ以下のためヒントは使用できません', 'error');
+                return;
+            }
+            
+            if (gameCompleted) {
+                updateStatus('❌ ゲームは既に完了しています', 'error');
+                return;
+            }
+            
+            // ゲーム開始時にタイマーを開始
+            startTimer();
+            
+            if (emptyCells.length > 0) {
+                const [row, col] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                const correctNumber = solution[row][col];
+                hintsRemaining--;
+                hintPenalty += 100; // 100秒のペナルティを追加
+                
+                // 数字を自動で入力
+                board[row][col] = correctNumber;
+                
+                // 使用済み数字を更新（盤面全体をスキャン）
+                usedNumbers.clear();
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        if (board[i][j] !== 0) {
+                            usedNumbers.add(board[i][j]);
+                        }
+                    }
+                }
+                
+                // 表示を更新
+                const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                cell.textContent = correctNumber;
+                cell.classList.remove('error');
+                cell.classList.add('filled');
+                
+                // ヒント効果のアニメーション
+                cell.style.background = '#fef5e7';
+                cell.style.borderColor = '#f6ad55';
+                setTimeout(() => {
+                    cell.style.background = '';
+                    cell.style.borderColor = '';
+                }, 2000);
+                
+                updateNumbersPanel();
+                updateUsedNumbersDisplay();
+                updateDuplicateHighlights();
+                updateScoreDisplay();
+                updateHintButton();
+                updatePenaltyDisplay();
+                
+                updateStatus(`💡 ヒント使用: (${row + 1}, ${col + 1}) に ${correctNumber} を入力しました (+100秒ペナルティ)`, 'info');
+                
+                // 完成チェック
+                if (isBoardComplete()) {
+                    setTimeout(() => {
+                        checkSolution();
+                    }, 500);
+                }
+            } else {
+                updateStatus('💡 すべてのマス目が埋まっています！', 'info');
+            }
+        }
+        
+        function updateStatus(message, type = '') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+        
+        function updatePenaltyDisplay() {
+            const penaltyDisplay = document.getElementById('penaltyDisplay');
+            if (hintPenalty > 0) {
+                penaltyDisplay.style.display = 'block';
+                penaltyDisplay.querySelector('.penalty-text').textContent = `+${hintPenalty}秒ペナルティ`;
+            } else {
+                penaltyDisplay.style.display = 'none';
+            }
+        }
+        
+        function showCompletionPopup(finalScore, isNewRecord, oldBest) {
+            const popup = document.createElement('div');
+            popup.className = 'completion-popup';
+            
+            const content = document.createElement('div');
+            content.className = 'completion-content';
+            
+            content.innerHTML = `
+                <div class="completion-title">🎉 おめでとう！</div>
+                <div class="completion-score">最終スコア: ${finalScore}点</div>
+                ${isNewRecord ? '<div class="completion-record">🆕 新記録達成！</div>' : ''}
+                <div class="completion-best">ベストスコア: ${Math.max(finalScore, oldBest)}点</div>
+                <button class="btn btn-primary" onclick="closeCompletionPopup(); backToStart();">最初に戻る</button>
+            `;
+            
+            popup.appendChild(content);
+            document.body.appendChild(popup);
+        }
+        
+        function closeCompletionPopup() {
+            const popup = document.querySelector('.completion-popup');
+            if (popup) {
+                popup.remove();
+            }
+        }
+        
+        function toggleDuplicates() {
+            allowDuplicates = !allowDuplicates;
+            document.getElementById('toggleDupBtn').textContent = 
+                `重複許可: ${allowDuplicates ? 'ON' : 'OFF'}`;
+            updateNumbersPanel();        // 厳格時は使用済みボタンを無効化
+            updateDuplicateHighlights(); // 表示を最新化
+            updateStatus(allowDuplicates
+                ? '重複を許可しました（ドラフトモード）'
+                : '重複を禁止しました（厳格モード）', 'info');
+        }
+        
+        function isNumberUsedElsewhere(num, row, col) {
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if ((i !== row || j !== col) && board[i][j] === num) return true;
+                }
+            }
+            return false;
+        }
+        
+        function getNumberCounts() {
+            const counts = new Map();
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const v = board[i][j];
+                    if (v > 0) counts.set(v, (counts.get(v) || 0) + 1);
+                }
+            }
+            return counts;
+        }
+        
+
+        
+        function updateDuplicateHighlights() {
+            const counts = getNumberCounts();
+            // 盤面セルの重複ハイライト
+            document.querySelectorAll('.cell').forEach(c => c.classList.remove('dup'));
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const v = board[i][j];
+                    if (v > 0 && counts.get(v) > 1) {
+                        const cell = document.querySelector(`[data-row="${i}"][data-col="${j}"]`);
+                        if (cell) cell.classList.add('dup');
+                    }
+                }
+            }
+            // 使用済み数字グリッドの重複バッジ
+            document.querySelectorAll('.used-number').forEach(div => {
+                const n = parseInt(div.dataset.number, 10);
+                const c = counts.get(n) || 0;
+                div.classList.toggle('dup', c > 1);
+                if (c > 1) { 
+                    div.setAttribute('data-count', c); 
+                } else { 
+                    div.removeAttribute('data-count'); 
+                }
+            });
+        }
+        
+
+        
+        function backToStart() {
+            // ゲームをリセット
+            if (gameTimer) {
+                clearInterval(gameTimer);
+            }
+            gameStarted = false;
+            startTime = null;
+            gameCompleted = false;
+            
+
+            
+            // ルール画面に戻る
+            showRulesScreen();
+        }
+        
+        // イベントリスナーの設定
+        document.addEventListener('DOMContentLoaded', function() {
+            // ルール画面のレベル選択ボタン
+            document.querySelectorAll('#rulesScreen .level-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    startGame(this.dataset.level);
+                });
+                
+
+            });
+            
+            // ゲーム画面のレベル選択ボタン（無効化）
+            document.querySelectorAll('#gameScreen .level-btn').forEach(btn => {
+                btn.style.pointerEvents = 'none';
+                btn.style.opacity = '0.6';
+            });
+            
+
+            
+            // キーボードイベント
+            document.addEventListener('keydown', function(e) {
+                if (!gameStarted || gameCompleted) return;
+                
+                // 十字キーでセル選択
+                if (e.key === 'ArrowUp' && selectedCell.row > 0) {
+                    selectedCell.row--;
+                    updateCellSelection();
+                    e.preventDefault();
+                } else if (e.key === 'ArrowDown' && selectedCell.row < size - 1) {
+                    selectedCell.row++;
+                    updateCellSelection();
+                    e.preventDefault();
+                } else if (e.key === 'ArrowLeft' && selectedCell.col > 0) {
+                    selectedCell.col--;
+                    updateCellSelection();
+                    e.preventDefault();
+                } else if (e.key === 'ArrowRight' && selectedCell.col < size - 1) {
+                    selectedCell.col++;
+                    updateCellSelection();
+                    e.preventDefault();
+                }
+                
+                // 数字キー（1〜9/16）入力をバッファして確定
+                if (/^\d$/.test(e.key)) {
+                    keyBuffer += e.key;
+                    clearTimeout(keyBufferTimer);
+                    keyBufferTimer = setTimeout(() => {
+                        const num = parseInt(keyBuffer, 10);
+                        keyBuffer = '';
+                        const max = (size === 3) ? 9 : 16;
+                        if (!isNaN(num) && num >= 1 && num <= max) {
+                            placeNumber(selectedCell.row, selectedCell.col, num);
+                        }
+                    }, KEY_COMMIT_DELAY);
+                    e.preventDefault();
+                }
+                
+                // 削除キー
+                if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') {
+                    deleteNumber(selectedCell.row, selectedCell.col);
+                    e.preventDefault();
+                }
+            });
+            
+            initGame();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9731dacc6787d1bd',t:'MTc1NTg2MDMwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
