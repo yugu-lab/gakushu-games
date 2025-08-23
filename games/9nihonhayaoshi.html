@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, orientation=landscape">
+    <title>都道府県早押しクイズ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        .quiz-button { transition: all 0.3s ease; transform: scale(1); }
+        .quiz-button:hover { transform: scale(1.05); }
+        .quiz-button:active { transform: scale(0.95); }
+        .pulse-animation { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.1);} }
+        .slide-in { animation: slideIn 0.5s ease-out; }
+        @keyframes slideIn { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+        .celebration-bounce { animation: celebrationBounce 1s ease-out infinite; }
+        @keyframes celebrationBounce { 0%,20%,50%,80%,100%{transform:translateY(0);} 40%{transform:translateY(-20px);} 60%{transform:translateY(-10px);} }
+        .popup-enter { animation: popupEnter 0.6s cubic-bezier(0.68,-0.55,0.265,1.55); }
+        @keyframes popupEnter { 0%{transform:scale(0) rotate(180deg);opacity:0;} 50%{transform:scale(1.1) rotate(90deg);opacity:.8;} 100%{transform:scale(1) rotate(0);opacity:1;} }
+        .confetti { position:absolute; width:10px; height:10px; background:#f39c12; animation: confetti-fall 3s linear infinite; }
+        @keyframes confetti-fall { 0%{ transform: translateY(-100vh) rotate(0); opacity:1;} 100%{ transform: translateY(100vh) rotate(720deg); opacity:0;} }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-400 via-purple-500 to-pink-400 min-h-screen">
+    <!-- メイン画面 -->
+    <div id="mainScreen" class="container mx-auto px-6 py-4 min-h-screen">
+        <div class="text-center mb-6">
+            <h1 class="text-5xl font-bold text-white mb-3 drop-shadow-lg">🗾 都道府県早押しクイズ 🗾</h1>
+            <p class="text-xl text-white drop-shadow-md">楽しく学ぼう！日本の都道府県</p>
+        </div>
+
+        <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl p-6">
+            <div id="welcomeSection" class="text-center">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">🎮 ゲームのルール 🎮</h2>
+                    <div class="bg-yellow-100 rounded-2xl p-6 mb-6">
+                        <div class="grid md:grid-cols-2 gap-6 text-left">
+                            <div>
+                                <h3 class="text-xl font-bold text-blue-600 mb-3">📝 基本ルール</h3>
+                                <ul class="space-y-2 text-gray-700">
+                                    <li>• 問題文が1文字ずつ表示されます</li>
+                                    <li>• 早押しボタンで読み上げを止められます</li>
+                                    <li>• 答えは15秒以内に入力してください</li>
+                                    <li>• 「東京」でも「東京都」でもOK！</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-green-600 mb-3">🎯 モード説明</h3>
+                                <ul class="space-y-2 text-gray-700">
+                                    <li>• <strong>1人モード</strong>：練習用です</li>
+                                    <li>• <strong>2人モード</strong>：対戦ゲームです</li>
+                                    <li>• 間違えると解答権を失います</li>
+                                    <li>• 先に設定した問題数正解で勝利！</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">モードを選んでください</h3>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button onclick="selectMode('single')" class="quiz-button bg-gradient-to-r from-green-400 to-green-600 text-white px-8 py-4 rounded-2xl text-xl font-bold shadow-lg hover:shadow-xl">
+                            🎯 1人モード（練習）
+                        </button>
+                        <button onclick="selectMode('multi')" class="quiz-button bg-gradient-to-r from-orange-400 to-red-500 text-white px-8 py-4 rounded-2xl text-xl font-bold shadow-lg hover:shadow-xl">
+                            👥 2人モード（対戦）
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2人モード設定画面 -->
+            <div id="multiSetupSection" class="hidden slide-in">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">👥 2人モード設定</h2>
+                </div>
+                
+                <div class="space-y-6">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-blue-50 rounded-2xl p-6">
+                            <h3 class="text-xl font-bold text-blue-600 mb-4">プレイヤー1</h3>
+                            <input type="text" id="player1Name" value="プレイヤー1" 
+                                   class="w-full px-4 py-3 rounded-xl border-2 border-blue-300 focus:border-blue-500 focus:outline-none text-lg"
+                                   onfocus="this.select()">
+                        </div>
+                        <div class="bg-red-50 rounded-2xl p-6">
+                            <h3 class="text-xl font-bold text-red-600 mb-4">プレイヤー2</h3>
+                            <input type="text" id="player2Name" value="プレイヤー2" 
+                                   class="w-full px-4 py-3 rounded-xl border-2 border-red-300 focus:border-red-500 focus:outline-none text-lg"
+                                   onfocus="this.select()">
+                        </div>
+                    </div>
+                    
+                    <div class="bg-yellow-50 rounded-2xl p-6 text-center">
+                        <h3 class="text-xl font-bold text-yellow-600 mb-4">🏆 何問先取で勝利？</h3>
+                        <select id="winCondition" class="px-6 py-3 rounded-xl border-2 border-yellow-300 focus:border-yellow-500 focus:outline-none text-lg font-bold">
+                            <option value="1">1問先取</option>
+                            <option value="2">2問先取</option>
+                            <option value="3" selected>3問先取</option>
+                            <option value="5">5問先取</option>
+                            <option value="10">10問先取</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex gap-4 justify-center">
+                        <button onclick="showWelcome()" class="quiz-button bg-gray-500 text-white px-6 py-3 rounded-xl text-lg font-bold">
+                            ← 戻る
+                        </button>
+                        <button onclick="startGame()" class="quiz-button bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-2xl text-xl font-bold shadow-lg">
+                            🚀 ゲーム開始！
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ゲーム画面 -->
+    <div id="gameScreen" class="hidden container mx-auto px-6 py-4 min-h-screen">
+        <div class="max-w-7xl mx-auto">
+            <!-- ゲーム情報表示 -->
+            <div id="gameInfo" class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                <div class="flex justify-between items-center">
+                    <div id="singleModeInfo" class="hidden">
+                        <h2 class="text-2xl font-bold text-blue-600">🎯 練習モード</h2>
+                    </div>
+                    <div id="multiModeInfo" class="hidden w-full">
+                        <div class="grid grid-cols-3 gap-4 items-center">
+                            <div id="player1Info" class="bg-blue-100 rounded-xl p-4 text-center">
+                                <h3 class="font-bold text-blue-600" id="player1Display">プレイヤー1</h3>
+                                <p class="text-2xl font-bold" id="player1Score">0</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-lg font-bold text-gray-600">VS</p>
+                                <p class="text-sm text-gray-500" id="winConditionDisplay">3問先取</p>
+                            </div>
+                            <div id="player2Info" class="bg-red-100 rounded-xl p-4 text-center">
+                                <h3 class="font-bold text-red-600" id="player2Display">プレイヤー2</h3>
+                                <p class="text-2xl font-bold" id="player2Score">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <div id="settingsBar" class="mt-2 flex items-center justify-end gap-4 text-sm">
+                <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
+                    <span>SE</span>
+                    <input id="sfxVolumeRange" type="range" min="0" max="1" step="0.01" class="w-28" />
+                    <button id="sfxMuteBtn" class="px-2 py-1 rounded-lg bg-gray-200">🔊</button>
+                </div>
+                <div class="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
+                    <span>TTS</span>
+                    <input id="ttsVolumeRange" type="range" min="0" max="1" step="0.01" class="w-28" />
+                    <button id="ttsMuteBtn" class="px-2 py-1 rounded-lg bg-gray-200">🗣️</button>
+                </div>
+            </div>
+
+            <!-- 問題表示エリア -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
+                <div class="text-center mb-4">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-3">📚 問題</h3>
+                    <div id="questionDisplay" role="status" aria-live="polite" class="text-2xl leading-relaxed text-gray-700 min-h-[120px] bg-gray-50 rounded-xl p-6">
+                        問題が表示されます...
+                    </div>
+                </div>
+
+                <!-- 早押しボタン -->
+                <div class="text-center mb-4">
+                    <div id="singleBuzzButton" class="hidden">
+                        <button id="buzzButtonSingle" aria-label="早押し（シングル）" onclick="buzz('single')" 
+                                class="quiz-button pulse-animation bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-20 py-12 rounded-full text-4xl font-bold shadow-lg hover:shadow-xl min-w-[300px] min-h-[120px]">
+                            🔔 早押し！
+                        </button>
+                    </div>
+                    <div id="multiBuzzButtons" class="hidden flex gap-12 justify-center">
+                        <button id="buzzButton1" aria-label="早押し プレイヤー1" onclick="buzz('player1')" 
+                                class="quiz-button pulse-animation bg-gradient-to-r from-blue-400 to-blue-600 text-white px-16 py-10 rounded-full text-3xl font-bold shadow-lg hover:shadow-xl min-w-[280px] min-h-[100px]">
+                            🔔 <span id="player1BuzzName">プレイヤー1</span><br>
+                            <span class="text-lg">[スペースキー]</span>
+                        </button>
+                        <button id="buzzButton2" aria-label="早押し プレイヤー2" onclick="buzz('player2')" 
+                                class="quiz-button pulse-animation bg-gradient-to-r from-red-400 to-red-600 text-white px-16 py-10 rounded-full text-3xl font-bold shadow-lg hover:shadow-xl min-w-[280px] min-h-[100px]">
+                            🔔 <span id="player2BuzzName">プレイヤー2</span><br>
+                            <span class="text-lg">[エンターキー]</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 解答エリア -->
+                <div id="answerSection" class="hidden">
+                    <div class="text-center mb-4">
+                        <p class="text-lg font-bold text-gray-700 mb-2" id="answerPrompt">答えを入力してください</p>
+                        <p class="text-sm text-red-500" id="timeRemaining">残り時間: 15秒</p>
+                        <div class="mx-auto max-w-md mt-2">
+                            <div id="answerProgress" role="progressbar" aria-label="残り時間" aria-valuemin="0" aria-valuemax="15" aria-valuenow="15" class="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="answerProgressBar" class="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-500" style="width: 100%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 justify-center items-center">
+                        <input type="text" id="answerInput" placeholder="例: 東京都 または 東京" 
+                               class="px-6 py-3 rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none text-lg flex-1 max-w-md">
+                        <button onclick="submitAnswer()" class="quiz-button bg-green-500 text-white px-6 py-3 rounded-xl text-lg font-bold hover:bg-green-600">
+                            ✓ 回答
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 結果表示エリア -->
+            <div id="resultSection" class="hidden bg-white rounded-2xl shadow-lg p-6 mb-6">
+                <div class="text-center">
+                    <div id="resultMessage" class="text-2xl font-bold mb-4"></div>
+                    <div id="correctAnswer" class="text-lg text-gray-600 mb-4"></div>
+                    <button onclick="nextQuestion()" class="quiz-button bg-blue-500 text-white px-8 py-4 rounded-xl text-lg font-bold hover:bg-blue-600">
+                        次の問題へ → <span class="text-sm">[スペース/エンター]</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ゲーム終了画面（ポップアップ） -->
+            <div id="gameEndOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div id="gameEndPopup" class="bg-white rounded-3xl shadow-2xl p-16 text-center max-w-4xl mx-4 transform scale-0 transition-all duration-500">
+                    <div class="mb-8">
+                        <div id="celebrationIcon" class="text-8xl mb-4">🎉</div>
+                        <div id="gameEndMessage" class="text-4xl font-bold mb-4"></div>
+                        <div id="gameEndSubMessage" class="text-xl text-gray-600 mb-6"></div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-8 justify-center">
+                        <button onclick="restartGame()" class="quiz-button bg-gradient-to-r from-green-400 to-green-600 text-white px-16 py-6 rounded-3xl text-2xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[280px]">
+                            🔄 もう一度プレイ
+                        </button>
+                        <button onclick="backToMenu()" class="quiz-button bg-gradient-to-r from-blue-400 to-blue-600 text-white px-16 py-6 rounded-3xl text-2xl font-bold shadow-lg hover:shadow-xl transform hover:scale-105 min-w-[280px]">
+                            📋 メニューに戻る
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// ===== 問題データ（北海道のみ） =====
+const DEFAULT_QUESTIONS = [
+ <script>
+// 貼り付け用：全47都道府県・3問セット
+window.ALL_QUESTIONS = [
+  // 北海道
+  { question: "日本最北端の宗谷岬があり、冬には流氷が接岸する、日本の食糧基地としても知られる都道府県はどこ？", answer: "北海道" },
+  { question: "日本最大の面積を誇り、オホーツク海に面し、日本一寒い町として知られる陸別町がある都道府県はどこ？", answer: "北海道" },
+  { question: "札幌雪まつりやYOSAKOIソーラン祭りが有名で、ジャガイモやタマネギなどの農産物が全国的に知られる都道府県はどこ？", answer: "北海道" },
+
+  // 青森県
+  { question: "津軽海峡を挟んで北海道と向かい合い、弘前城の桜やねぶた祭りが有名な都道府県はどこ？", answer: "青森県" },
+  { question: "世界遺産・白神山地があり、リンゴの産地として全国的に知られる都道府県はどこ？", answer: "青森県" },
+  { question: "本州最北端の大間崎があり、大間のマグロが特に有名な都道府県はどこ？", answer: "青森県" },
+
+  // 岩手県
+  { question: "宮沢賢治の故郷であり、わんこそばや盛岡冷麺、じゃじゃ麺が有名な都道府県はどこ？", answer: "岩手県" },
+  { question: "世界遺産・平泉の文化遺産があり、三陸海岸の美しい景観が広がる都道府県はどこ？", answer: "岩手県" },
+  { question: "小岩井農場や岩手山があり、チャグチャグ馬コという伝統行事が行われる都道府県はどこ？", answer: "岩手県" },
+
+  // 宮城県
+  { question: "伊達政宗が築いた仙台城跡や、日本三景の一つ・松島が有名な都道府県はどこ？", answer: "宮城県" },
+  { question: "牛タンや笹かまぼこ、ずんだ餅が名物で、七夕祭りが行われる都道府県はどこ？", answer: "宮城県" },
+  { question: "東北大学やプロ野球チームの本拠地があり、東北の中枢都市・仙台市がある都道府県はどこ？", answer: "宮城県" },
+
+  // 秋田県
+  { question: "男鹿のなまはげが有名で、きりたんぽ鍋や稲庭うどんが知られる都道府県はどこ？", answer: "秋田県" },
+  { question: "田沢湖や白神山地があり、秋田犬や“秋田美人”で知られる都道府県はどこ？", answer: "秋田県" },
+  { question: "竿燈まつりや大曲の花火が有名で、米どころとしても知られる都道府県はどこ？", answer: "秋田県" },
+
+  // 山形県
+  { question: "蔵王のお釜や銀山温泉、山寺（立石寺）が有名で、さくらんぼの名産地として知られる都道府県はどこ？", answer: "山形県" },
+  { question: "米沢牛や芋煮、玉こんにゃくが名物で、出羽三山を擁する都道府県はどこ？", answer: "山形県" },
+  { question: "ドラマ「おしん」の舞台として知られ、紅花やラ・フランスの産地でもある都道府県はどこ？", answer: "山形県" },
+
+  // 福島県
+  { question: "会津若松城（鶴ヶ城）や大内宿、猪苗代湖が有名で、白虎隊の歴史でも知られる都道府県はどこ？", answer: "福島県" },
+  { question: "桃・梨・柿など果樹栽培が盛んで、喜多方ラーメンが有名な都道府県はどこ？", answer: "福島県" },
+  { question: "磐梯吾妻スカイラインや裏磐梯の自然が美しく、スパリゾート施設でも知られる都道府県はどこ？", answer: "福島県" },
+
+  // 茨城県
+  { question: "日本三名園の一つ・偕楽園があり、水戸黄門で知られる水戸市がある都道府県はどこ？", answer: "茨城県" },
+  { question: "ひたち海浜公園のネモフィラやコキアが有名で、水戸納豆が名物の都道府県はどこ？", answer: "茨城県" },
+  { question: "霞ヶ浦や筑波山があり、鹿島アントラーズの本拠地としても知られる都道府県はどこ？", answer: "茨城県" },
+
+  // 栃木県
+  { question: "世界遺産・日光の社寺や華厳の滝、中禅寺湖がある都道府県はどこ？", answer: "栃木県" },
+  { question: "イチゴの産地として知られ、餃子で有名な宇都宮市がある都道府県はどこ？", answer: "栃木県" },
+  { question: "那須高原や鬼怒川温泉など観光地が多数ある都道府県はどこ？", answer: "栃木県" },
+
+  // 群馬県
+  { question: "草津温泉や伊香保温泉など温泉地が多く、日本三名泉の一つを擁する都道府県はどこ？", answer: "群馬県" },
+  { question: "こんにゃくやキャベツの生産が盛んで、「上毛かるた」が郷土文化として親しまれる都道府県はどこ？", answer: "群馬県" },
+  { question: "世界遺産・富岡製糸場と絹産業遺産群がある都道府県はどこ？", answer: "群馬県" },
+
+  // 埼玉県
+  { question: "川越の“小江戸”の街並みや長瀞渓谷が有名で、十万石まんじゅうでも知られる都道府県はどこ？", answer: "埼玉県" },
+  { question: "首都圏のベッドタウンとして発展し、浦和レッズや大宮アルディージャの本拠地がある都道府県はどこ？", answer: "埼玉県" },
+  { question: "海に面さない内陸県で、秩父夜祭が有名な都道府県はどこ？", answer: "埼玉県" },
+
+  // 千葉県
+  { question: "東京ディズニーリゾートや成田国際空港があり、年間を通じて観光客が訪れる都道府県はどこ？", answer: "千葉県" },
+  { question: "落花生やネギ、ビワなどの農産物が有名で、九十九里浜や房総半島の海岸線が美しい都道府県はどこ？", answer: "千葉県" },
+  { question: "幕張メッセやプロ野球の本拠地球場があり、物流拠点としても重要な都道府県はどこ？", answer: "千葉県" },
+
+  // 東京都
+  { question: "東京都庁の所在地で、新宿御苑や明治神宮など観光スポットが多い日本の政治・経済の中心地はどこ？", answer: "東京都" },
+  { question: "多摩地域・伊豆諸島・小笠原諸島からなり、世界自然遺産に登録された小笠原諸島がある都道府県はどこ？", answer: "東京都" },
+  { question: "浅草寺や雷門、東京スカイツリーが有名で、江戸時代に徳川幕府が置かれていた都道府県はどこ？", answer: "東京都" },
+
+  // 神奈川県
+  { question: "横浜中華街やみなとみらい、江の島など観光地が多数あり、港町として栄えた都道府県はどこ？", answer: "神奈川県" },
+  { question: "箱根温泉や小田原城、鎌倉の大仏など古都の雰囲気と近代都市が共存する都道府県はどこ？", answer: "神奈川県" },
+  { question: "首都圏を支える大都市圏の一角で、人口規模が大きい都道府県はどこ？", answer: "神奈川県" },
+
+  // 新潟県
+  { question: "佐渡島や越後湯沢温泉が有名で、日本有数の米どころとして知られる都道府県はどこ？", answer: "新潟県" },
+  { question: "信濃川や阿賀野川など大河が流れ、日本海に面する都道府県はどこ？", answer: "新潟県" },
+  { question: "トキの保護で知られ、スキー場が多く豪雪地帯としても知られる都道府県はどこ？", answer: "新潟県" },
+
+  // 富山県
+  { question: "立山黒部アルペンルートや黒部ダムが有名で、薬売りの歴史やホタルイカ・ブリで知られる都道府県はどこ？", answer: "富山県" },
+  { question: "富山湾に面し、世界遺産・五箇山の合掌造り集落がある都道府県はどこ？", answer: "富山県" },
+  { question: "雪の大谷や称名滝などダイナミックな自然景観が楽しめる都道府県はどこ？", answer: "富山県" },
+
+  // 石川県
+  { question: "兼六園やひがし茶屋街、金沢21世紀美術館が有名で、加賀友禅や輪島塗など伝統工芸が盛んな都道府県はどこ？", answer: "石川県" },
+  { question: "能登半島や白山を擁し、世界農業遺産「能登の里山里海」がある都道府県はどこ？", answer: "石川県" },
+  { question: "日本海に面し、カニやブリ、のどぐろなど海の幸が豊富な都道府県はどこ？", answer: "石川県" },
+
+  // 福井県
+  { question: "恐竜化石の発掘で有名で、恐竜博物館がある都道府県はどこ？", answer: "福井県" },
+  { question: "東尋坊や永平寺、丸岡城が有名で、越前ガニや水ようかんが名物の都道府県はどこ？", answer: "福井県" },
+  { question: "若狭湾に面し、越前和紙や若狭塗箸など伝統工芸が盛んな都道府県はどこ？", answer: "福井県" },
+
+  // 山梨県
+  { question: "富士山や富士五湖、甲府盆地など自然に恵まれ、ブドウやモモの産地として知られる都道府県はどこ？", answer: "山梨県" },
+  { question: "武田信玄のゆかりの地で、ほうとうや鳥もつ煮など郷土料理が知られる都道府県はどこ？", answer: "山梨県" },
+  { question: "リニアモーターカーの実験線があり、ミネラルウォーターの産地としても有名な都道府県はどこ？", answer: "山梨県" },
+
+  // 長野県
+  { question: "日本アルプスがそびえ、上高地・白馬・軽井沢などの避暑地が有名な都道府県はどこ？", answer: "長野県" },
+  { question: "善光寺や松本城、戸隠神社など歴史名所が多く、そばやリンゴが特産の都道府県はどこ？", answer: "長野県" },
+  { question: "1998年に冬季オリンピックが開催され、自然と温泉が楽しめる都道府県はどこ？", answer: "長野県" },
+
+  // 岐阜県
+  { question: "世界遺産・白川郷の合掌造り集落があり、長良川の鵜飼が有名な都道府県はどこ？", answer: "岐阜県" },
+  { question: "岐阜城や養老の滝、飛騨高山など歴史と自然が共存する都道府県はどこ？", answer: "岐阜県" },
+  { question: "飛騨牛や栗きんとんが名物で、関市は刃物の産地として知られる都道府県はどこ？", answer: "岐阜県" },
+
+  // 静岡県
+  { question: "富士山や伊豆半島、浜名湖など自然景観が美しく、茶の産地として全国的に知られる都道府県はどこ？", answer: "静岡県" },
+  { question: "うなぎやミカン、ワサビなど特産が豊富で、徳川家康が晩年を過ごした駿府ゆかりの地がある都道府県はどこ？", answer: "静岡県" },
+  { question: "熱海や修善寺など温泉地が多く、温暖な気候に恵まれる都道府県はどこ？", answer: "静岡県" },
+
+  // 愛知県
+  { question: "名古屋城や熱田神宮、トヨタ自動車の本社があり、日本のものづくりを支える工業県はどこ？", answer: "愛知県" },
+  { question: "きしめん、味噌カツ、ひつまぶしなど“名古屋めし”が有名な都道府県はどこ？", answer: "愛知県" },
+  { question: "犬山城や岡崎城など、戦国時代の歴史が色濃く残る都道府県はどこ？", answer: "愛知県" },
+
+  // 三重県
+  { question: "伊勢神宮や夫婦岩、鳥羽水族館が有名で、真珠や松阪牛が特産の都道府県はどこ？", answer: "三重県" },
+  { question: "鈴鹿サーキットがあり、忍者で知られる伊賀上野がある都道府県はどこ？", answer: "三重県" },
+  { question: "熊野古道や英虞湾など、自然と文化が共存する都道府県はどこ？", answer: "三重県" },
+
+  // 滋賀県
+  { question: "日本最大の湖・琵琶湖があり、近江商人や彦根城が有名な都道府県はどこ？", answer: "滋賀県" },
+  { question: "信楽焼や近江牛、フナ寿司などの特産があり、比叡山延暦寺を擁する都道府県はどこ？", answer: "滋賀県" },
+  { question: "琵琶湖一周サイクリング「ビワイチ」が人気で、近江八幡の歴史的町並みが残る都道府県はどこ？", answer: "滋賀県" },
+
+  // 京都府
+  { question: "清水寺や金閣寺、伏見稲荷大社など世界遺産が多く、日本の古都として知られる都道府県はどこ？", answer: "京都府" },
+  { question: "祇園祭や時代祭など伝統的な祭りが有名で、日本文化の中心地として発展してきた都道府県はどこ？", answer: "京都府" },
+  { question: "宇治茶の産地として知られ、竹林の道や嵐山など風光明媚な景観が広がる都道府県はどこ？", answer: "京都府" },
+
+  // 大阪府
+  { question: "大阪城や通天閣、道頓堀が名所で、たこ焼きやお好み焼きなど粉もん文化が盛んな都道府県はどこ？", answer: "大阪府" },
+  { question: "吉本新喜劇や阪神タイガースで知られ、日本の“笑い”の中心地として発展してきた都道府県はどこ？", answer: "大阪府" },
+  { question: "関西国際空港やユニバーサル・スタジオ・ジャパンがあり、商業の要として栄える都道府県はどこ？", answer: "大阪府" },
+
+  // 兵庫県
+  { question: "神戸ポートタワーや南京町、異人館街など国際色豊かな港町を擁する都道府県はどこ？", answer: "兵庫県" },
+  { question: "世界遺産・姫路城や日本三古湯の一つ・有馬温泉があり、コウノトリの保護でも知られる都道府県はどこ？", answer: "兵庫県" },
+  { question: "日本海側と瀬戸内海側の両方に面し、但馬牛や神戸ビーフが有名な都道府県はどこ？", answer: "兵庫県" },
+
+  // 奈良県
+  { question: "東大寺の大仏や鹿で有名な奈良公園、法隆寺を擁し、日本仏教文化の中心として栄えた都道府県はどこ？", answer: "奈良県" },
+  { question: "柿の葉寿司や三輪そうめんが名物で、飛鳥時代に都が置かれた歴史をもつ都道府県はどこ？", answer: "奈良県" },
+  { question: "世界遺産「紀伊山地の霊場と参詣道」の吉野山・大峯山を擁し、修験道の聖地としても知られる都道府県はどこ？", answer: "奈良県" },
+
+  // 和歌山県
+  { question: "高野山や熊野古道など、世界遺産に登録された霊場と参詣道がある都道府県はどこ？", answer: "和歌山県" },
+  { question: "紀州の梅やミカンが有名で、パンダの飼育頭数が多いアドベンチャーワールドがある都道府県はどこ？", answer: "和歌山県" },
+  { question: "白浜温泉や那智の滝、橋杭岩など自然景観が美しい都道府県はどこ？", answer: "和歌山県" },
+
+  // 鳥取県
+  { question: "日本最大の砂丘・鳥取砂丘や大山、浦富海岸が有名で、二十世紀梨の産地として知られる都道府県はどこ？", answer: "鳥取県" },
+  { question: "「ゲゲゲの鬼太郎」の作者・水木しげるの出身地で、境港に水木しげるロードがある都道府県はどこ？", answer: "鳥取県" },
+  { question: "「砂の美術館」や「コナン通り」などユニークな観光スポットがある都道府県はどこ？", answer: "鳥取県" },
+
+  // 島根県
+  { question: "縁結びの神様で知られる出雲大社や、世界遺産・石見銀山遺跡がある都道府県はどこ？", answer: "島根県" },
+  { question: "松江城や宍道湖、隠岐諸島など歴史と自然が豊かな都道府県はどこ？", answer: "島根県" },
+  { question: "シジミやワカメ、カニなど海産物が豊富で、神話の舞台としても知られる都道府県はどこ？", answer: "島根県" },
+
+  // 岡山県
+  { question: "桃太郎伝説の舞台で、桃やブドウの生産が盛ん。後楽園や倉敷美観地区が有名な都道府県はどこ？", answer: "岡山県" },
+  { question: "ジーンズの産地として知られる倉敷市児島があり、温暖で日照が多い気候の都道府県はどこ？", answer: "岡山県" },
+  { question: "岡山三大河川の一つ・旭川が市内を流れ、「晴れの国」として知られる都道府県はどこ？", answer: "岡山県" },
+
+  // 広島県
+  { question: "平和記念公園や原爆ドーム、世界遺産・厳島神社（宮島）が有名で、もみじ饅頭やお好み焼きが名物の都道府県はどこ？", answer: "広島県" },
+  { question: "牡蠣の養殖が盛んで、プロ野球チームの本拠地がある都道府県はどこ？", answer: "広島県" },
+  { question: "瀬戸内海に面し、しまなみ海道や大久野島（うさぎ島）などの観光地がある都道府県はどこ？", answer: "広島県" },
+
+  // 山口県
+  { question: "日本三名橋の一つ・錦帯橋や秋吉台、元乃隅神社が有名で、ふぐ料理で知られる都道府県はどこ？", answer: "山口県" },
+  { question: "長州藩の歴史を持ち、幕末維新の志士を多く輩出した都道府県はどこ？", answer: "山口県" },
+  { question: "角島大橋やカルスト台地など美しい自然景観が広がる都道府県はどこ？", answer: "山口県" },
+
+  // 徳島県
+  { question: "阿波踊りや鳴門の渦潮が有名で、すだちや阿波尾鶏、徳島ラーメンが知られる都道府県はどこ？", answer: "徳島県" },
+  { question: "日本三奇橋の一つ・祖谷のかずら橋があり、剣山や大歩危・小歩危の渓谷が美しい都道府県はどこ？", answer: "徳島県" },
+  { question: "四国八十八ヶ所霊場の一番札所・霊山寺がある都道府県はどこ？", answer: "徳島県" },
+
+  // 香川県
+  { question: "日本で最も面積が小さい都道府県で、金刀比羅宮や栗林公園が有名、讃岐うどんで知られるのはどこ？", answer: "香川県" },
+  { question: "瀬戸内国際芸術祭の舞台・直島や小豆島など、多くの島々が点在する都道府県はどこ？", answer: "香川県" },
+  { question: "オリーブやハマチ養殖が盛んで、ため池の数が全国的に多いことで知られる都道府県はどこ？", answer: "香川県" },
+
+  // 愛媛県
+  { question: "柑橘王国として知られ、みかんや伊予柑の産地で、道後温泉や松山城が有名な都道府県はどこ？", answer: "愛媛県" },
+  { question: "タオルや真珠、造船など多様な産業が盛んで、しまなみ海道の起点となる都道府県はどこ？", answer: "愛媛県" },
+  { question: "小説『坊っちゃん』や『坂の上の雲』の舞台となり、鯛めしやじゃこ天が名物の都道府県はどこ？", answer: "愛媛県" },
+
+  // 高知県
+  { question: "坂本龍馬の故郷で、桂浜や四万十川、室戸岬が有名な都道府県はどこ？", answer: "高知県" },
+  { question: "カツオのたたきや文旦、ゆずが名物で、よさこい祭りが有名な都道府県はどこ？", answer: "高知県" },
+  { question: "清流・仁淀川が流れ、森林率が高いことで知られる都道府県はどこ？", answer: "高知県" },
+
+  // 福岡県
+  { question: "博多ラーメンやもつ鍋、明太子が有名で、太宰府天満宮や櫛田神社がある都道府県はどこ？", answer: "福岡県" },
+  { question: "九州最大の都市圏を形成し、中洲の屋台や博多祇園山笠で知られる都道府県はどこ？", answer: "福岡県" },
+  { question: "小倉城や門司港レトロなど、歴史的な港町の雰囲気が残る地域を擁する都道府県はどこ？", answer: "福岡県" },
+
+  // 佐賀県
+  { question: "吉野ヶ里遺跡や有田焼・伊万里焼など、歴史と伝統工芸が盛んな都道府県はどこ？", answer: "佐賀県" },
+  { question: "佐賀牛や呼子のイカ、温泉湯豆腐が名物で、バルーンフェスタが開催される都道府県はどこ？", answer: "佐賀県" },
+  { question: "日本三大稲荷の一つ・祐徳稲荷神社があり、有明海のムツゴロウでも知られる都道府県はどこ？", answer: "佐賀県" },
+
+  // 長崎県
+  { question: "グラバー園や大浦天主堂など異国情緒ある街並みが有名で、カステラやちゃんぽんが名物の都道府県はどこ？", answer: "長崎県" },
+  { question: "ハウステンボスや軍艦島（端島）、雲仙普賢岳がある都道府県はどこ？", answer: "長崎県" },
+  { question: "江戸時代、対外貿易が出島（長崎）に限定されていた歴史を持ち、国際交流の窓口であった都道府県はどこ？", answer: "長崎県" },
+
+  // 熊本県
+  { question: "熊本城や阿蘇山、黒川温泉など、歴史と大自然が共存する都道府県はどこ？", answer: "熊本県" },
+  { question: "馬刺しや辛子蓮根、太平燕が名物で、ゆるキャラ「くまモン」で知られる都道府県はどこ？", answer: "熊本県" },
+  { question: "天草諸島や菊池渓谷など、美しい自然景観が楽しめる都道府県はどこ？", answer: "熊本県" },
+
+  // 大分県
+  { question: "別府温泉や由布院温泉など、源泉数・湧出量が多く「おんせん県」として知られる都道府県はどこ？", answer: "大分県" },
+  { question: "関サバや関アジ、かぼすが特産で、国宝・臼杵石仏がある都道府県はどこ？", answer: "大分県" },
+  { question: "九州の東側に位置し、美しい海岸線を持つ都道府県はどこ？", answer: "大分県" },
+
+  // 宮崎県
+  { question: "高千穂峡や青島、サンメッセ日南など、神話と南国情緒が共存する都道府県はどこ？", answer: "宮崎県" },
+  { question: "マンゴーや日向夏、地鶏の炭火焼が名物で、温暖な気候に恵まれる都道府県はどこ？", answer: "宮崎県" },
+  { question: "日本神話「天孫降臨」の伝承地として知られ、プロ野球のキャンプ地としても有名な都道府県はどこ？", answer: "宮崎県" },
+
+  // 鹿児島県
+  { question: "桜島や屋久島、種子島など火山や島々が有名で、黒豚やさつまいもが特産の都道府県はどこ？", answer: "鹿児島県" },
+  { question: "西郷隆盛の出身地で、知覧特攻平和会館や仙巌園がある都道府県はどこ？", answer: "鹿児島県" },
+  { question: "「白熊」や「かるかん」などの名物があり、焼酎の生産が盛んな都道府県はどこ？", answer: "鹿児島県" },
+
+  // 沖縄県
+  { question: "首里城や美ら海水族館、国際通りなど、独自の文化と自然が楽しめる都道府県はどこ？", answer: "沖縄県" },
+  { question: "ゴーヤーチャンプルーやタコライス、沖縄そばなど独特の食文化があり、多くの離島から成る都道府県はどこ？", answer: "沖縄県" },
+  { question: "琉球王国が栄えた地で、サンゴ礁の海と白い砂浜が広がる都道府県はどこ？", answer: "沖縄県" }
+];
+</script>
+
+
+let questions = DEFAULT_QUESTIONS;
+
+// ===== ゲーム状態 =====
+let gameMode = '';
+let currentQuestionIndex = 0;
+let questionTimer = null;
+let answerTimer = null;
+let isReading = false;
+let currentPlayer = '';
+let player1Score = 0;
+let player2Score = 0;
+let winCondition = 3;
+let usedQuestions = [];
+let disabledPlayers = [];
+let buzzLocked = false; // 早押しのデバウンス
+let recentIndices = []; const RECENT_BUFFER = 3; // 直近重複回避
+
+// 音声合成
+const synth = window.speechSynthesis;
+let currentUtterance = null;
+
+// ===== 効果音・音量設定 =====
+let audioCtx = null;
+let masterGain = null;
+let sfxVolume = 0.12;
+let sfxMuted = false;
+let ttsVolume = 0.8;
+let ttsMuted = false;
+
+function getAudioCtx() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (!masterGain && audioCtx) {
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = sfxMuted ? 0 : sfxVolume;
+      masterGain.connect(audioCtx.destination);
+    }
+  } catch (_) {}
+  return audioCtx;
+}
+function setSfxVolume(v){ sfxVolume = Math.max(0, Math.min(1, v)); if (masterGain) masterGain.gain.value = sfxMuted ? 0 : sfxVolume; }
+function toggleSfxMute(){ sfxMuted = !sfxMuted; if (masterGain) masterGain.gain.value = sfxMuted ? 0 : sfxVolume; updateSettingsIcons(); }
+function setTtsVolume(v){ ttsVolume = Math.max(0, Math.min(1, v)); }
+function toggleTtsMute(){ ttsMuted = !ttsMuted; updateSettingsIcons(); }
+
+function playBeep(f=880, dur=0.12, type='sine'){
+  const ctx=getAudioCtx(); if(!ctx) return;
+  const osc=ctx.createOscillator(); const g=ctx.createGain();
+  osc.type=type; osc.frequency.setValueAtTime(f, ctx.currentTime);
+  g.gain.setValueAtTime(1, ctx.currentTime);
+  osc.connect(g).connect(masterGain || ctx.destination);
+  const end=ctx.currentTime+dur;
+  g.gain.exponentialRampToValueAtTime(0.0001, end);
+  osc.start(); osc.stop(end);
+}
+function playCorrectSound(){ playBeep(1046.5,0.12,'sine'); setTimeout(()=>playBeep(1318.5,0.12,'sine'),150); }
+function playWrongSound(){
+  const ctx=getAudioCtx(); if(!ctx) return;
+  const o=ctx.createOscillator(); const g=ctx.createGain(); const t=ctx.currentTime;
+  o.type='sawtooth'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(120,t+0.5);
+  g.gain.setValueAtTime(1,t);
+  o.connect(g); g.connect(masterGain || ctx.destination);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+0.55);
+  o.start(t); o.stop(t+0.6);
+}
+
+function initSettingsUI(){
+  const sRange = document.getElementById('sfxVolumeRange');
+  const sBtn = document.getElementById('sfxMuteBtn');
+  const tRange = document.getElementById('ttsVolumeRange');
+  const tBtn = document.getElementById('ttsMuteBtn');
+  if (sRange){ sRange.value = sfxVolume; sRange.addEventListener('input', e=> setSfxVolume(parseFloat(e.target.value||'0'))); }
+  if (sBtn){ sBtn.addEventListener('click', ()=> toggleSfxMute()); }
+  if (tRange){ tRange.value = ttsVolume; tRange.addEventListener('input', e=> setTtsVolume(parseFloat(e.target.value||'0'))); }
+  if (tBtn){ tBtn.addEventListener('click', ()=> toggleTtsMute()); }
+  updateSettingsIcons();
+}
+function updateSettingsIcons(){
+  const sBtn = document.getElementById('sfxMuteBtn');
+  const tBtn = document.getElementById('ttsMuteBtn');
+  if (sBtn) sBtn.textContent = sfxMuted ? '🔇' : '🔊';
+  if (tBtn) tBtn.textContent = ttsMuted ? '🤫' : '🗣️';
+  const sRange = document.getElementById('sfxVolumeRange'); if (sRange) sRange.disabled = sfxMuted;
+  const tRange = document.getElementById('ttsVolumeRange'); if (tRange) tRange.disabled = ttsMuted;
+  if (masterGain) masterGain.gain.value = sfxMuted ? 0 : sfxVolume;
+}
+
+// ===== 都道府県名の正規化 =====
+function normalizeAnswer(answer) {
+  const pref = { '北海道':['北海道'],'青森':['青森','青森県'],'岩手':['岩手','岩手県'],'宮城':['宮城','宮城県'],'秋田':['秋田','秋田県'],'山形':['山形','山形県'],'福島':['福島','福島県'],'茨城':['茨城','茨城県'],'栃木':['栃木','栃木県'],'群馬':['群馬','群馬県'],'埼玉':['埼玉','埼玉県'],'千葉':['千葉','千葉県'],'東京':['東京','東京都'],'神奈川':['神奈川','神奈川県'],'新潟':['新潟','新潟県'],'富山':['富山','富山県'],'石川':['石川','石川県'],'福井':['福井','福井県'],'山梨':['山梨','山梨県'],'長野':['長野','長野県'],'岐阜':['岐阜','岐阜県'],'静岡':['静岡','静岡県'],'愛知':['愛知','愛知県'],'三重':['三重','三重県'],'滋賀':['滋賀','滋賀県'],'京都':['京都','京都府'],'大阪':['大阪','大阪府'],'兵庫':['兵庫','兵庫県'],'奈良':['奈良','奈良県'],'和歌山':['和歌山','和歌山県'],'鳥取':['鳥取','鳥取県'],'島根':['島根','島根県'],'岡山':['岡山','岡山県'],'広島':['広島','広島県'],'山口':['山口','山口県'],'徳島':['徳島','徳島県'],'香川':['香川','香川県'],'愛媛':['愛媛','愛媛県'],'高知':['高知','高知県'],'福岡':['福岡','福岡県'],'佐賀':['佐賀','佐賀県'],'長崎':['長崎','長崎県'],'熊本':['熊本','熊本県'],'大分':['大分','大分県'],'宮崎':['宮崎','宮崎県'],'鹿児島':['鹿児島','鹿児島県'],'沖縄':['沖縄','沖縄県'] };
+  const n = (answer||'').trim();
+  for (const [k, v] of Object.entries(pref)) if (v.includes(n)) return k;
+  return n;
+}
+
+// ===== モード選択・画面遷移 =====
+function selectMode(mode) {
+  gameMode = mode;
+  if (mode === 'single') {
+    startGame();
+  } else {
+    showMultiSetup();
+  }
+}
+// クリック属性から必ず呼べるよう即時に公開
+window.selectMode = selectMode;
+function showMultiSetup() {
+  document.getElementById('welcomeSection').classList.add('hidden');
+  document.getElementById('multiSetupSection').classList.remove('hidden');
+}
+function showWelcome() {
+  document.getElementById('multiSetupSection').classList.add('hidden');
+  document.getElementById('welcomeSection').classList.remove('hidden');
+}
+
+function startGame() {
+  if (gameMode === 'multi') {
+    const p1 = document.getElementById('player1Name').value.trim() || 'プレイヤー1';
+    const p2 = document.getElementById('player2Name').value.trim() || 'プレイヤー2';
+    winCondition = parseInt(document.getElementById('winCondition').value, 10);
+    document.getElementById('player1Display').textContent = p1;
+    document.getElementById('player2Display').textContent = p2;
+    document.getElementById('player1BuzzName').textContent = p1;
+    document.getElementById('player2BuzzName').textContent = p2;
+    document.getElementById('winConditionDisplay').textContent = `${winCondition}問先取`;
+    document.getElementById('multiModeInfo').classList.remove('hidden');
+    document.getElementById('multiBuzzButtons').classList.remove('hidden');
+  } else {
+    document.getElementById('singleModeInfo').classList.remove('hidden');
+    document.getElementById('singleBuzzButton').classList.remove('hidden');
+  }
+
+  document.getElementById('mainScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.remove('hidden');
+
+  currentQuestionIndex = 0;
+  player1Score = 0; player2Score = 0; usedQuestions = []; disabledPlayers = []; recentIndices = [];
+  updateScores();
+  nextQuestion();
+}
+
+// ===== 読み上げ/表示 =====
+function startSpeechSynthesis(text) {
+  try {
+    if (!window.speechSynthesis) return;
+    if (currentUtterance) synth.cancel();
+    currentUtterance = new SpeechSynthesisUtterance(text);
+    currentUtterance.lang = 'ja-JP';
+    currentUtterance.rate = 0.8; currentUtterance.pitch = 1; currentUtterance.volume = ttsMuted ? 0 : ttsVolume;
+    synth.speak(currentUtterance);
+  } catch (_) {}
+}
+function stopSpeechSynthesis() {
+  try { if (currentUtterance) { synth.cancel(); currentUtterance = null; } } catch(_){}
+}
+
+function startQuestionReading() {
+  const q = questions[currentQuestionIndex].question;
+  const box = document.getElementById('questionDisplay');
+  box.textContent = '';
+  isReading = true;
+  startSpeechSynthesis(q);
+  let i = 0;
+  questionTimer = setInterval(()=>{
+    if (!isReading) { clearInterval(questionTimer); questionTimer = null; return; }
+    if (i < q.length) { box.textContent += q[i++]; }
+    else { clearInterval(questionTimer); questionTimer = null; isReading = false; /* 自動バズなし */ }
+  }, 325);
+}
+
+// ===== 早押し =====
+function buzz(player) {
+  if (!document.getElementById('answerSection').classList.contains('hidden')) return;
+  if (!document.getElementById('resultSection').classList.contains('hidden')) return;
+  if (buzzLocked) return; buzzLocked = true;
+  if (gameMode === 'multi' && (player === 'player1' || player === 'player2')) {
+    if (disabledPlayers.includes(player)) return;
+  }
+  isReading = false;
+  if (questionTimer) { clearInterval(questionTimer); questionTimer = null; }
+  stopSpeechSynthesis();
+  disableBuzzButtons();
+  currentPlayer = player;
+  showAnswerSection();
+}
+
+function enableBuzzButtons() {
+  buzzLocked = false;
+  const b1 = document.getElementById('buzzButton1');
+  const b2 = document.getElementById('buzzButton2');
+  const bs = document.getElementById('buzzButtonSingle');
+  if (gameMode === 'single') {
+    bs.disabled = false; bs.classList.remove('opacity-50','cursor-not-allowed','bg-gray-400');
+    bs.classList.add('pulse-animation','bg-gradient-to-r','from-yellow-400','to-orange-500');
+    bs.focus();
+  } else {
+    if (!disabledPlayers.includes('player1')) { b1.disabled=false; b1.classList.remove('opacity-50','cursor-not-allowed','bg-gray-400'); b1.classList.add('pulse-animation','bg-gradient-to-r','from-blue-400','to-blue-600'); } else { b1.disabled=true; b1.classList.add('opacity-50','cursor-not-allowed','bg-gray-400'); b1.classList.remove('pulse-animation','bg-gradient-to-r','from-blue-400','to-blue-600'); }
+    if (!disabledPlayers.includes('player2')) { b2.disabled=false; b2.classList.remove('opacity-50','cursor-not-allowed','bg-gray-400'); b2.classList.add('pulse-animation','bg-gradient-to-r','from-red-400','to-red-600'); } else { b2.disabled=true; b2.classList.add('opacity-50','cursor-not-allowed','bg-gray-400'); b2.classList.remove('pulse-animation','bg-gradient-to-r','from-red-400','to-red-600'); }
+    if (!b1.disabled) b1.focus(); else if (!b2.disabled) b2.focus();
+  }
+}
+function disableBuzzButtons() {
+  document.querySelectorAll('[id^="buzzButton"]').forEach(b=>{ b.disabled=true; b.classList.add('opacity-50','cursor-not-allowed'); b.classList.remove('pulse-animation'); });
+}
+
+// ===== 解答 =====
+function showAnswerSection() {
+  const section = document.getElementById('answerSection');
+  const prompt = document.getElementById('answerPrompt');
+  const input = document.getElementById('answerInput');
+  const time = document.getElementById('timeRemaining');
+  section.classList.remove('hidden');
+  if (gameMode === 'multi' && currentPlayer !== 'auto') {
+    const name = currentPlayer === 'player1' ? document.getElementById('player1Display').textContent : document.getElementById('player2Display').textContent;
+    prompt.textContent = `${name}さん、答えを入力してください`;
+  } else { prompt.textContent = '答えを入力してください'; }
+  input.value = ''; input.focus();
+  time.textContent = '残り時間: 15秒';
+  // progress init
+  const pWrap = document.getElementById('answerProgress');
+  const pBar = document.getElementById('answerProgressBar');
+  if (pBar) { pBar.style.transition = 'width 1s linear'; pBar.style.width = '100%'; }
+  if (pWrap) { pWrap.setAttribute('aria-valuenow', '15'); }
+  startAnswerTimer();
+}
+function startAnswerTimer() {
+  if (answerTimer) { clearInterval(answerTimer); answerTimer = null; }
+  let timeLeft = 15;
+  const time = document.getElementById('timeRemaining');
+  const pWrap = document.getElementById('answerProgress');
+  const pBar = document.getElementById('answerProgressBar');
+  if (pBar) { pBar.style.transition = 'width 1s linear'; pBar.style.width = '100%'; }
+  if (pWrap) { pWrap.setAttribute('aria-valuenow', '15'); }
+  answerTimer = setInterval(()=>{
+    timeLeft--;
+    time.textContent = `残り時間: ${timeLeft}秒`;
+    if (pBar) { pBar.style.width = Math.max(0,(timeLeft/15)*100) + '%'; }
+    if (pWrap) { pWrap.setAttribute('aria-valuenow', String(timeLeft)); }
+    if (timeLeft <= 0) { clearInterval(answerTimer); answerTimer = null; submitAnswer(true); }
+  }, 1000);
+}
+function submitAnswer(isTimeout=false) {
+  if (answerTimer) { clearInterval(answerTimer); answerTimer = null; }
+  const userAnswer = document.getElementById('answerInput').value.trim();
+  const correctAnswer = questions[currentQuestionIndex].answer;
+  let isCorrect = false;
+  if (!isTimeout && userAnswer) isCorrect = normalizeAnswer(userAnswer) === normalizeAnswer(correctAnswer);
+  document.getElementById('answerSection').classList.add('hidden');
+  showResult(isCorrect, isTimeout, correctAnswer);
+}
+
+// ===== 結果表示 =====
+function showResult(isCorrect, isTimeout, correctAnswer) {
+  const section = document.getElementById('resultSection');
+  const msg = document.getElementById('resultMessage');
+  const ans = document.getElementById('correctAnswer');
+  const nextBtn = section.querySelector('button');
+
+  if (isTimeout) { msg.textContent = '⏰ 時間切れです！'; msg.className = 'text-2xl font-bold mb-4 text-orange-500'; try{playWrongSound();}catch(_){} }
+  else if (isCorrect) { msg.textContent = '🎉 正解です！'; msg.className = 'text-2xl font-bold mb-4 text-green-500'; try{playCorrectSound();}catch(_){} }
+  else { msg.textContent = '❌ 不正解です！'; msg.className = 'text-2xl font-bold mb-4 text-red-500'; try{playWrongSound();}catch(_){} }
+
+  const fullQ = questions[currentQuestionIndex].question;
+  document.getElementById('questionDisplay').textContent = fullQ;
+
+  if (isCorrect) {
+    if (gameMode === 'multi') {
+      if (currentPlayer === 'player1') player1Score++; else if (currentPlayer === 'player2') player2Score++;
+      updateScores();
+      if (player1Score >= winCondition || player2Score >= winCondition) {
+        ans.textContent = `正解: ${correctAnswer}`;
+        section.classList.remove('hidden');
+        nextBtn.style.display = 'none';
+        setTimeout(()=>{ showGameEnd(); }, 2000);
+        return;
+      }
+    }
+    ans.textContent = `正解: ${correctAnswer}`;
+    section.classList.remove('hidden');
+    nextBtn.style.display = '';
+    return;
+  }
+
+  // 不正解 or タイムアップ
+  if (gameMode === 'multi') {
+    // 今答えた人は失格
+    if (!disabledPlayers.includes(currentPlayer)) disabledPlayers.push(currentPlayer);
+    // 両者失格 → 正解を出して次へ
+    if (disabledPlayers.length >= 2) {
+      ans.textContent = `正解: ${correctAnswer}`;
+      section.classList.remove('hidden');
+      nextBtn.style.display = '';
+      return;
+    }
+    // 相手に解答権を回す：正解は出さずに1.2秒だけ不正解表示→再読
+    ans.textContent = '';
+    section.classList.remove('hidden');
+    nextBtn.style.display = 'none';
+    setTimeout(()=>{
+      section.classList.add('hidden');
+      document.getElementById('questionDisplay').textContent = '';
+      enableBuzzButtons();
+      isReading = true; // 再読フラグ
+      startQuestionReading();
+    }, 1200);
+    return;
+  }
+
+  // 1人モード：正解を出して次へ
+  ans.textContent = `正解: ${correctAnswer}`;
+  section.classList.remove('hidden');
+  nextBtn.style.display = '';
+}
+
+function updateScores() {
+  if (gameMode === 'multi') {
+    document.getElementById('player1Score').textContent = player1Score;
+    document.getElementById('player2Score').textContent = player2Score;
+  }
+}
+
+function nextQuestion() {
+  // リセット
+  if (questionTimer) { clearInterval(questionTimer); questionTimer = null; }
+  if (answerTimer) { clearInterval(answerTimer); answerTimer = null; }
+  stopSpeechSynthesis(); isReading = false; disabledPlayers = []; buzzLocked = false;
+  document.getElementById('resultSection').classList.add('hidden');
+  document.getElementById('answerSection').classList.add('hidden');
+  const nextButton = document.getElementById('resultSection').querySelector('button');
+  if (nextButton) nextButton.style.display = '';
+
+  // ランダム選択（未使用から）＋直前の重複回避
+  let pool = questions.map((q,i)=>[q,i]).filter(([_,i])=>!usedQuestions.includes(i));
+  if (pool.length === 0) { usedQuestions = []; pool = questions.map((q,i)=>[q,i]); }
+  if (recentIndices.length && pool.length > recentIndices.length) {
+  const recentSet = new Set(recentIndices);
+  pool = pool.filter(([_,i]) => !recentSet.has(i));
+}
+const [q, idx] = pool[Math.floor(Math.random()*pool.length)];
+currentQuestionIndex = idx; usedQuestions.push(idx);
+recentIndices.push(idx); if (recentIndices.length > RECENT_BUFFER) recentIndices.shift();
+
+  enableBuzzButtons();
+  startQuestionReading();
+}
+
+// ===== ゲーム終了 =====
+function showGameEnd() {
+  document.getElementById('resultSection').classList.add('hidden');
+  const msg = document.getElementById('gameEndMessage');
+  const sub = document.getElementById('gameEndSubMessage');
+  const icon = document.getElementById('celebrationIcon');
+  const overlay = document.getElementById('gameEndOverlay');
+  const popup = document.getElementById('gameEndPopup');
+  if (gameMode === 'multi') {
+    const p1 = document.getElementById('player1Display').textContent;
+    const p2 = document.getElementById('player2Display').textContent;
+    if (player1Score >= winCondition) { msg.textContent = `${p1}さんの勝利！`; msg.className = 'text-4xl font-bold mb-4 text-blue-600'; }
+    else { msg.textContent = `${p2}さんの勝利！`; msg.className = 'text-4xl font-bold mb-4 text-red-600'; }
+    sub.textContent = '🎊 おめでとうございます！ 🎊'; icon.textContent = '🏆'; icon.className = 'text-8xl mb-4 celebration-bounce';
+  } else {
+    msg.textContent = '練習お疲れさまでした！'; msg.className = 'text-4xl font-bold mb-4 text-green-600';
+    sub.textContent = '🌟 素晴らしい学習でした！ 🌟'; icon.textContent = '🎯'; icon.className = 'text-8xl mb-4 celebration-bounce';
+  }
+  overlay.classList.remove('hidden');
+  setTimeout(()=>{ popup.classList.add('popup-enter'); popup.style.transform='scale(1)'; },100);
+  createConfetti();
+}
+function createConfetti() {
+  const colors = ['#ff6b6b','#4ecdc4','#45b7d1','#f9ca24','#f0932b','#eb4d4b','#6c5ce7'];
+  const overlay = document.getElementById('gameEndOverlay');
+  for (let i=0;i<200;i++) {
+    setTimeout(()=>{
+      const el = document.createElement('div'); el.className='confetti';
+      el.style.left = Math.random()*100+'%'; el.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+      el.style.animationDelay = Math.random()*3+'s'; el.style.animationDuration = (Math.random()*3+2)+'s';
+      overlay.appendChild(el);
+      setTimeout(()=>{ if (el.parentNode) el.parentNode.removeChild(el); }, 5000);
+    }, i*100);
+  }
+}
+
+function restartGame() {
+  const overlay = document.getElementById('gameEndOverlay');
+  const popup = document.getElementById('gameEndPopup');
+  popup.style.transform = 'scale(0)'; popup.classList.remove('popup-enter');
+  setTimeout(()=>{ overlay.classList.add('hidden'); player1Score=0; player2Score=0; usedQuestions=[]; updateScores(); nextQuestion(); },300);
+}
+function backToMenu() {
+  const overlay = document.getElementById('gameEndOverlay');
+  const popup = document.getElementById('gameEndPopup');
+  popup.style.transform = 'scale(0)'; popup.classList.remove('popup-enter');
+  setTimeout(()=>{
+    overlay.classList.add('hidden');
+    document.getElementById('gameScreen').classList.add('hidden');
+    document.getElementById('mainScreen').classList.remove('hidden');
+    document.getElementById('singleModeInfo').classList.add('hidden');
+    document.getElementById('multiModeInfo').classList.add('hidden');
+    document.getElementById('singleBuzzButton').classList.add('hidden');
+    document.getElementById('multiBuzzButtons').classList.add('hidden');
+    document.getElementById('resultSection').classList.add('hidden');
+    document.getElementById('answerSection').classList.add('hidden');
+    showWelcome();
+    if (questionTimer) { clearInterval(questionTimer); questionTimer = null; }
+    if (answerTimer) { clearInterval(answerTimer); answerTimer = null; }
+    stopSpeechSynthesis();
+  },300);
+}
+
+// ===== キーボード操作 =====
+(document.addEventListener('keydown', (e)=>{
+  if (!document.getElementById('answerSection').classList.contains('hidden')) {
+    if (e.key==='Enter') submitAnswer();
+    return;
+  }
+  if (!document.getElementById('resultSection').classList.contains('hidden')) {
+    const nextButton = document.getElementById('resultSection').querySelector('button');
+    if (nextButton && nextButton.style.display !== 'none' && (e.key===' '||e.key==='Enter')) { e.preventDefault(); nextQuestion(); }
+    return;
+  }
+  if (gameMode==='multi' && isReading) {
+    if (e.key===' ' && !disabledPlayers.includes('player1')) { e.preventDefault(); buzz('player1'); }
+    else if (e.key==='Enter' && !disabledPlayers.includes('player2')) { e.preventDefault(); buzz('player2'); }
+  }
+}));
+document.addEventListener('DOMContentLoaded', ()=>{ try{loadExternalQuestions();}catch(_){}; try{initSettingsUI();}catch(_){}; });
+function loadExternalQuestions(){
+  if (Array.isArray(window.ALL_QUESTIONS) && window.ALL_QUESTIONS.length) { questions = window.ALL_QUESTIONS; }
+  else if (Array.isArray(window.QUESTIONS) && window.QUESTIONS.length) { questions = window.QUESTIONS; }
+}
+// 明示的にグローバル公開（onclickから呼べるように）
+window.selectMode = selectMode;
+window.showWelcome = showWelcome;
+window.startGame = startGame;
+window.buzz = buzz;
+window.submitAnswer = submitAnswer;
+window.nextQuestion = nextQuestion;
+window.restartGame = restartGame;
+window.backToMenu = backToMenu;
+</script>
+</body>
+</html>
