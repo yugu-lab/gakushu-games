@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>整数判別ゲーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            color: white;
+            font-size: 20px;
+            animation: twinkle 2s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            min-height: 100svh;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .title {
+            font-size: 3rem;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .game-button {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            min-width: 300px;
+        }
+
+        .game-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .game-screen {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            min-height: 100dvh;
+            min-height: 100svh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 100;
+            flex-wrap: nowrap;
+            width: 90%;
+            max-width: 800px;
+            justify-content: center;
+        }
+
+        .score-display, .timer-display, .rule-display {
+            background: rgba(255,255,255,0.9);
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 1rem;
+            color: #333;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            white-space: nowrap;
+            flex: 1;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .shooting-star {
+            position: absolute;
+            background: linear-gradient(45deg, #ff9a9e, #fecfef);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+            animation: shoot 4s linear;
+            z-index: 50;
+        }
+
+        @keyframes shoot {
+            from {
+                right: -100px;
+                transform: translateY(0);
+            }
+            to {
+                right: 100vw;
+                transform: translateY(0);
+            }
+        }
+
+        .shooting-star-left {
+            animation: shootLeft 4s linear;
+        }
+
+        @keyframes shootLeft {
+            from {
+                left: -100px;
+                transform: translateY(0);
+            }
+            to {
+                left: 100vw;
+                transform: translateY(0);
+            }
+        }
+
+        .shooting-star-lcm {
+            animation: shootLCM 20s linear;
+        }
+
+        .shooting-star-lcm-left {
+            animation: shootLCMLeft 20s linear;
+        }
+
+        @keyframes shootLCM {
+            from {
+                right: -100px;
+                transform: translateY(0);
+            }
+            to {
+                right: 100vw;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shootLCMLeft {
+            from {
+                left: -100px;
+                transform: translateY(0);
+            }
+            to {
+                left: 100vw;
+                transform: translateY(0);
+            }
+        }
+
+
+
+        .explosion {
+            position: absolute;
+            font-size: 3rem;
+            animation: explode 0.5s ease-out;
+            z-index: 60;
+        }
+
+        @keyframes explode {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+
+        .back-button {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 200;
+        }
+
+        .roulette {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 200;
+        }
+
+        .roulette-wheel {
+            width: 200px;
+            height: 200px;
+            border: 10px solid #333;
+            border-radius: 50%;
+            margin: 1rem auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff9ff3);
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .input-area {
+            position: absolute;
+            bottom: 140px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .number-input {
+            padding: 15px;
+            font-size: 1.5rem;
+            border: 3px solid white;
+            border-radius: 10px;
+            text-align: center;
+            width: 150px;
+        }
+
+        .submit-button {
+            background: #4ecdc4;
+            border: none;
+            color: white;
+            padding: 15px 25px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .numpad {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: nowrap;
+            justify-content: center;
+            max-width: 800px;
+            overflow-x: auto;
+        }
+
+        .numpad-button {
+            background: rgba(255,255,255,0.9);
+            border: 2px solid #333;
+            color: #333;
+            padding: 12px 16px;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            min-width: 50px;
+            transition: all 0.2s ease;
+        }
+
+        .numpad-button:hover {
+            background: #4ecdc4;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .numpad-button.clear {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .numpad-button.clear:hover {
+            background: #ff5252;
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            text-align: center;
+            font-size: 1.1rem;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 10px;
+            z-index: 100;
+        }
+
+        .game-buttons {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .touch-button {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            border: none;
+            color: white;
+            padding: 15px 25px;
+            font-size: 1.2rem;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            min-width: 120px;
+        }
+
+        .touch-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .touch-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .even-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .odd-button {
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+        }
+
+        .multiple-yes-button {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        }
+
+        .multiple-no-button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .shooting-star, .shooting-star-left,
+            .shooting-star-lcm, .shooting-star-lcm-left,
+            .roulette-wheel {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    
+    <div class="container" id="menu">
+        <h1 class="title">🌟 整数判別ゲーム 🌟</h1>
+        <div class="menu">
+            <button class="game-button" onclick="startGame('evenOdd')">
+                🎯 偶数奇数判別ゲーム<br>
+                <small>ハイスコア: <span id="evenOddMenuHigh">0</span></small>
+            </button>
+            <button class="game-button" onclick="startGame('multiple')">
+                🎲 〇の倍数ゲーム<br>
+                <small>ハイスコア: <span id="multipleMenuHigh">0</span></small>
+            </button>
+            <button class="game-button" onclick="startGame('lcm')">
+                🧮 最小公倍数ゲーム<br>
+                <small>ハイスコア: <span id="lcmMenuHigh">0</span></small>
+            </button>
+        </div>
+    </div>
+
+    <!-- 偶数奇数ゲーム -->
+    <div class="game-screen" id="evenOddGame">
+        <button class="back-button" onclick="backToMenu()">← メニューに戻る</button>
+        <div class="game-header">
+            <div class="score-display">スコア: <span id="evenOddScore">0</span></div>
+            <div class="timer-display">時間: <span id="evenOddTimer">20</span>秒</div>
+            <div class="score-display">ハイスコア: <span id="evenOddHigh">0</span></div>
+        </div>
+        <div class="game-buttons">
+            <button class="touch-button even-button" onclick="checkEvenOdd(true)">偶数</button>
+            <button class="touch-button odd-button" onclick="checkEvenOdd(false)">奇数</button>
+        </div>
+        <div class="instructions">
+            偶数なら「偶数」ボタンまたは Enter キー、奇数なら「奇数」ボタンまたは Space キーを押そう！
+        </div>
+    </div>
+
+    <!-- 倍数ゲーム -->
+    <div class="game-screen" id="multipleGame">
+        <button class="back-button" onclick="backToMenu()">← メニューに戻る</button>
+        <div class="game-header">
+            <div class="score-display">スコア: <span id="multipleScore">0</span></div>
+            <div class="timer-display">時間: <span id="multipleTimer">20</span>秒</div>
+            <div class="rule-display" id="multipleRule">?の倍数</div>
+            <div class="score-display">ハイスコア: <span id="multipleHigh">0</span></div>
+        </div>
+        <div class="game-buttons">
+            <button class="touch-button multiple-yes-button" onclick="checkMultiple(true)"><span id="multipleYesText">3</span>の倍数</button>
+            <button class="touch-button multiple-no-button" onclick="checkMultiple(false)"><span id="multipleNoText">3</span>の倍数ではない</button>
+        </div>
+        <div class="instructions">
+            <span id="multipleInstructions">倍数なら Enter キー、違うなら Space キーを押そう！</span>
+        </div>
+    </div>
+
+    <!-- 最小公倍数ゲーム -->
+    <div class="game-screen" id="lcmGame">
+        <button class="back-button" onclick="backToMenu()">← メニューに戻る</button>
+        <div class="game-header">
+            <div class="score-display">スコア: <span id="lcmScore">0</span></div>
+            <div class="timer-display">時間: <span id="lcmTimer">60</span>秒</div>
+            <div class="score-display">ハイスコア: <span id="lcmHigh">0</span></div>
+        </div>
+        <div class="input-area">
+            <div class="input-row">
+                <input type="text" inputmode="numeric" pattern="[0-9]*" class="number-input" id="lcmInput" placeholder="答えを入力">
+                <button class="submit-button" onclick="submitLCM()">送信</button>
+                <button class="touch-button" onclick="skipLCM()">スキップ（-3秒）</button>
+            </div>
+            <div class="numpad">
+                <button class="numpad-button" onclick="addNumber('1')">1</button>
+                <button class="numpad-button" onclick="addNumber('2')">2</button>
+                <button class="numpad-button" onclick="addNumber('3')">3</button>
+                <button class="numpad-button" onclick="addNumber('4')">4</button>
+                <button class="numpad-button" onclick="addNumber('5')">5</button>
+                <button class="numpad-button" onclick="addNumber('6')">6</button>
+                <button class="numpad-button" onclick="addNumber('7')">7</button>
+                <button class="numpad-button" onclick="addNumber('8')">8</button>
+                <button class="numpad-button" onclick="addNumber('9')">9</button>
+                <button class="numpad-button" onclick="addNumber('0')">0</button>
+                <button class="numpad-button clear" onclick="clearInput()">クリア</button>
+            </div>
+        </div>
+        <div class="instructions">
+            左右の数字の最小公倍数を入力してEnterキーを押そう！
+        </div>
+    </div>
+
+    <!-- ルーレット -->
+    <div class="roulette" id="roulette" style="display: none;">
+        <h2>何の倍数かな？</h2>
+        <div class="roulette-wheel" id="rouletteWheel">?</div>
+        <button class="game-button" onclick="stopRoulette()">ストップ！</button>
+        <p style="margin-top: 1rem; color: #666; font-size: 0.9rem;">Enter または Space キーでストップ</p>
+    </div>
+
+    <!-- 倍数確認画面 -->
+    <div class="game-over" id="multipleConfirm" style="display: none;">
+        <h2 id="multipleConfirmTitle">決定！</h2>
+        <div style="margin: 1.5rem 0; font-size: 1.2rem; line-height: 1.8;">
+            <p><strong id="multipleNumber">3</strong>の倍数ゲームです！</p>
+            <br>
+            <p>📝 <strong>操作方法</strong></p>
+            <p><strong id="multipleNumberRule">3</strong>の倍数なら <strong>Enter</strong> キー</p>
+            <p><strong id="multipleNumberRule2">3</strong>の倍数でなければ <strong>Space</strong> キー</p>
+        </div>
+        <button class="game-button" onclick="startMultipleGame()" style="margin-top: 1rem;">ゲームスタート！</button>
+        <button class="game-button" onclick="backToRoulette()" style="margin-top: 0.5rem; background: #666;">ルーレットに戻る</button>
+        <p style="margin-top: 1rem; color: #ccc; font-size: 0.9rem;">Enter：ゲーム開始 / Space：ルーレットに戻る</p>
+    </div>
+
+    <!-- ルール説明画面 -->
+    <div class="game-over" id="ruleScreen" style="display: none;">
+        <h2 id="ruleTitle">ゲームルール</h2>
+        <div id="ruleContent" style="margin: 1rem 0; line-height: 1.6;"></div>
+        <button class="game-button" onclick="startActualGame()" style="margin-top: 1rem;">ゲームスタート！</button>
+        <button class="game-button" onclick="backToMenu()" style="margin-top: 0.5rem; background: #666;">戻る</button>
+        <p style="margin-top: 1rem; color: #ccc; font-size: 0.9rem;">Enter：ゲーム開始 / Space：メニューに戻る</p>
+    </div>
+
+    <!-- ゲームオーバー -->
+    <div class="game-over" id="gameOver" style="display: none;">
+        <h2 id="gameOverTitle">ゲームオーバー！</h2>
+        <p id="gameOverText">スコア: 0</p>
+        <p id="gameOverHigh"></p>
+        <button class="game-button" onclick="backToMenu()" style="margin-top: 1rem;">メニューに戻る</button>
+        <p style="margin-top: 1rem; color: #ccc; font-size: 0.9rem;">Enter または Space キーでメニューに戻る</p>
+    </div>
+
+    <script>
+        let currentGame = null;
+        let gameTimer = null;
+        let currentStar = null;
+        let currentStarLeft = null;
+        let score = 0;
+        let timeLeft = 30;
+        let gameActive = false;
+        let multipleNumber = 3;
+        let rouletteInterval = null;
+
+        // 背景の星を生成
+        function createBackgroundStars() {
+            const starsContainer = document.getElementById('stars');
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.innerHTML = '✨';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 2 + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // ハイスコアを取得
+        function getHighScore(gameType) {
+            try { 
+                return parseInt(localStorage.getItem(`highScore_${gameType}`)) || 0; 
+            } catch { 
+                return 0; 
+            }
+        }
+
+        // ハイスコアを保存
+        function saveHighScore(gameType, score) {
+            try {
+                const currentHigh = getHighScore(gameType);
+                if (score > currentHigh) { 
+                    localStorage.setItem(`highScore_${gameType}`, String(score)); 
+                    return true; 
+                }
+                return false;
+            } catch { 
+                return false; 
+            }
+        }
+
+        // ゲーム開始（ルール画面表示）
+        function startGame(gameType) {
+            currentGame = gameType;
+            document.getElementById('menu').style.display = 'none';
+            showRuleScreen(gameType);
+        }
+
+        // ルール画面表示
+        function showRuleScreen(gameType) {
+            const rules = {
+                'evenOdd': {
+                    title: '🎯 偶数奇数判別ゲーム',
+                    content: `
+                        <p><strong>ルール：</strong></p>
+                        <p>• 右から左に0～50の数字が流れてきます</p>
+                        <p>• 偶数なら <strong>Enter</strong> キーを押そう</p>
+                        <p>• 奇数なら <strong>Space</strong> キーを押そう</p>
+                        <p>• 制限時間は20秒です</p>
+                        <p>• 間違えるとゲームオーバーです</p>
+                    `
+                },
+                'multiple': {
+                    title: '🎲 〇の倍数ゲーム',
+                    content: `
+                        <p><strong>ルール：</strong></p>
+                        <p>• まずルーレットで何の倍数かを決めます</p>
+                        <p>• 右から左に<strong>1～50</strong>の数字が流れてきます</p>
+                        <p>• 倍数なら <strong>Enter</strong> キーを押そう</p>
+                        <p>• 倍数でなければ <strong>Space</strong> キーを押そう</p>
+                        <p>• 制限時間は20秒です</p>
+                        <p>• 間違えるとゲームオーバーです</p>
+                    `
+                },
+                'lcm': {
+                    title: '🧮 最小公倍数ゲーム',
+                    content: `
+                        <p><strong>ルール：</strong></p>
+                        <p>• 左右から2～15の数字が流れてきます</p>
+                        <p>• 2つの数字の最小公倍数を計算しよう</p>
+                        <p>• 答えを入力して <strong>Enter</strong> キーを押そう</p>
+                        <p>• 制限時間は60秒です</p>
+                        <p>• 間違えるとゲームオーバーです</p>
+                        <p>• 分からなければ<strong>Sキー</strong>か「スキップ」で次へ（<strong>-3秒</strong>）</p>
+                    `
+                }
+            };
+
+            document.getElementById('ruleTitle').textContent = rules[gameType].title;
+            document.getElementById('ruleContent').innerHTML = rules[gameType].content;
+            document.getElementById('ruleScreen').style.display = 'block';
+        }
+
+        // 実際のゲーム開始
+        function startActualGame() {
+            document.getElementById('ruleScreen').style.display = 'none';
+            
+            if (currentGame === 'multiple') {
+                showRoulette();
+            } else {
+                showGameScreen(currentGame);
+            }
+        }
+
+        // ルーレット表示
+        function showRoulette() {
+            if (rouletteInterval) { clearInterval(rouletteInterval); rouletteInterval = null; }
+            document.getElementById('roulette').style.display = 'block';
+            
+            // ルーレットの初期化
+            const wheel = document.getElementById('rouletteWheel');
+            wheel.style.animation = 'spin 2s linear infinite';
+            wheel.style.background = 'linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff9ff3)';
+            wheel.style.transform = 'scale(1)';
+            
+            // ストップボタンの初期化
+            const stopButton = document.querySelector('#roulette .game-button');
+            stopButton.disabled = false;
+            stopButton.style.opacity = '1';
+            stopButton.textContent = 'ストップ！';
+            
+            const numbers = [2, 3, 4, 5, 6, 7, 8, 9];
+            let index = 0;
+            
+            rouletteInterval = setInterval(() => {
+                document.getElementById('rouletteWheel').textContent = numbers[index];
+                index = (index + 1) % numbers.length;
+            }, 100);
+        }
+
+        // ルーレット停止
+        function stopRoulette() {
+            clearInterval(rouletteInterval);
+            rouletteInterval = null;
+            multipleNumber = parseInt(document.getElementById('rouletteWheel').textContent);
+            
+            // ルーレットの結果を2秒間表示してから次の画面へ
+            const wheel = document.getElementById('rouletteWheel');
+            wheel.style.animation = 'none';
+            wheel.style.background = 'linear-gradient(45deg, #4ecdc4, #44a08d)';
+            wheel.style.transform = 'scale(1.1)';
+            
+            // ストップボタンを無効化
+            const stopButton = document.querySelector('#roulette .game-button');
+            stopButton.disabled = true;
+            stopButton.style.opacity = '0.5';
+            stopButton.textContent = '決定中...';
+            
+            setTimeout(() => {
+                document.getElementById('roulette').style.display = 'none';
+                showMultipleConfirm();
+            }, 2000);
+        }
+
+        // 倍数確認画面表示
+        function showMultipleConfirm() {
+            document.getElementById('multipleNumber').textContent = multipleNumber;
+            document.getElementById('multipleNumberRule').textContent = multipleNumber;
+            document.getElementById('multipleNumberRule2').textContent = multipleNumber;
+            document.getElementById('multipleConfirm').style.display = 'block';
+        }
+
+        // 倍数ゲーム開始
+        function startMultipleGame() {
+            document.getElementById('multipleConfirm').style.display = 'none';
+            showGameScreen('multiple');
+        }
+
+        // ルーレットに戻る
+        function backToRoulette() {
+            document.getElementById('multipleConfirm').style.display = 'none';
+            showRoulette();
+        }
+
+        // ゲーム画面表示
+        function showGameScreen(gameType) {
+            const gameScreen = document.getElementById(gameType + 'Game');
+            gameScreen.style.display = 'block';
+            
+            // ハイスコア表示
+            document.getElementById(gameType + 'High').textContent = getHighScore(gameType);
+            
+            if (gameType === 'multiple') {
+                document.getElementById('multipleRule').textContent = multipleNumber + 'の倍数';
+                document.getElementById('multipleInstructions').textContent = 
+                    multipleNumber + 'の倍数なら Enter キー、違うなら Space キーを押そう！';
+                document.getElementById('multipleYesText').textContent = multipleNumber;
+                document.getElementById('multipleNoText').textContent = multipleNumber;
+            }
+            
+            resetGame(gameType);
+            startGameTimer(gameType);
+            createShootingStar(gameType);
+        }
+
+        // ゲームリセット
+        function resetGame(gameType) {
+            score = 0;
+            timeLeft = gameType === 'lcm' ? 60 : 20;
+            gameActive = true;
+            document.getElementById(gameType + 'Score').textContent = score;
+            document.getElementById(gameType + 'Timer').textContent = timeLeft;
+            
+            if (gameType === 'lcm') {
+                document.getElementById('lcmInput').value = '';
+                // 入力フィールドにフォーカス
+                setTimeout(() => {
+                    document.getElementById('lcmInput').focus();
+                }, 100);
+            }
+        }
+
+        // タイマー開始
+        function startGameTimer(gameType) {
+            if (gameTimer) { clearInterval(gameTimer); gameTimer = null; }
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById(gameType + 'Timer').textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    endGame(gameType);
+                }
+            }, 1000);
+        }
+
+        // 流れ星作成
+        function createShootingStar(gameType) {
+            if (!gameActive) return;
+            
+            if (gameType === 'lcm') {
+                // 最小公倍数ゲームは左右から
+                createLCMStars();
+            } else {
+                // 右から左へ
+                const star = document.createElement('div');
+                star.className = 'shooting-star';
+                const raw = Math.floor(Math.random() * 51);
+                const number = (gameType === 'multiple' ? Math.max(1, raw) : raw);
+                star.textContent = number;
+                star.dataset.number = number;
+                
+                // ボタンエリアを避けて星を配置（上部100px～下部250pxの間）
+                const minTop = 100;
+                const maxTop = Math.max(minTop + 150, window.innerHeight - 250);
+                star.style.top = (Math.random() * (maxTop - minTop) + minTop) + 'px';
+                
+                document.getElementById(gameType + 'Game').appendChild(star);
+                currentStar = star;
+                
+                setTimeout(() => {
+                    if (star.parentNode && gameActive) {
+                        // 時間切れでゲームオーバー
+                        endGame(gameType);
+                    }
+                }, 4000);
+            }
+        }
+
+        // 最小公倍数用の星作成
+        function createLCMStars() {
+            function safeTop() {
+                const min = 120;
+                const max = Math.max(min + 120, window.innerHeight - 400);
+                return (Math.random() * (max - min) + min) + 'px';
+            }
+            
+            // 右からの星（2～7の範囲）
+            const starRight = document.createElement('div');
+            starRight.className = 'shooting-star shooting-star-lcm';
+            const numberRight = Math.floor(Math.random() * 6) + 2;
+            starRight.textContent = numberRight;
+            starRight.dataset.number = numberRight;
+            starRight.style.top = safeTop();
+            starRight.style.animationDuration = '10s';
+            
+            // 左からの星（2～15の範囲）
+            const starLeft = document.createElement('div');
+            starLeft.className = 'shooting-star shooting-star-lcm-left';
+            const numberLeft = Math.floor(Math.random() * 14) + 2;
+            starLeft.textContent = numberLeft;
+            starLeft.dataset.number = numberLeft;
+            starLeft.style.top = safeTop();
+            starLeft.style.animationDuration = '10s';
+            
+            document.getElementById('lcmGame').appendChild(starRight);
+            document.getElementById('lcmGame').appendChild(starLeft);
+            
+            currentStar = starRight;
+            currentStarLeft = starLeft;
+            
+            setTimeout(() => {
+                if ((starRight.parentNode || starLeft.parentNode) && gameActive) {
+                    endGame('lcm');
+                }
+            }, 10000);
+        }
+
+        // 最小公倍数計算
+        function gcd(a, b) {
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        function lcm(a, b) {
+            return (a * b) / gcd(a, b);
+        }
+
+        // 爆発エフェクト
+        function createExplosion(x, y, gameType) {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            explosion.innerHTML = '💥';
+            explosion.style.left = x + 'px';
+            explosion.style.top = y + 'px';
+            
+            document.getElementById(gameType + 'Game').appendChild(explosion);
+            
+            setTimeout(() => {
+                explosion.remove();
+            }, 500);
+        }
+
+        // 偶数奇数判定
+        function checkEvenOdd(isEven) {
+            if (!gameActive || !currentStar || currentGame !== 'evenOdd') return;
+            
+            const number = parseInt(currentStar.dataset.number);
+            const numberIsEven = number % 2 === 0;
+            
+            if ((isEven && numberIsEven) || (!isEven && !numberIsEven)) {
+                correctAnswer('evenOdd');
+            } else {
+                endGame('evenOdd');
+            }
+        }
+
+        // 倍数判定
+        function checkMultiple(isMultiple) {
+            if (!gameActive || !currentStar || currentGame !== 'multiple') return;
+            
+            const number = parseInt(currentStar.dataset.number);
+            const numberIsMultiple = number % multipleNumber === 0;
+            
+            if ((isMultiple && numberIsMultiple) || (!isMultiple && !numberIsMultiple)) {
+                correctAnswer('multiple');
+            } else {
+                endGame('multiple');
+            }
+        }
+
+        // 正解処理
+        function correctAnswer(gameType) {
+            score++;
+            document.getElementById(gameType + 'Score').textContent = score;
+            
+            // 爆発エフェクト
+            if (currentStar) {
+                const rect = currentStar.getBoundingClientRect();
+                createExplosion(rect.left + rect.width/2, rect.top + rect.height/2, gameType);
+                currentStar.remove();
+                currentStar = null;
+            }
+            
+            if (currentStarLeft) {
+                const rect = currentStarLeft.getBoundingClientRect();
+                createExplosion(rect.left + rect.width/2, rect.top + rect.height/2, gameType);
+                currentStarLeft.remove();
+                currentStarLeft = null;
+            }
+            
+            // 次の星
+            setTimeout(() => {
+                createShootingStar(gameType);
+                if (gameType === 'lcm') {
+                    const inp = document.getElementById('lcmInput');
+                    if (inp) inp.focus();
+                }
+            }, 200);
+        }
+
+        // 最小公倍数送信
+        function submitLCM() {
+            if (!gameActive || !currentStar || !currentStarLeft) return;
+            
+            const input = document.getElementById('lcmInput');
+            const userAnswer = parseInt(input.value);
+            if (Number.isNaN(userAnswer)) {
+                input.focus();
+                return;
+            }
+            const num1 = parseInt(currentStar.dataset.number);
+            const num2 = parseInt(currentStarLeft.dataset.number);
+            const correctLCM = lcm(num1, num2);
+            
+            if (userAnswer === correctLCM) {
+                input.value = '';
+                correctAnswer('lcm');
+            } else {
+                endGame('lcm');
+            }
+        }
+
+        // LCMスキップ機能
+        function skipLCM() {
+            if (!gameActive) return;
+            if (currentStar) { 
+                currentStar.remove(); 
+                currentStar = null; 
+            }
+            if (currentStarLeft) { 
+                currentStarLeft.remove(); 
+                currentStarLeft = null; 
+            }
+            timeLeft = Math.max(0, timeLeft - 3);
+            document.getElementById('lcmTimer').textContent = timeLeft;
+            document.getElementById('lcmInput').value = '';
+            setTimeout(() => {
+                createShootingStar('lcm');
+            }, 200);
+        }
+
+        // ゲーム終了
+        function endGame(gameType) {
+            gameActive = false;
+            clearInterval(gameTimer);
+            gameTimer = null;
+            
+            // 残った星を削除
+            const stars = document.querySelectorAll('.shooting-star');
+            stars.forEach(star => star.remove());
+            
+            // ハイスコア更新チェック
+            const isNewHigh = saveHighScore(gameType, score);
+            
+            document.getElementById('gameOverTitle').textContent = 
+                timeLeft <= 0 ? 'タイムアップ！' : 'ゲームオーバー！';
+            document.getElementById('gameOverText').textContent = `スコア: ${score}`;
+            document.getElementById('gameOverHigh').textContent = 
+                isNewHigh ? '🎉 新記録達成！ 🎉' : `ハイスコア: ${getHighScore(gameType)}`;
+            
+            document.getElementById('gameOver').style.display = 'block';
+        }
+
+        // メニューに戻る
+        function backToMenu() {
+            gameActive = false;
+            clearInterval(gameTimer);
+            gameTimer = null;
+            clearInterval(rouletteInterval);
+            rouletteInterval = null;
+            
+            // 全ての画面を非表示
+            document.querySelectorAll('.game-screen').forEach(screen => {
+                screen.style.display = 'none';
+            });
+            document.getElementById('roulette').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('ruleScreen').style.display = 'none';
+            document.getElementById('multipleConfirm').style.display = 'none';
+            
+            // 残った星を削除
+            document.querySelectorAll('.shooting-star').forEach(star => star.remove());
+            
+            // メニューのハイスコアを更新
+            updateMenuHighScores();
+            
+            document.getElementById('menu').style.display = 'flex';
+            currentGame = null;
+            currentStar = null;
+            currentStarLeft = null;
+        }
+
+        // メニューのハイスコア更新
+        function updateMenuHighScores() {
+            document.getElementById('evenOddMenuHigh').textContent = getHighScore('evenOdd');
+            document.getElementById('multipleMenuHigh').textContent = getHighScore('multiple');
+            document.getElementById('lcmMenuHigh').textContent = getHighScore('lcm');
+        }
+
+        // キーボードイベント
+        document.addEventListener('keydown', (e) => {
+            // ルーレット画面でのキー操作
+            if (document.getElementById('roulette').style.display === 'block') {
+                if (e.code === 'Enter' || e.code === 'Space') {
+                    e.preventDefault();
+                    stopRoulette();
+                }
+                return;
+            }
+            
+            // 倍数確認画面でのキー操作
+            if (document.getElementById('multipleConfirm').style.display === 'block') {
+                if (e.code === 'Enter') {
+                    e.preventDefault();
+                    startMultipleGame();
+                } else if (e.code === 'Space') {
+                    e.preventDefault();
+                    backToRoulette();
+                }
+                return;
+            }
+            
+            // ルール画面でのキー操作
+            if (document.getElementById('ruleScreen').style.display === 'block') {
+                if (e.code === 'Enter') {
+                    e.preventDefault();
+                    startActualGame();
+                } else if (e.code === 'Space') {
+                    e.preventDefault();
+                    backToMenu();
+                }
+                return;
+            }
+            
+            // ゲームオーバー画面でのキー操作
+            if (document.getElementById('gameOver').style.display === 'block') {
+                if (e.code === 'Enter' || e.code === 'Space') {
+                    e.preventDefault();
+                    backToMenu();
+                }
+                return;
+            }
+            
+            // ゲーム中のキー操作
+            if (!gameActive) return;
+            
+            if (currentGame === 'evenOdd' && currentStar) {
+                const number = parseInt(currentStar.dataset.number);
+                const isEven = number % 2 === 0;
+                
+                if ((e.code === 'Enter' && isEven) || (e.code === 'Space' && !isEven)) {
+                    correctAnswer('evenOdd');
+                } else if (e.code === 'Enter' || e.code === 'Space') {
+                    endGame('evenOdd');
+                }
+            }
+            
+            if (currentGame === 'multiple' && currentStar) {
+                const number = parseInt(currentStar.dataset.number);
+                const isMultiple = number % multipleNumber === 0;
+                
+                if ((e.code === 'Enter' && isMultiple) || (e.code === 'Space' && !isMultiple)) {
+                    correctAnswer('multiple');
+                } else if (e.code === 'Enter' || e.code === 'Space') {
+                    endGame('multiple');
+                }
+            }
+            
+            if (currentGame === 'lcm' && e.code === 'Enter') {
+                e.preventDefault();
+                submitLCM();
+            }
+            
+            if (currentGame === 'lcm' && e.code === 'KeyS') {
+                e.preventDefault();
+                skipLCM();
+            }
+        });
+
+        // テンキー機能
+        function addNumber(num) {
+            const input = document.getElementById('lcmInput');
+            input.value += num;
+            input.focus();
+        }
+
+        function clearInput() {
+            const input = document.getElementById('lcmInput');
+            input.value = '';
+            input.focus();
+        }
+
+        // 初期化
+        createBackgroundStars();
+        updateMenuHighScores();
+        
+        // アクセシビリティ対応
+        document.querySelectorAll('.timer-display, .score-display')
+            .forEach(el => el.setAttribute('aria-live', 'polite'));
+
+        // タブを離れたら自動一時停止
+        let pausedByHide = false;
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                pausedByHide = gameActive;
+                gameActive = false;
+                clearInterval(gameTimer);
+                gameTimer = null;
+            } else if (currentGame && !gameTimer && pausedByHide) {
+                startGameTimer(currentGame);
+                gameActive = true;
+                pausedByHide = false;
+            }
+        });
+    </script>
+</body>
+</html>
