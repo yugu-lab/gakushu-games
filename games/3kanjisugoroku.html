@@ -1190,7 +1190,34 @@
                 player2Group.style.display = 'block';
             }
         }
-        
+        document.addEventListener('DOMContentLoaded', function() {
+  loadSettings();
+  togglePlayer2Input();
+
+  // ★追加：回答入力をリアルタイムで「ひらがな」に矯正
+  const ai = document.getElementById('answerInput');
+  if (ai) {
+    ai.addEventListener('input', () => {
+      const cur = ai.selectionStart; // キャレット位置保持
+      ai.value = toHiragana(ai.value);
+      // 句読点やスペースも不要ならここで除去済み（toHiragana内で処理）
+      ai.setSelectionRange(cur, cur);
+    });
+
+    // 貼り付け時もひらがな化
+    ai.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      const start = ai.selectionStart, end = ai.selectionEnd;
+      const before = ai.value.slice(0, start);
+      const after  = ai.value.slice(end);
+      ai.value = before + toHiragana(text) + after;
+      const pos = (before + toHiragana(text)).length;
+      ai.setSelectionRange(pos, pos);
+    });
+  }
+});
+
         // 初期設定画面の関数
         function showInstructions() {
             const player1Name = document.getElementById('player1Name').value.trim();
