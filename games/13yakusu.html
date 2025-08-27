@@ -54,7 +54,7 @@
             <div class="mb-6">
                 <h3 class="text-lg font-medium text-gray-700 mb-3">基本ルール</h3>
                 <ul class="list-disc list-inside text-gray-600 space-y-2">
-                    <li>10以上20以下の数が表示されます</li>
+                    <li>2以上20以下の数が表示されます</li>
                     <li>その数の約数を全て選択してください</li>
                     <li>1～20のボタンから正しい約数を選んで「送信」ボタンを押します</li>
                     <li>全ての約数を正しく選択できれば正解です</li>
@@ -383,7 +383,7 @@
         function generateRandomNumber() {
             let n;
             do { 
-                n = Math.floor(Math.random() * 11) + 10; // 10-20の範囲
+                n = Math.floor(Math.random() * 19) + 2; // 2-20の範囲
             } while(lastNums.includes(n));
             lastNums = [n, ...lastNums].slice(0, 3); // 直前3問を記録
             return n;
@@ -867,4 +867,5 @@
         createNumberButtons();
         updateSelectedDisplay();
     </script>
-
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975e8a8064ab9aae',t:'MTc1NjMyODg3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
