@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>流れ星整数ゲーム</title>
+    <title>整数判別ゲーム</title>
     <style>
         * {
             margin: 0;
@@ -639,7 +639,7 @@
                     title: '🧮 最小公倍数ゲーム',
                     content: `
                         <p><strong>ルール：</strong></p>
-                        <p>• 左右から2～15の数字が流れてきます</p>
+                        <p>• 左右から2～10の数字が流れてきます</p>
                         <p>• 2つの数字の最小公倍数を計算しよう</p>
                         <p>• 答えを入力して <strong>Enter</strong> キーを押そう</p>
                         <p>• 制限時間は60秒です</p>
@@ -827,23 +827,27 @@
                 return (Math.random() * (max - min) + min) + 'px';
             }
             
-            // 右からの星（2～7の範囲）
+            // 2～10の範囲で異なる2つの数字を生成
+            const numbers = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+            const shuffled = numbers.sort(() => Math.random() - 0.5);
+            const numberRight = shuffled[0];
+            const numberLeft = shuffled[1];
+            
+            // 右からの星（2～10の範囲）
             const starRight = document.createElement('div');
             starRight.className = 'shooting-star shooting-star-lcm';
-            const numberRight = Math.floor(Math.random() * 6) + 2;
             starRight.textContent = numberRight;
             starRight.dataset.number = numberRight;
             starRight.style.top = safeTop();
-            starRight.style.animationDuration = '10s';
+            starRight.style.animationDuration = '14s';
             
-            // 左からの星（2～15の範囲）
+            // 左からの星（2～10の範囲、右と異なる数字）
             const starLeft = document.createElement('div');
             starLeft.className = 'shooting-star shooting-star-lcm-left';
-            const numberLeft = Math.floor(Math.random() * 14) + 2;
             starLeft.textContent = numberLeft;
             starLeft.dataset.number = numberLeft;
             starLeft.style.top = safeTop();
-            starLeft.style.animationDuration = '10s';
+            starLeft.style.animationDuration = '14s';
             
             document.getElementById('lcmGame').appendChild(starRight);
             document.getElementById('lcmGame').appendChild(starLeft);
@@ -855,7 +859,7 @@
                 if ((starRight.parentNode || starLeft.parentNode) && gameActive) {
                     endGame('lcm');
                 }
-            }, 10000);
+            }, 14000);
         }
 
         // 最小公倍数計算
@@ -1160,5 +1164,5 @@
             }
         });
     </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975e94d5b7b49aae',t:'MTc1NjMyOTI5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
