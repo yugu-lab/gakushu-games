@@ -1236,19 +1236,7 @@ function kanaLiveSanitize(input){
   });
 });
 
-    // 貼り付け時もひらがな化
-    ai.addEventListener('paste', (e) => {
-      e.preventDefault();
-      const text = (e.clipboardData || window.clipboardData).getData('text');
-      const start = ai.selectionStart, end = ai.selectionEnd;
-      const before = ai.value.slice(0, start);
-      const after  = ai.value.slice(end);
-      ai.value = before + toHiragana(text) + after;
-      const pos = (before + toHiragana(text)).length;
-      ai.setSelectionRange(pos, pos);
-    });
-  }
-});
+
 
         // 初期設定画面の関数
         function showInstructions() {
@@ -2435,11 +2423,6 @@ function kanaLiveSanitize(input){
             }
         }
         
-        // 初期化時にプレイヤー2入力欄を非表示にし、設定を読み込む
-        document.addEventListener('DOMContentLoaded', function() {
-            loadSettings();
-            togglePlayer2Input();
-        });
         
         // キーボードイベントリスナー
         document.addEventListener('keydown', function(event) {
