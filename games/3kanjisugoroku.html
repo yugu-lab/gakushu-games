@@ -763,22 +763,27 @@
     </div>
 
     <script>
-        // 入力正規化関数（子どもの入力ゆらぎ対応）
-        function toHiragana(input){
-            // 全角化・小書き統一・カタカナ→ひらがな・長音処理・空白除去
-            let s = input.normalize('NFKC').toLowerCase().trim();
-            // カタカナ→ひらがな
-            s = s.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
-            // 長音「ー」を直前母音に展開（おおざっぱだが実用的）
-            s = s.replace(/([あいうえお])ー/g, '$1$1');
-            // 小書き統一（ゃゅょ→やゆよ等）※必要に応じて調整
-            const map = {'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お','ゃ':'や','ゅ':'ゆ','ょ':'よ','っ':'つ','ゎ':'わ'};
-            s = s.replace(/[ぁぃぅぇぉゃゅょっゎ]/g, m => map[m] || m);
-            // 空白・句読点の除去
-            s = s.replace(/[\s、。．・･]/g,'');
-            return s;
-        }
-        const normalize = toHiragana;
+// 送信時の比較だけに使う“強め”の正規化（今までの toHiragana と同等）
+function normalizeForCompare(input){
+  let s = input.normalize('NFKC').toLowerCase().trim();
+  s = s.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60)); // カタカナ→ひらがな
+  s = s.replace(/([あいうえお])ー/g, '$1$1');             // 任意: 長音展開
+  s = s.replace(/[\s、。．・･]/g,'');                      // 任意: 空白・句読点除去
+  // 任意: 小書き統一
+  // const map = {'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お','ゃ':'や','ゅ':'ゆ','ょ':'よ','っ':'つ','ゎ':'わ'};
+  // s = s.replace(/[ぁぃぅぇぉゃゅょっゎ]/g, m => map[m] || m);
+  return s;
+}
+// 既存コードの互換用（checkAnswer などは normalize を呼んでいる）
+const normalize = normalizeForCompare;
+
+// 入力中の見た目だけ軽く整える版（リアルタイム用）
+// → カタカナ→ひらがなのみ。小書き/長音/空白は触らない
+function kanaLiveSanitize(input){
+  let s = input.normalize('NFKC');
+  return s.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+}
+
 
         // ゲーム状態
         let currentPlayer = 1;
@@ -1190,19 +1195,46 @@
                 player2Group.style.display = 'block';
             }
         }
-        document.addEventListener('DOMContentLoaded', function() {
+
+        document.addEventListener('DOMContentLoaded', () => {
   loadSettings();
   togglePlayer2Input();
 
-  // ★追加：回答入力をリアルタイムで「ひらがな」に矯正
   const ai = document.getElementById('answerInput');
-  if (ai) {
-    ai.addEventListener('input', () => {
-      const cur = ai.selectionStart; // キャレット位置保持
-      ai.value = toHiragana(ai.value);
-      // 句読点やスペースも不要ならここで除去済み（toHiragana内で処理）
-      ai.setSelectionRange(cur, cur);
-    });
+  if (!ai) return;
+
+  let composing = false;
+
+  // 日本語IMEの変換開始/確定を検知
+  ai.addEventListener('compositionstart', () => { composing = true; });
+  ai.addEventListener('compositionend', () => {
+    composing = false;
+    const pos = ai.selectionStart;
+    ai.value = kanaLiveSanitize(ai.value); // 確定後にだけ軽めに整える
+    ai.setSelectionRange(pos, pos);
+  });
+
+  // 入力中は“カタカナ→ひらがな”だけ（小書き・長音・空白はそのまま）
+  ai.addEventListener('input', () => {
+    if (composing) return; // 変換中は一切触らない
+    const pos = ai.selectionStart;
+    ai.value = kanaLiveSanitize(ai.value);
+    ai.setSelectionRange(pos, pos);
+  });
+
+  // 貼り付け時も“軽め”に
+  ai.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text');
+    const start = ai.selectionStart, end = ai.selectionEnd;
+    const before = ai.value.slice(0, start);
+    const after  = ai.value.slice(end);
+    const mid    = kanaLiveSanitize(text);
+    ai.value = before + mid + after;
+    const pos = (before + mid).length;
+    ai.setSelectionRange(pos, pos);
+  });
+});
 
     // 貼り付け時もひらがな化
     ai.addEventListener('paste', (e) => {
