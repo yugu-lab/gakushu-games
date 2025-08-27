@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>約数選択ゲーム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap');
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        .pulse-animation { animation: pulse 1s infinite; }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- メインタイトル -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-indigo-800 mb-2">約数選択ゲーム</h1>
+            <p class="text-gray-600">数の約数を素早く見つけよう！</p>
+        </div>
+
+        <!-- メインメニュー -->
+        <div id="mainMenu" class="bg-white rounded-xl shadow-lg p-8">
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">ゲームモードを選択</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <button onclick="showRules('single')" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-6 px-8 rounded-lg transition-colors">
+                        <div class="text-xl mb-2">🏃‍♂️ 1人モード</div>
+                        <div class="text-sm opacity-90">45秒で何問正解できるか挑戦！</div>
+                    </button>
+                    <button onclick="showRules('multi')" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-6 px-8 rounded-lg transition-colors">
+                        <div class="text-xl mb-2">👥 2人モード</div>
+                        <div class="text-sm opacity-90">友達と対戦しよう！</div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- ルール説明ボタン -->
+            <div class="text-center">
+                <button onclick="showExample()" class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+                    📚 ルールと例題を見る
+                </button>
+            </div>
+        </div>
+
+        <!-- ルール説明画面 -->
+        <div id="rulesScreen" class="bg-white rounded-xl shadow-lg p-8 hidden">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">ゲームルール</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-medium text-gray-700 mb-3">基本ルール</h3>
+                <ul class="list-disc list-inside text-gray-600 space-y-2">
+                    <li>10以上20以下の数が表示されます</li>
+                    <li>その数の約数を全て選択してください</li>
+                    <li>1～20のボタンから正しい約数を選んで「送信」ボタンを押します</li>
+                    <li>全ての約数を正しく選択できれば正解です</li>
+                </ul>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-medium text-gray-700 mb-3">モード別ルール</h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h4 class="font-medium text-blue-800 mb-2">🏃‍♂️ 1人モード</h4>
+                        <p class="text-sm text-blue-700">45秒以内に何問正解できるかを競います</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <h4 class="font-medium text-green-800 mb-2">👥 2人モード</h4>
+                        <p class="text-sm text-green-700">同じ問題で早く正解した方が1ポイント獲得</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modeSpecificRules"></div>
+
+            <div class="flex gap-4 justify-center">
+                <button onclick="backToMenu()" class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                    戻る
+                </button>
+                <button id="startGameBtn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                    ゲーム開始
+                </button>
+            </div>
+        </div>
+
+        <!-- 例題画面 -->
+        <div id="exampleScreen" class="bg-white rounded-xl shadow-lg p-8 hidden">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">例題で練習</h2>
+            
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                <h3 class="font-medium text-yellow-800 mb-2">例：数字「12」の約数を見つけよう</h3>
+                <p class="text-yellow-700 text-sm mb-3">12を割り切れる数を全て選択します</p>
+                <div class="text-sm text-yellow-600">
+                    <p>12 ÷ 1 = 12 ✓</p>
+                    <p>12 ÷ 2 = 6 ✓</p>
+                    <p>12 ÷ 3 = 4 ✓</p>
+                    <p>12 ÷ 4 = 3 ✓</p>
+                    <p>12 ÷ 6 = 2 ✓</p>
+                    <p>12 ÷ 12 = 1 ✓</p>
+                    <p class="font-medium mt-2">答え：1, 2, 3, 4, 6, 12</p>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button onclick="backToMenu()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                    メニューに戻る
+                </button>
+            </div>
+        </div>
+
+        <!-- 2人モード設定画面 -->
+        <div id="multiSetupScreen" class="bg-white rounded-xl shadow-lg p-8 hidden">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">2人モード設定</h2>
+            
+            <div class="space-y-6">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">プレイヤー1の名前</label>
+                        <input type="text" id="player1Name" value="プレイヤー1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">プレイヤー2の名前</label>
+                        <input type="text" id="player2Name" value="プレイヤー2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">先取ポイント数</label>
+                    <select id="targetScore" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="3">3点先取</option>
+                        <option value="5">5点先取</option>
+                        <option value="7">7点先取</option>
+                        <option value="10">10点先取</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-4 justify-center mt-8">
+                <button onclick="backToMenu()" class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                    戻る
+                </button>
+                <button onclick="startMultiGame()" class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                    ゲーム開始
+                </button>
+            </div>
+        </div>
+
+        <!-- ゲーム画面 -->
+        <div id="gameScreen" class="bg-white rounded-xl shadow-lg p-8 hidden">
+            <!-- ゲーム情報 -->
+            <div id="gameInfo" class="mb-6"></div>
+            
+            <!-- 1人モード用問題表示 -->
+            <div id="singleModeProblem" class="text-center mb-8 hidden">
+                <div class="text-lg text-gray-600 mb-2">この数の約数を全て選択してください</div>
+                <div id="currentNumberSingle" class="text-6xl font-bold text-indigo-600 mb-4">12</div>
+                <div id="gameStatusSingle" class="text-sm text-gray-500"></div>
+            </div>
+
+            <!-- 選択ボタン -->
+            <div class="mb-6">
+                <!-- 1人モード用ボタン -->
+                <div id="singleModeButtons" class="hidden">
+                    <div class="text-center mb-4">
+                        <span class="text-sm text-gray-600">選択した約数: </span>
+                        <span id="selectedNumbers" class="font-medium text-indigo-600">なし</span>
+                    </div>
+                    <div id="numberButtons" class="grid grid-cols-10 gap-2 max-w-4xl mx-auto"></div>
+                </div>
+
+                <!-- 2人モード用レイアウト -->
+                <div id="multiModeButtons" class="hidden">
+                    <!-- プレイヤー2エリア（上側・逆向き） -->
+                    <div class="p-4 bg-green-50 rounded-lg mb-4 transform rotate-180">
+                        <div class="text-center mb-4">
+                            <h3 class="text-lg font-semibold text-green-800" id="player2NameDisplay">プレイヤー2</h3>
+                            <div class="text-sm text-green-600">選択した約数: <span id="player2Selected" class="font-medium">なし</span></div>
+                        </div>
+                        <div id="player2Buttons" class="grid grid-cols-10 gap-2 max-w-4xl mx-auto"></div>
+                        <div class="text-center mt-4">
+                            <button id="player2SubmitBtn" onclick="submitMultiAnswer(2)" class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                                送信
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 問題表示（中央） -->
+                    <div class="py-6 bg-gray-50 rounded-lg mb-4">
+                        <div class="text-center text-lg text-gray-600 mb-2">この数の約数を全て選択してください</div>
+                        <div class="flex justify-between items-center px-8">
+                            <!-- プレイヤー2の情報（左側・逆向き） -->
+                            <div class="flex flex-col items-center transform rotate-180 w-32">
+                                <div class="text-lg font-bold text-green-800" id="player2ScoreArea"></div>
+                                <div id="player2Status" class="text-sm mt-2 font-medium"></div>
+                            </div>
+                            
+                            <!-- 問題数字（中央） -->
+                            <div class="flex justify-center items-center space-x-8">
+                                <div id="currentNumberP2" class="text-4xl font-bold text-green-600 transform rotate-180">12</div>
+                                <div id="currentNumberP1" class="text-4xl font-bold text-blue-600">12</div>
+                            </div>
+                            
+                            <!-- プレイヤー1の情報（右側・通常向き） -->
+                            <div class="flex flex-col items-center w-32">
+                                <div class="text-lg font-bold text-blue-800" id="player1ScoreArea"></div>
+                                <div id="player1Status" class="text-sm mt-2 font-medium"></div>
+                            </div>
+                        </div>
+                        <div id="gameStatus" class="text-sm text-gray-500 mt-4 text-center">両プレイヤーが回答してください</div>
+                        <div id="currentTurnIndicator" class="text-lg font-bold mt-2 text-center"></div>
+                    </div>
+
+                    <!-- プレイヤー1エリア（下側・通常向き） -->
+                    <div class="p-4 bg-blue-50 rounded-lg">
+                        <div class="text-center mb-4">
+                            <h3 class="text-lg font-semibold text-blue-800" id="player1NameDisplay">プレイヤー1</h3>
+                            <div class="text-sm text-blue-600">選択した約数: <span id="player1Selected" class="font-medium">なし</span></div>
+                        </div>
+                        <div id="player1Buttons" class="grid grid-cols-10 gap-2 max-w-4xl mx-auto"></div>
+                        <div class="text-center mt-4">
+                            <button id="player1SubmitBtn" onclick="submitMultiAnswer(1)" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                                送信
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作ボタン（1人モード用） -->
+            <div id="singleModeControls" class="text-center space-x-4 hidden">
+                <button id="clearBtn" onclick="clearSelection()" class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                    クリア
+                </button>
+                <button id="submitBtn" onclick="submitAnswer()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-3 px-8 rounded-lg transition-colors pulse-animation">
+                    送信
+                </button>
+            </div>
+
+            <!-- 結果表示 -->
+            <div id="resultDisplay" class="mt-6 text-center hidden"></div>
+        </div>
+
+        <!-- 結果画面 -->
+        <div id="resultScreen" class="bg-white rounded-xl shadow-lg p-8 hidden">
+            <div id="finalResult" class="text-center"></div>
+            <div class="text-center mt-6">
+                <button onclick="backToMenu()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                    メニューに戻る
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameMode = '';
+        let currentNumber = 0;
+        let selectedNumbers = [];
+        let player1SelectedNumbers = [];
+        let player2SelectedNumbers = [];
+        let gameTimer = null;
+        let timeLeft = 45;
+        let score = 0;
+        let player1Score = 0;
+        let player2Score = 0;
+        let player1Name = 'プレイヤー1';
+        let player2Name = 'プレイヤー2';
+        let targetScore = 3;
+        let currentTurn = 0; // 0: 両方可能, 1: プレイヤー1のみ, 2: プレイヤー2のみ
+        let questionStartTime = 0;
+        let gameEnded = false;
+        let lastNums = [];
+        let wrongAnswers = []; // 間違えた問題を記録
+        let singleLocked = false; // 1人モードの二重送信防止
+
+        // 2人モードのプレイヤー有効/無効切替
+        function setPlayerActive(player, active) {
+            const submitBtn = document.getElementById(`player${player}SubmitBtn`);
+            submitBtn.disabled = !active;
+            submitBtn.className = active
+                ? (player === 1
+                    ? 'bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg transition-colors'
+                    : 'bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-6 rounded-lg transition-colors')
+                : 'bg-gray-400 text-white font-medium py-2 px-6 rounded-lg cursor-not-allowed';
+
+            for (let i = 1; i <= 20; i++) {
+                const btn = document.getElementById(`p${player}-btn-${i}`);
+                if (!btn) continue;
+                if (active) {
+                    // 再アタッチ（クロージャでiを固定）
+                    btn.onclick = ((n, b) => () => togglePlayerNumber(player, n, b))(i, btn);
+                    if (!btn.className.includes('hover:bg-gray-300')) btn.className += ' hover:bg-gray-300';
+                    btn.classList.remove('cursor-not-allowed');
+                } else {
+                    btn.onclick = null;
+                    btn.className = btn.className.replace('hover:bg-gray-300', '');
+                    btn.classList.add('cursor-not-allowed');
+                }
+            }
+        }
+
+        function showScreen(screenId) {
+            const screens = ['mainMenu', 'rulesScreen', 'exampleScreen', 'multiSetupScreen', 'gameScreen', 'resultScreen'];
+            screens.forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function showRules(mode) {
+            gameMode = mode;
+            const modeRules = document.getElementById('modeSpecificRules');
+            
+            if (mode === 'single') {
+                modeRules.innerHTML = `
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-gray-700 mb-3">1人モード詳細</h3>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <ul class="list-disc list-inside text-blue-700 space-y-1 text-sm">
+                                <li>制限時間は45秒です</li>
+                                <li>時間内に何問正解できるかを競います</li>
+                                <li>間違えても次の問題に進めます</li>
+                                <li>高得点を目指しましょう！</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('startGameBtn').onclick = startSingleGame;
+            } else {
+                modeRules.innerHTML = `
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-gray-700 mb-3">2人モード詳細</h3>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <ul class="list-disc list-inside text-green-700 space-y-1 text-sm">
+                                <li>同じ問題に対して2人が同時に挑戦</li>
+                                <li>正解かつ早く送信した方が1ポイント獲得</li>
+                                <li>間違えた場合はポイントなし</li>
+                                <li>設定したポイント数に先に到達した方が勝利</li>
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('startGameBtn').onclick = showMultiSetup;
+            }
+            
+            showScreen('rulesScreen');
+        }
+
+        function showExample() {
+            showScreen('exampleScreen');
+        }
+
+        function showMultiSetup() {
+            showScreen('multiSetupScreen');
+        }
+
+        function backToMenu() {
+            showScreen('mainMenu');
+            resetGame();
+        }
+
+        function resetGame() {
+            if (gameTimer) {
+                clearInterval(gameTimer);
+                gameTimer = null;
+            }
+            selectedNumbers = [];
+            player1SelectedNumbers = [];
+            player2SelectedNumbers = [];
+            score = 0;
+            player1Score = 0;
+            player2Score = 0;
+            timeLeft = 45;
+            currentTurn = 0;
+            gameEnded = false;
+            wrongAnswers = [];
+            lastNums = [];           // ★ 追加：履歴もリセット
+        }
+
+        function generateRandomNumber() {
+            let n;
+            do { 
+                n = Math.floor(Math.random() * 11) + 10; // 10-20の範囲
+            } while(lastNums.includes(n));
+            lastNums = [n, ...lastNums].slice(0, 3); // 直前3問を記録
+            return n;
+        }
+
+        function getDivisors(num) {
+            const divisors = [];
+            for (let i = 1; i <= num; i++) {
+                if (num % i === 0) {
+                    divisors.push(i);
+                }
+            }
+            return divisors;
+        }
+
+        function createNumberButtons() {
+            if (gameMode === 'single') {
+                const container = document.getElementById('numberButtons');
+                container.innerHTML = '';
+                
+                for (let i = 1; i <= 20; i++) {
+                    const button = document.createElement('button');
+                    button.textContent = i;
+                    button.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-3 rounded transition-colors';
+                    button.onclick = () => toggleNumber(i, button);
+                    button.id = `s-btn-${i}`;
+                    container.appendChild(button);
+                }
+            } else {
+                // プレイヤー1のボタン
+                const player1Container = document.getElementById('player1Buttons');
+                player1Container.innerHTML = '';
+                
+                for (let i = 1; i <= 20; i++) {
+                    const button = document.createElement('button');
+                    button.textContent = i;
+                    button.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-3 rounded transition-colors';
+                    button.onclick = () => togglePlayerNumber(1, i, button);
+                    button.id = `p1-btn-${i}`;
+                    player1Container.appendChild(button);
+                }
+
+                // プレイヤー2のボタン
+                const player2Container = document.getElementById('player2Buttons');
+                player2Container.innerHTML = '';
+                
+                for (let i = 1; i <= 20; i++) {
+                    const button = document.createElement('button');
+                    button.textContent = i;
+                    button.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-3 rounded transition-colors';
+                    button.onclick = () => togglePlayerNumber(2, i, button);
+                    button.id = `p2-btn-${i}`;
+                    player2Container.appendChild(button);
+                }
+            }
+        }
+
+        function toggleNumber(num, button) {
+            const index = selectedNumbers.indexOf(num);
+            if (index === -1) {
+                selectedNumbers.push(num);
+                button.className = 'bg-indigo-500 text-white font-medium py-2 px-3 rounded transition-colors';
+            } else {
+                selectedNumbers.splice(index, 1);
+                button.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-3 rounded transition-colors';
+            }
+            
+            updateSelectedDisplay();
+        }
+
+        function togglePlayerNumber(player, num, button) {
+            // 早押しモード：現在のターンでない場合は操作不可
+            if (currentTurn !== 0 && currentTurn !== player) return;
+            if (gameEnded) return;
+
+            const selectedArray = player === 1 ? player1SelectedNumbers : player2SelectedNumbers;
+            const index = selectedArray.indexOf(num);
+            
+            if (index === -1) {
+                selectedArray.push(num);
+                button.className = player === 1 ? 
+                    'bg-blue-500 text-white font-medium py-2 px-3 rounded transition-colors' :
+                    'bg-green-500 text-white font-medium py-2 px-3 rounded transition-colors';
+            } else {
+                selectedArray.splice(index, 1);
+                button.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-3 rounded transition-colors';
+            }
+            
+            updatePlayerSelectedDisplay(player);
+        }
+
+        function updateSelectedDisplay() {
+            const display = document.getElementById('selectedNumbers');
+            if (selectedNumbers.length === 0) {
+                display.textContent = 'なし';
+            } else {
+                display.textContent = selectedNumbers.sort((a, b) => a - b).join(', ');
+            }
+        }
+
+        function updatePlayerSelectedDisplay(player) {
+            const selectedArray = player === 1 ? player1SelectedNumbers : player2SelectedNumbers;
+            const displayId = player === 1 ? 'player1Selected' : 'player2Selected';
+            const display = document.getElementById(displayId);
+            
+            if (selectedArray.length === 0) {
+                display.textContent = 'なし';
+            } else {
+                display.textContent = selectedArray.sort((a, b) => a - b).join(', ');
+            }
+        }
+
+        function clearSelection() {
+            selectedNumbers = [];
+            createNumberButtons();
+            updateSelectedDisplay();
+        }
+
+        function clearPlayerSelection(player) {
+            if (player === 1) {
+                player1SelectedNumbers = [];
+            } else {
+                player2SelectedNumbers = [];
+            }
+            createNumberButtons();
+            updatePlayerSelectedDisplay(player);
+        }
+
+        function startSingleGame() {
+            gameMode = 'single';
+            showScreen('gameScreen');
+            resetGame();
+            timeLeft = 45;
+            score = 0;
+            
+            // 1人モード用UI表示
+            document.getElementById('singleModeProblem').classList.remove('hidden');
+            document.getElementById('singleModeButtons').classList.remove('hidden');
+            document.getElementById('singleModeControls').classList.remove('hidden');
+            document.getElementById('multiModeButtons').classList.add('hidden');
+            
+            // ゲーム情報表示
+            document.getElementById('gameInfo').innerHTML = `
+                <div class="flex justify-between items-center bg-blue-50 p-4 rounded-lg">
+                    <div class="text-blue-800">
+                        <span class="font-medium">1人モード</span>
+                    </div>
+                    <div class="text-blue-800">
+                        <span class="font-medium">得点: <span id="currentScore">${score}</span></span>
+                    </div>
+                    <div class="text-blue-800">
+                        <span class="font-medium">残り時間: <span id="timeDisplay">${timeLeft}</span>秒</span>
+                    </div>
+                </div>
+            `;
+            
+            startNewQuestion();
+            startTimer();
+            singleLocked = false;
+        }
+
+        function startMultiGame() {
+            gameMode = 'multi';
+            player1Name = document.getElementById('player1Name').value || 'プレイヤー1';
+            player2Name = document.getElementById('player2Name').value || 'プレイヤー2';
+            targetScore = parseInt(document.getElementById('targetScore').value);
+            
+            showScreen('gameScreen');
+            resetGame();
+            
+            // 2人モード用UI表示
+            document.getElementById('singleModeProblem').classList.add('hidden');
+            document.getElementById('singleModeButtons').classList.add('hidden');
+            document.getElementById('singleModeControls').classList.add('hidden');
+            document.getElementById('multiModeButtons').classList.remove('hidden');
+            
+            // プレイヤー名を表示に反映
+            document.getElementById('player1NameDisplay').textContent = player1Name;
+            document.getElementById('player2NameDisplay').textContent = player2Name;
+            
+            // ゲーム情報表示
+            document.getElementById('gameInfo').innerHTML = `
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <div class="text-center text-purple-800">
+                        <span class="font-medium text-xl">${targetScore}点先取</span>
+                    </div>
+                </div>
+            `;
+            
+            startNewMultiQuestion();
+        }
+
+        function startNewQuestion() {
+            currentNumber = generateRandomNumber();
+            document.getElementById('currentNumberSingle').textContent = currentNumber;
+            clearSelection();
+            document.getElementById('resultDisplay').classList.add('hidden');
+            singleLocked = false;
+            document.getElementById('submitBtn').disabled = false;
+        }
+
+        function startNewMultiQuestion() {
+            currentNumber = generateRandomNumber();
+            document.getElementById('currentNumberP1').textContent = currentNumber;
+            document.getElementById('currentNumberP2').textContent = currentNumber;
+            
+            // 2人モード用のクリア
+            player1SelectedNumbers = [];
+            player2SelectedNumbers = [];
+            currentTurn = 0; // 両方のプレイヤーが回答可能
+            gameEnded = false;
+            
+            createNumberButtons();
+            updatePlayerSelectedDisplay(1);
+            updatePlayerSelectedDisplay(2);
+            
+            // スコア表示を更新
+            document.getElementById('player1ScoreArea').textContent = `${player1Name}: ${player1Score}点`;
+            document.getElementById('player2ScoreArea').textContent = `${player2Name}: ${player2Score}点`;
+            document.getElementById('player1Status').textContent = '';
+            document.getElementById('player2Status').textContent = '';
+            
+            document.getElementById('resultDisplay').classList.add('hidden');
+            document.getElementById('gameStatus').textContent = '早押しで回答してください！';
+            document.getElementById('currentTurnIndicator').textContent = '';
+            
+            // 両プレイヤーを有効化
+            setPlayerActive(1, true);
+            setPlayerActive(2, true);
+            
+            questionStartTime = Date.now();
+        }
+
+        function startTimer() {
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timeDisplay').textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    endSingleGame();
+                }
+            }, 1000);
+        }
+
+        function submitAnswer() { // シングル専用
+            if (gameMode === 'single') submitSingleAnswer();
+        }
+
+        function submitSingleAnswer() {
+            if (singleLocked) return;
+            singleLocked = true;
+            
+            const correctDivisors = getDivisors(currentNumber);
+            const isCorrect = arraysEqual(selectedNumbers.sort((a, b) => a - b), correctDivisors.sort((a, b) => a - b));
+            
+            const resultDiv = document.getElementById('resultDisplay');
+            resultDiv.classList.remove('hidden');
+            
+            if (isCorrect) {
+                score++;
+                document.getElementById('currentScore').textContent = score;
+                resultDiv.innerHTML = `
+                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                        <strong>正解！</strong> ${currentNumber}の約数: ${correctDivisors.join(', ')}
+                    </div>
+                `;
+            } else {
+                // 間違えた問題を記録
+                wrongAnswers.push({
+                    number: currentNumber,
+                    correctAnswer: correctDivisors,
+                    userAnswer: [...selectedNumbers].sort((a, b) => a - b)
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                        <strong>不正解</strong> 正解: ${correctDivisors.join(', ')} / あなたの回答: ${selectedNumbers.sort((a, b) => a - b).join(', ') || 'なし'}
+                    </div>
+                `;
+            }
+            
+            // 送信ボタンを無効化
+            document.getElementById('submitBtn').disabled = true;
+            // 数字ボタンも一時無効化
+            for (let i = 1; i <= 20; i++) {
+                const b = document.getElementById(`s-btn-${i}`);
+                if (b) { 
+                    b.onclick = null; 
+                    b.classList.add('cursor-not-allowed'); 
+                }
+            }
+            
+            // 正解を緑でハイライト
+            correctDivisors.forEach(n=>{
+                const b=document.getElementById(`s-btn-${n}`);
+                if(b) b.className='bg-green-500 text-white font-medium py-2 px-3 rounded';
+            });
+            // 誤って選んだ数を赤でハイライト
+            selectedNumbers
+                .filter(n=>!correctDivisors.includes(n))
+                .forEach(n=>{
+                    const b=document.getElementById(`s-btn-${n}`);
+                    if(b) b.className='bg-red-500 text-white font-medium py-2 px-3 rounded';
+                });
+            
+            setTimeout(() => {
+                if (timeLeft > 0) {
+                    startNewQuestion();
+                }
+            }, 800);
+        }
+
+        function submitMultiAnswer(player) {
+            if (gameEnded) return;
+            if (currentTurn !== 0 && currentTurn !== player) return;
+            
+            const selectedArray = player === 1 ? player1SelectedNumbers : player2SelectedNumbers;
+            const correctDivisors = getDivisors(currentNumber);
+            const isCorrect = arraysEqual(selectedArray.sort((a, b) => a - b), correctDivisors.sort((a, b) => a - b));
+            const currentTime = Date.now() - questionStartTime;
+            const playerName = player === 1 ? player1Name : player2Name;
+            const otherPlayer = player === 1 ? 2 : 1;
+            const otherPlayerName = player === 1 ? player2Name : player1Name;
+            
+            if (isCorrect) {
+                // 正解の場合
+                if (player === 1) {
+                    player1Score++;
+                } else {
+                    player2Score++;
+                }
+                
+                gameEnded = true;
+                
+                // スコア表示を更新
+                document.getElementById('player1ScoreArea').textContent = `${player1Name}: ${player1Score}点`;
+                document.getElementById('player2ScoreArea').textContent = `${player2Name}: ${player2Score}点`;
+                
+                // 正解したプレイヤーのステータス表示
+                const statusElement = document.getElementById(`player${player}Status`);
+                statusElement.innerHTML = `<span class="text-green-600">✓ 正解!</span><br><span class="text-xs text-gray-500">${(currentTime / 1000).toFixed(1)}秒</span>`;
+                
+                const resultDiv = document.getElementById('resultDisplay');
+                resultDiv.classList.remove('hidden');
+                resultDiv.innerHTML = `
+                    <div class="bg-green-100 border-2 border-green-400 p-4 rounded-lg">
+                        <div class="text-center">
+                            <div class="text-xl font-bold text-green-800 mb-2">🎉 ${playerName} 正解！</div>
+                            <div class="text-lg text-green-700">正解: ${correctDivisors.join(', ')}</div>
+                            <div class="text-lg font-bold text-purple-600 mt-2">${playerName}が1ポイント獲得！</div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('gameStatus').textContent = `${playerName}の勝利！`;
+                disableAllButtons();
+                
+                if (player1Score >= targetScore || player2Score >= targetScore) {
+                    setTimeout(() => {
+                        endMultiGame();
+                    }, 1500);
+                } else {
+                    setTimeout(() => {
+                        startNewMultiQuestion();
+                    }, 1500);
+                }
+            } else {
+                // 不正解の場合
+                currentTurn = otherPlayer; // 相手のターンに
+                
+                // 不正解したプレイヤーのステータス表示
+                const statusElement = document.getElementById(`player${player}Status`);
+                statusElement.innerHTML = `<span class="text-red-600">✗ 不正解</span><br><span class="text-xs text-gray-500">${(currentTime / 1000).toFixed(1)}秒</span>`;
+                
+                // プレイヤーの有効/無効を切り替え
+                setPlayerActive(player, false);          // 間違えた側を無効化
+                setPlayerActive(otherPlayer, true);      // 相手を有効化（過去に誤答して無効化されてても復活させる）
+                
+                document.getElementById('gameStatus').textContent = `${playerName}不正解！`;
+                document.getElementById('currentTurnIndicator').textContent = `${otherPlayerName}のターン`;
+                
+                const resultDiv = document.getElementById('resultDisplay');
+                resultDiv.classList.remove('hidden');
+                resultDiv.innerHTML = `
+                    <div class="bg-red-100 border-2 border-red-400 p-4 rounded-lg">
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-red-800">${playerName} 不正解</div>
+                            <div class="text-sm text-red-700">回答: ${selectedArray.sort((a, b) => a - b).join(', ') || 'なし'}</div>
+                            <div class="text-lg font-bold text-blue-600 mt-2">${otherPlayerName}に解答権が移りました</div>
+                        </div>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    document.getElementById('resultDisplay').classList.add('hidden');
+                }, 1000);
+            }
+        }
+
+        function disableAllButtons() {
+            // 全ての送信ボタンを無効化
+            document.getElementById('player1SubmitBtn').disabled = true;
+            document.getElementById('player2SubmitBtn').disabled = true;
+            document.getElementById('player1SubmitBtn').className = 'bg-gray-400 text-white font-medium py-2 px-6 rounded-lg cursor-not-allowed';
+            document.getElementById('player2SubmitBtn').className = 'bg-gray-400 text-white font-medium py-2 px-6 rounded-lg cursor-not-allowed';
+            
+            // 全ての数字ボタンを無効化
+            for (let i = 1; i <= 20; i++) {
+                const btn1 = document.getElementById(`p1-btn-${i}`);
+                const btn2 = document.getElementById(`p2-btn-${i}`);
+                if (btn1) {
+                    btn1.onclick = null;
+                    btn1.className = btn1.className.replace('hover:bg-gray-300', '').replace('hover:bg-blue-600', '').replace('hover:bg-green-600', '');
+                }
+                if (btn2) {
+                    btn2.onclick = null;
+                    btn2.className = btn2.className.replace('hover:bg-gray-300', '').replace('hover:bg-blue-600', '').replace('hover:bg-green-600', '');
+                }
+            }
+        }
+
+
+
+        function endSingleGame() {
+            clearInterval(gameTimer);
+            showScreen('resultScreen');
+            
+            let reviewSection = '';
+            if (wrongAnswers.length > 0) {
+                reviewSection = `
+                    <div class="mt-8 p-6 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <h3 class="text-xl font-semibold text-yellow-800 mb-4">📝 間違えた問題を振り返ろう</h3>
+                        <div class="space-y-3">
+                            ${wrongAnswers.map(wrong => `
+                                <div class="bg-white p-4 rounded border">
+                                    <div class="font-medium text-gray-800 mb-2">問題: ${wrong.number}の約数</div>
+                                    <div class="text-sm text-green-700">✓ 正解: ${wrong.correctAnswer.join(', ')}</div>
+                                    <div class="text-sm text-red-700">✗ あなたの回答: ${wrong.userAnswer.join(', ') || 'なし'}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="mt-4 text-sm text-yellow-700">
+                            💡 約数は、その数を割り切れる数のことです。1から順番に割り算してみましょう！
+                        </div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('finalResult').innerHTML = `
+                <h2 class="text-3xl font-bold text-indigo-600 mb-4">ゲーム終了！</h2>
+                <div class="text-6xl font-bold text-gray-800 mb-4">${score}</div>
+                <div class="text-xl text-gray-600 mb-6">問正解</div>
+                <div class="text-lg text-gray-500">45秒間お疲れさまでした！</div>
+                ${reviewSection}
+            `;
+        }
+
+        function endMultiGame() {
+            showScreen('resultScreen');
+            
+            const winner = player1Score >= targetScore ? player1Name : player2Name;
+            const winnerScore = player1Score >= targetScore ? player1Score : player2Score;
+            const loserScore = player1Score >= targetScore ? player2Score : player1Score;
+            
+            document.getElementById('finalResult').innerHTML = `
+                <h2 class="text-3xl font-bold text-green-600 mb-4">ゲーム終了！</h2>
+                <div class="text-4xl font-bold text-gray-800 mb-4">🏆 ${winner} の勝利！</div>
+                <div class="text-xl text-gray-600 mb-6">
+                    最終スコア: ${winnerScore} - ${loserScore}
+                </div>
+                <div class="text-lg text-gray-500">お疲れさまでした！</div>
+            `;
+        }
+
+        function arraysEqual(a, b) {
+            return a.length === b.length && a.every((val, i) => val === b[i]);
+        }
+
+        // 初期化
+        gameMode = 'single'; // デフォルトは1人モード
+        createNumberButtons();
+        updateSelectedDisplay();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975e757fc7e10087',t:'MTc1NjMyODAxMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
