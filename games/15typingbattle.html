@@ -585,10 +585,7 @@
 
     // ===== UI更新 =====
     function updateUI(){
-      for(let i=0;i<2;i++){
-        const p = gameState.players[i];
-        document.getElementById(`player${i+1Name}`).textContent = p.name; // <- typo guard
-      }
+     
       // 名前/アバター/HP
       for(let i=0;i<2;i++){
         const p = gameState.players[i];
