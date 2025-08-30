@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>絶対音感ゲーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            min-height: 100vh;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+        
+        .container {
+            background: linear-gradient(145deg, #8B4513, #A0522D);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            max-width: 1000px;
+            width: 100%;
+            height: calc(100vh - 20px);
+            text-align: center;
+            border: 6px solid #654321;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        h1 {
+            color: #f8f9fa;
+            margin-bottom: 15px;
+            font-size: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+        }
+        
+        .menu-screen, .game-screen {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .menu-screen.active, .game-screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .mode-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .mode-btn {
+            background: linear-gradient(45deg, #6c757d, #5a6268);
+            color: white;
+            border: 3px solid transparent;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 140px;
+            opacity: 0.7;
+        }
+        
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+        
+        .mode-btn.selected {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: 3px solid #fff;
+            transform: translateY(-2px);
+            opacity: 1;
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.4);
+            filter: brightness(1.1);
+        }
+        
+        .difficulty-section {
+            margin: 15px 0;
+        }
+        
+        .difficulty-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .difficulty-btn {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+        
+        .difficulty-btn.selected {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        .players-section {
+            margin: 15px 0;
+            display: none;
+        }
+        
+        .players-input {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 10px 0;
+        }
+        
+        .players-input input {
+            width: 80px;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        .start-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+        
+        .start-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        
+        .info-item {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 120px;
+            font-size: 0.9rem;
+        }
+        
+        .piano {
+            display: flex;
+            justify-content: center;
+            margin: 15px auto;
+            position: relative;
+            height: 180px;
+            width: clamp(500px, 85vw, 650px);
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.3);
+            flex-shrink: 0;
+        }
+        
+        .key {
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 15px;
+            font-weight: bold;
+            user-select: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .white-key {
+            width: calc((100% - 16px) / 8);
+            height: 150px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 50%, #e9ecef 100%);
+            border: 1px solid #adb5bd;
+            border-radius: 0 0 6px 6px;
+            margin: 0 1px;
+            color: #333;
+            position: relative;
+            font-size: 0.85rem;
+        }
+        
+        .white-key::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 2px;
+            right: 2px;
+            height: 20px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.8) 0%, transparent 100%);
+            border-radius: 6px 6px 0 0;
+        }
+        
+        .black-key {
+            width: 30px;
+            height: 90px;
+            background: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
+            border: 1px solid #000;
+            border-radius: 0 0 4px 4px;
+            position: absolute;
+            top: 15px;
+            color: white;
+            z-index: 2;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+            font-size: 0.75rem;
+        }
+        
+        .black-key::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            height: 15px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .key:hover {
+            transform: translateY(2px);
+        }
+        
+        .key:active {
+            transform: translateY(4px);
+        }
+        
+        .key.pressed {
+            transform: translateY(4px);
+        }
+        
+        .white-key.pressed {
+            background: linear-gradient(180deg, #ffd700 0%, #ffed4e 50%, #f1c40f 100%);
+        }
+        
+        .black-key.pressed {
+            background: linear-gradient(180deg, #f39c12 0%, #e67e22 100%);
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        
+        .control-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.9rem;
+        }
+        
+        .control-btn:hover {
+            background: #5a6268;
+        }
+        
+        .control-btn.primary {
+            background: #007bff;
+        }
+        
+        .control-btn.primary:hover {
+            background: #0056b3;
+        }
+        
+        .sequence-display {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            flex-shrink: 0;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .result.correct {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .result.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .piano.hide-labels .key { 
+            color: transparent; 
+            text-shadow: none; 
+        }
+        
+        .preview-section {
+            margin: 20px 0;
+        }
+        
+        .preview-piano {
+            display: flex;
+            justify-content: center;
+            margin: 15px auto;
+            position: relative;
+            height: 120px;
+            width: clamp(400px, 70vw, 500px);
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: inset 0 3px 10px rgba(0,0,0,0.3);
+        }
+        
+        .preview-piano .key {
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 8px;
+            font-weight: bold;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-size: 0.7rem;
+        }
+        
+        .preview-piano .white-key {
+            width: calc((100% - 12px) / 8);
+            height: 100px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 50%, #e9ecef 100%);
+            border: 1px solid #adb5bd;
+            border-radius: 0 0 4px 4px;
+            margin: 0 1px;
+            color: #333;
+            position: relative;
+        }
+        
+        .preview-piano .black-key {
+            width: 20px;
+            height: 60px;
+            background: linear-gradient(180deg, #2c3e50 0%, #1a252f 100%);
+            border: 1px solid #000;
+            border-radius: 0 0 3px 3px;
+            position: absolute;
+            top: 10px;
+            color: white;
+            z-index: 2;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+        
+        .preview-controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .mode-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .game-info {
+                flex-direction: column;
+            }
+            
+            .piano {
+                margin: 20px auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎹 絶対音感ゲーム</h1>
+        
+        <!-- メニュー画面 -->
+        <div class="menu-screen active">
+            <div class="mode-buttons">
+                <button class="mode-btn" onclick="selectMode('solo', this)">
+                    🎵 ひとりモード
+                </button>
+                <button class="mode-btn" onclick="selectMode('multi', this)">
+                    👥 みんなモード
+                </button>
+            </div>
+            
+            <div class="difficulty-section">
+                <h3>難易度を選択</h3>
+                <div class="difficulty-buttons">
+                    <button class="difficulty-btn selected" onclick="selectDifficulty('easy', this)">
+                        かんたん（♯なし）
+                    </button>
+                    <button class="difficulty-btn" onclick="selectDifficulty('hard', this)">
+                        むずかしい（♯あり）
+                    </button>
+                </div>
+            </div>
+            
+            <div class="players-section" id="playersSection">
+                <h3>プレイヤー数を選択</h3>
+                <div class="players-input">
+                    <label>人数：</label>
+                    <input type="number" id="playerCount" min="2" max="8" value="2">
+                    <span>人</span>
+                </div>
+                <div style="background:#e3f2fd;padding:12px;border-radius:8px;margin-top:15px;font-size:0.9rem;text-align:left;">
+                    <strong>📋 みんなモードのルール</strong><br>
+                    • プレイヤーが順番に音を1つずつ追加していきます<br>
+                    • 次のプレイヤーは、これまでの音をすべて正しい順番で入力してから新しい音を追加します<br>
+                    • 間違えたプレイヤーが負けです<br>
+                    • 音の順番は表示されないので、よく聞いて覚えてください！
+                </div>
+            </div>
+            
+            <div class="solo-section" id="soloSection" style="display:none;">
+                <div style="background:#fff3e0;padding:12px;border-radius:8px;margin:15px 0;font-size:0.9rem;text-align:left;">
+                    <strong>🎵 ひとりモードのルール</strong><br>
+                    • ランダムに出題される音を聞いて、正しい鍵盤を押してください<br>
+                    • 正解するとスコアが1点アップします<br>
+                    • 間違えるとゲームオーバーになり、最初からやり直しです<br>
+                    • 何問連続で正解できるか挑戦してみましょう！
+                </div>
+                
+                <div class="high-scores" style="background:#e8f5e8;padding:12px;border-radius:8px;margin:15px 0;">
+                    <strong>🏆 あなたのハイスコア</strong><br>
+                    <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:0.9rem;">
+                        <span>かんたん（♯なし）:</span>
+                        <span id="menuBestEasy">0</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.9rem;">
+                        <span>むずかしい（♯あり）:</span>
+                        <span id="menuBestHard">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="preview-section">
+                <h3>音の確認</h3>
+                <div class="preview-piano" id="previewPiano">
+                    <!-- プレビュー用ピアノがここに生成されます -->
+                </div>
+                <div class="preview-controls">
+                    <label style="background:#f8f9fa;padding:4px 8px;border-radius:4px;font-size:0.8rem;margin:2px">
+                        波形:
+                        <select id="previewWaveSelect" style="margin-left:2px;font-size:0.8rem">
+                            <option value="sine" selected>sine</option>
+                            <option value="triangle">triangle</option>
+                            <option value="square">square</option>
+                            <option value="sawtooth">sawtooth</option>
+                        </select>
+                    </label>
+                    <label style="background:#f8f9fa;padding:4px 8px;border-radius:4px;font-size:0.8rem;margin:2px">
+                        音域:
+                        <select id="previewOctaveSelect" style="margin-left:2px;font-size:0.8rem">
+                            <option value="-12">低</option>
+                            <option value="0" selected>標準</option>
+                            <option value="12">高</option>
+                        </select>
+                    </label>
+                    <label style="background:#f8f9fa;padding:4px 8px;border-radius:4px;font-size:0.8rem;margin:2px">
+                        音量:<input id="previewVolRange" type="range" min="0" max="1" step="0.01" value="0.3" style="vertical-align:middle;width:60px;margin-left:2px">
+                    </label>
+                </div>
+            </div>
+            
+            <button class="start-btn" onclick="startGame()">
+                ゲーム開始
+            </button>
+        </div>
+        
+        <!-- ゲーム画面 -->
+        <div class="game-screen">
+            <div class="game-info">
+                <div class="info-item">
+                    <div>モード: <span id="currentMode"></span></div>
+                </div>
+                <div class="info-item">
+                    <div>難易度: <span id="currentDifficulty"></span></div>
+                </div>
+                <div class="info-item">
+                    <div>スコア: <span id="score">0</span></div>
+                </div>
+                <div class="info-item">
+                    <div>ベスト: <span id="bestScore">0</span></div>
+                </div>
+                <div class="info-item" id="playerInfo" style="display: none;">
+                    <div>プレイヤー: <span id="currentPlayer"></span></div>
+                </div>
+            </div>
+            
+            <div class="sequence-display" id="sequenceDisplay" style="display: none;">
+                <div>覚える音の順番:</div>
+                <div id="sequenceText"></div>
+            </div>
+            
+            <div class="piano" id="piano">
+                <!-- ピアノの鍵盤がここに生成されます -->
+            </div>
+            
+            <div class="control-buttons">
+                <button class="control-btn primary" id="playBtn" onclick="playCurrentSound()">
+                    🔊 音を再生
+                </button>
+                <button class="control-btn" onclick="backToMenu()">
+                    🏠 メニューに戻る
+                </button>
+            </div>
+            
+            <div class="control-buttons" style="margin-top:5px;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+                <label style="background:#f8f9fa;padding:4px 8px;border-radius:4px;font-size:0.8rem">
+                    <input type="checkbox" id="visualPlayback" checked> 光る
+                </label>
+                <label style="background:#f8f9fa;padding:4px 8px;border-radius:4px;font-size:0.8rem">
+                    <input type="checkbox" id="hideLabels"> 文字隠す
+                </label>
+                <label style="background:#f8f9fa;padding:4px 8px;border-radius:4px;font-size:0.8rem">
+                    波形:
+                    <select id="waveSelect" style="margin-left:2px;font-size:0.8rem">
+                        <option value="sine" selected>sine</option>
+                        <option value="triangle">triangle</option>
+                        <option value="square">square</option>
+                        <option value="sawtooth">sawtooth</option>
+                    </select>
+                </label>
+                <label style="background:#f8f9fa;padding:4px 8px;border-radius:4px;font-size:0.8rem">
+                    音域:
+                    <select id="octaveSelect" style="margin-left:2px;font-size:0.8rem">
+                        <option value="-12">低</option>
+                        <option value="0" selected>標準</option>
+                        <option value="12">高</option>
+                    </select>
+                </label>
+                <label style="background:#f8f9fa;padding:4px 8px;border-radius:4px;font-size:0.8rem">
+                    音量:<input id="volRange" type="range" min="0" max="1" step="0.01" value="0.3" style="vertical-align:middle;width:60px;margin-left:2px">
+                </label>
+                <label style="background:#f8f9fa;padding:4px 8px;border-radius:4px;font-size:0.8rem">
+                    長さ:<input id="lenRange" type="range" min="200" max="1500" step="50" value="800" style="vertical-align:middle;width:70px;margin-left:2px">
+                </label>
+            </div>
+            
+            <div class="result" id="result" aria-live="polite" role="status"></div>
+        </div>
+    </div>
+
+    <script>
+        // ゲーム状態
+        let gameState = {
+            mode: 'solo',
+            difficulty: 'easy',
+            playerCount: 2,
+            currentPlayer: 1,
+            score: 0,
+            currentSound: null,
+            sequence: [],
+            playerSequence: [],
+            isPlaying: false,
+            inputLocked: false
+        };
+        
+        // 追加：入力ロック＆タイマー管理
+        let pendingTimers = [];
+        function setTimer(fn, ms){
+            const id = setTimeout(fn, ms);
+            pendingTimers.push(id);
+            return id;
+        }
+        function clearTimers(){
+            pendingTimers.forEach(clearTimeout);
+            pendingTimers = [];
+        }
+
+        
+        // 設定
+        const settings = {
+            visualOnPlayback: true,
+            wave: 'sine',
+            volume: 0.3,
+            noteMs: 800,
+            semitoneOffset: 0,
+        };
+        
+        // 音符の定義（ドからドまで）
+        const notes = {
+            easy: ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C2'],
+            hard: ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C2']
+        };
+        
+        const noteNames = {
+            'C': 'ド', 'C#': 'ド♯', 'D': 'レ', 'D#': 'レ♯', 'E': 'ミ',
+            'F': 'ファ', 'F#': 'ファ♯', 'G': 'ソ', 'G#': 'ソ♯', 'A': 'ラ',
+            'A#': 'ラ♯', 'B': 'シ', 'C2': 'ド'
+        };
+        
+        // 音の周波数（C4を基準、正確な値）
+        const frequencies = {
+            'C': 261.626, 'C#': 277.183, 'D': 293.665, 'D#': 311.127, 'E': 329.628,
+            'F': 349.228, 'F#': 369.994, 'G': 391.995, 'G#': 415.305, 'A': 440.000,
+            'A#': 466.164, 'B': 493.883, 'C2': 523.251
+        };
+        
+        // ローカルストレージユーティリティ
+        const LS = {
+            get: (k, v)=> JSON.parse(localStorage.getItem(k) ?? JSON.stringify(v)),
+            set: (k, v)=> localStorage.setItem(k, JSON.stringify(v))
+        };
+        
+        // Web Audio API
+        let audioContext;
+        
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        
+        function unlockAudio() {
+            initAudio();
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            document.removeEventListener('touchend', unlockAudio);
+            document.removeEventListener('click', unlockAudio);
+        }
+        
+        // モバイルSafari対応：初回タップで音声をアンロック
+        document.addEventListener('touchend', unlockAudio, { once: true });
+        document.addEventListener('click', unlockAudio, { once: true });
+        
+        // 共通のADSRエンベロープ関数
+        function applyADSR(gainNode, startTime, duration, volume) {
+            const v = Math.max(0.001, volume);
+            const durationSec = duration / 1000;
+            gainNode.gain.setValueAtTime(0.0001, startTime);
+            gainNode.gain.exponentialRampToValueAtTime(v, startTime + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + durationSec);
+        }
+        
+        function playNote(note, duration = settings.noteMs, showVisual = false) {
+            initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            const baseFreq = frequencies[note] * Math.pow(2, settings.semitoneOffset/12);
+            oscillator.frequency.setValueAtTime(baseFreq, audioContext.currentTime);
+            oscillator.type = settings.wave;
+            
+            const now = audioContext.currentTime;
+            applyADSR(gainNode, now, duration, settings.volume);
+            
+            oscillator.start(now);
+            oscillator.stop(now + duration / 1000 + 0.03);
+            
+            // 鍵盤のビジュアルフィードバック
+            if (showVisual) {
+                const key = document.querySelector(`[data-note="${note}"]`);
+                if (key) {
+                    key.classList.add('pressed');
+                    setTimeout(() => key.classList.remove('pressed'), duration);
+                }
+            }
+        }
+        
+        function selectMode(mode, btn) {
+            gameState.mode = mode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            
+            const playersSection = document.getElementById('playersSection');
+            const soloSection = document.getElementById('soloSection');
+            
+            if (mode === 'multi') {
+                playersSection.style.display = 'block';
+                soloSection.style.display = 'none';
+            } else {
+                playersSection.style.display = 'none';
+                soloSection.style.display = 'block';
+                updateMenuHighScores();
+            }
+        }
+        
+        function updateMenuHighScores() {
+            const easyBest = localStorage.getItem('bestScore:solo:easy') || '0';
+            const hardBest = localStorage.getItem('bestScore:solo:hard') || '0';
+            
+            const menuBestEasy = document.getElementById('menuBestEasy');
+            const menuBestHard = document.getElementById('menuBestHard');
+            
+            if (menuBestEasy) menuBestEasy.textContent = easyBest;
+            if (menuBestHard) menuBestHard.textContent = hardBest;
+        }
+        
+        function selectDifficulty(difficulty, btn) {
+            gameState.difficulty = difficulty;
+            document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            generatePreviewPiano();
+        }
+        
+        function generatePreviewPiano() {
+            const piano = document.getElementById('previewPiano');
+            if (!piano) return;
+            
+            piano.innerHTML = '';
+            
+            const currentNotes = notes[gameState.difficulty];
+            
+            // 白鍵を先に配置
+            const whiteKeys = currentNotes.filter(note => !note.includes('#'));
+            whiteKeys.forEach((note, index) => {
+                const key = document.createElement('div');
+                key.className = 'key white-key';
+                key.dataset.note = note;
+                key.textContent = noteNames[note];
+                key.addEventListener('pointerdown', () => playPreviewNote(note));
+                piano.appendChild(key);
+            });
+            
+            // 黒鍵を配置
+            if (gameState.difficulty === 'hard') {
+                const whiteElements = [...piano.querySelectorAll('.white-key')];
+                const blackKeyMap = { 'C#': 0, 'D#': 1, 'F#': 3, 'G#': 4, 'A#': 5 };
+                
+                Object.entries(blackKeyMap).forEach(([note, idx]) => {
+                    if (!currentNotes.includes(note)) return;
+                    const whiteKey = whiteElements[idx];
+                    const blackWidth = 20;
+                    const left = whiteKey.offsetLeft + whiteKey.offsetWidth - (blackWidth / 2);
+                    const key = document.createElement('div');
+                    key.className = 'key black-key';
+                    key.dataset.note = note;
+                    key.textContent = noteNames[note];
+                    key.style.left = left + 'px';
+                    key.style.width = blackWidth + 'px';
+                    key.addEventListener('pointerdown', () => playPreviewNote(note));
+                    piano.appendChild(key);
+                });
+            }
+        }
+        
+        function playPreviewNote(note) {
+            initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // プレビュー用の設定を使用
+            const previewWave = document.getElementById('previewWaveSelect')?.value || 'sine';
+            const previewOctave = parseInt(document.getElementById('previewOctaveSelect')?.value || '0');
+            const previewVolume = parseFloat(document.getElementById('previewVolRange')?.value || '0.3');
+            
+            const baseFreq = frequencies[note] * Math.pow(2, previewOctave/12);
+            oscillator.frequency.setValueAtTime(baseFreq, audioContext.currentTime);
+            oscillator.type = previewWave;
+            
+            const now = audioContext.currentTime;
+            applyADSR(gainNode, now, 600, previewVolume);
+            
+            oscillator.start(now);
+            oscillator.stop(now + 0.63);
+            
+            // ビジュアルフィードバック
+            const key = document.querySelector(`#previewPiano [data-note="${note}"]`);
+            if (key) {
+                key.classList.add('pressed');
+                setTimeout(() => key.classList.remove('pressed'), 600);
+            }
+        }
+        
+        function startGame() {
+            clearTimers();
+            
+            if (gameState.mode === 'multi') {
+                gameState.playerCount = parseInt(document.getElementById('playerCount').value);
+            }
+            
+            // 画面切り替え
+            document.querySelector('.menu-screen').classList.remove('active');
+            document.querySelector('.game-screen').classList.add('active');
+            
+            // UI更新
+            document.getElementById('currentMode').textContent = 
+                gameState.mode === 'solo' ? 'ひとりモード' : 'みんなモード';
+            document.getElementById('currentDifficulty').textContent = 
+                gameState.difficulty === 'easy' ? 'かんたん（♯なし）' : 'むずかしい（♯あり）';
+            
+            // ピアノ生成
+            generatePiano();
+            
+            // ゲーム初期化
+            resetGame();
+            nextRound();
+            
+            // 初手の操作先を明示
+            requestAnimationFrame(() => document.getElementById('playBtn')?.focus());
+        }
+        
+        function generatePiano() {
+            const piano = document.getElementById('piano');
+            piano.innerHTML = '';
+            
+            const currentNotes = notes[gameState.difficulty];
+            
+            // 白鍵を先に配置（ドからドまで）
+            const whiteKeys = currentNotes.filter(note => !note.includes('#'));
+            whiteKeys.forEach((note, index) => {
+                const key = document.createElement('div');
+                key.className = 'key white-key';
+                key.dataset.note = note;
+                key.textContent = noteNames[note];
+                key.setAttribute('role', 'button');
+                key.setAttribute('tabindex', '0');
+                key.setAttribute('aria-label', `${noteNames[note]} の鍵`);
+                key.addEventListener('pointerdown', () => selectNote(note));
+                key.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Enter' || ev.key === ' ') {
+                        ev.preventDefault();
+                        selectNote(note);
+                    }
+                });
+                piano.appendChild(key);
+            });
+            
+            // 黒鍵を配置（位置を白鍵の座標から計算）
+            if (gameState.difficulty === 'hard') {
+                requestAnimationFrame(() => {
+                    const whiteElements = [...piano.querySelectorAll('.white-key')];
+                    const blackKeyMap = { 'C#': 0, 'D#': 1, 'F#': 3, 'G#': 4, 'A#': 5 }; // どの白鍵の右肩に乗せるか
+                    
+                    Object.entries(blackKeyMap).forEach(([note, idx]) => {
+                        if (!currentNotes.includes(note)) return;
+                        const whiteKey = whiteElements[idx];
+                        const blackWidth = 30;
+                        const left = whiteKey.offsetLeft + whiteKey.offsetWidth - (blackWidth / 2);
+                        const key = document.createElement('div');
+                        key.className = 'key black-key';
+                        key.dataset.note = note;
+                        key.textContent = noteNames[note];
+                        key.style.left = left + 'px';
+                        key.style.width = blackWidth + 'px';
+                        key.setAttribute('role', 'button');
+                        key.setAttribute('tabindex', '0');
+                        key.setAttribute('aria-label', `${noteNames[note]} の鍵`);
+                        key.addEventListener('pointerdown', () => selectNote(note));
+                        key.addEventListener('keydown', (ev) => {
+                            if (ev.key === 'Enter' || ev.key === ' ') {
+                                ev.preventDefault();
+                                selectNote(note);
+                            }
+                        });
+                        piano.appendChild(key);
+                    });
+                });
+            }
+        }
+        
+        function resetGame() {
+            gameState.score = 0;
+            gameState.currentPlayer = 1;
+            gameState.sequence = [];
+            gameState.playerSequence = [];
+            updateUI();
+        }
+        
+        // 追加：重複回避のランダム
+        function pickRandomNote(arr, avoid){
+            if (arr.length <= 1) return arr[0];
+            let note;
+            do { note = arr[Math.floor(Math.random()*arr.length)]; } while (note === avoid);
+            return note;
+        }
+        
+        function nextRound() {
+            clearTimers();
+            gameState.inputLocked = false;
+            
+            if (gameState.mode === 'solo') {
+                // ひとりモード：ランダムな音を出題
+                const currentNotes = notes[gameState.difficulty];
+                const randomNote = pickRandomNote(currentNotes, gameState.currentSound);
+                gameState.currentSound = randomNote;
+                document.getElementById('sequenceDisplay').style.display = 'none';
+            } else {
+                // みんなモード：プレイヤーが音を追加する番
+                gameState.playerSequence = [];
+                document.getElementById('sequenceDisplay').style.display = 'none';
+                
+                const result = document.getElementById('result');
+                
+                // 既存のシーケンスがある場合は再生後に入力を促す
+                if (gameState.sequence.length > 0) {
+                    result.textContent = '聞いてください...';
+                    gameState.inputLocked = true; // 再生準備中は入力禁止
+                    playSequenceAsync().then(() => {
+                        result.className = 'result correct';
+                        result.textContent = `プレイヤー${gameState.currentPlayer}、音の入力をしてください！`;
+                        gameState.inputLocked = false;
+                    });
+                } else {
+                    // 最初のプレイヤーが最初の音を追加
+                    result.className = 'result correct';
+                    result.textContent = `プレイヤー${gameState.currentPlayer}、最初の音を選んでください！`;
+                }
+            }
+            
+            updateUI();
+        }
+        
+        function updateSequenceDisplay() {
+            const sequenceText = gameState.sequence.map(note => noteNames[note]).join(' → ');
+            document.getElementById('sequenceText').textContent = sequenceText;
+        }
+        
+        function playSequenceAsync() {
+            initAudio();
+            gameState.isPlaying = true;
+            document.getElementById('playBtn').disabled = true;
+            
+            const step = (settings.noteMs + 200) / 1000;
+            const start = audioContext.currentTime + 0.1;
+            
+            gameState.sequence.forEach((note, i) => {
+                const t = start + i * step;
+                playNoteScheduled(note, t, settings.noteMs);
+                if (settings.visualOnPlayback) {
+                    const ms = (t - audioContext.currentTime) * 1000;
+                    setTimer(() => {
+                        const k = document.querySelector(`[data-note="${note}"]`);
+                        if (k) {
+                            k.classList.add('pressed');
+                            setTimeout(() => k.classList.remove('pressed'), settings.noteMs);
+                        }
+                    }, Math.max(0, ms));
+                }
+            });
+            
+            const lastEnd = start + (gameState.sequence.length - 1) * step + (settings.noteMs/1000);
+            return new Promise(res => {
+                setTimer(() => {
+                    gameState.isPlaying = false;
+                    document.getElementById('playBtn').disabled = false;
+                    res();
+                }, (lastEnd - audioContext.currentTime) * 1000 + 50);
+            });
+        }
+        
+        function playSequence() {
+            playSequenceAsync();
+        }
+        
+        function playNoteScheduled(note, startTime, duration) {
+            initAudio();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            const baseFreq = frequencies[note] * Math.pow(2, settings.semitoneOffset/12);
+            oscillator.frequency.setValueAtTime(baseFreq, startTime);
+            oscillator.type = settings.wave;
+            
+            applyADSR(gainNode, startTime, duration, settings.volume);
+            
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration / 1000 + 0.03);
+        }
+        
+        function playCurrentSound() {
+            if (gameState.isPlaying) return;
+            
+            if (gameState.mode === 'solo') {
+                playNote(gameState.currentSound, settings.noteMs, false); // 視覚的フィードバックなし
+            } else {
+                playSequence();
+            }
+        }
+        
+        function selectNote(note) {
+            if (gameState.isPlaying || gameState.inputLocked) return;
+            
+            playNote(note, 500, true);
+            
+            if (gameState.mode === 'solo') {
+                checkSoloAnswer(note);
+            } else {
+                checkMultiAnswer(note);
+            }
+        }
+        
+        function checkSoloAnswer(note) {
+            const result = document.getElementById('result');
+            if (gameState.inputLocked) return; // 二重判定防止
+            gameState.inputLocked = true;
+            
+            if (note === gameState.currentSound) {
+                gameState.score++;
+                result.className = 'result correct';
+                result.textContent = `正解！ ${noteNames[note]} でした。`;
+                
+                // 正解時のバイブレーション
+                if (navigator.vibrate) {
+                    navigator.vibrate(80);
+                }
+                
+                setTimer(() => {
+                    result.textContent = '';
+                    nextRound();
+                }, 1500);
+            } else {
+                result.className = 'result incorrect';
+                result.textContent = `不正解... 正解は ${noteNames[gameState.currentSound]} でした。`;
+                
+                // 不正解時のバイブレーション
+                if (navigator.vibrate) {
+                    navigator.vibrate([60, 60, 120]);
+                }
+                
+                setTimer(() => {
+                    result.textContent = '';
+                    resetGame();
+                    nextRound();
+                }, 2000);
+            }
+            
+            updateUI();
+        }
+        
+        function checkMultiAnswer(note) {
+            const result = document.getElementById('result');
+            if (gameState.inputLocked) return;
+            
+            if (gameState.playerSequence.length < gameState.sequence.length) {
+                // 既存のシーケンスを再現中
+                const expectedNote = gameState.sequence[gameState.playerSequence.length];
+                
+                if (note === expectedNote) {
+                    gameState.playerSequence.push(note);
+                    
+                    if (gameState.playerSequence.length === gameState.sequence.length) {
+                        // 既存シーケンス完了、新しい音を追加する番
+                        result.className = 'result correct';
+                        result.textContent = `プレイヤー${gameState.currentPlayer}、新しい音を追加してください！`;
+                    } else {
+                        result.className = 'result correct';
+                        result.textContent = `${gameState.playerSequence.length}/${gameState.sequence.length} 正解中...`;
+                    }
+                } else {
+                    // 間違い
+                    result.className = 'result incorrect';
+                    result.textContent = `プレイヤー${gameState.currentPlayer} 負け！ゲーム終了`;
+                    gameState.inputLocked = true;
+                    
+                    setTimer(() => {
+                        backToMenu();
+                    }, 2000);
+                }
+            } else {
+                // 新しい音を追加
+                gameState.sequence.push(note);
+                gameState.score++;
+                result.className = 'result correct';
+                result.textContent = `プレイヤー${gameState.currentPlayer} が音を追加しました！`;
+                
+                // 次のプレイヤーへ
+                gameState.currentPlayer = (gameState.currentPlayer % gameState.playerCount) + 1;
+                
+                // 再生→入力促しの間はロック
+                gameState.inputLocked = true;
+                setTimer(() => {
+                    result.textContent = '聞いてください...';
+                    playSequenceAsync().then(() => {
+                        result.className = 'result correct';
+                        result.textContent = `プレイヤー${gameState.currentPlayer}、音の入力をしてください！`;
+                        gameState.playerSequence = []; // 次のプレイヤー用にリセット
+                        gameState.inputLocked = false;
+                    });
+                }, 600);
+            }
+            
+            updateUI();
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = gameState.score;
+            
+            // ベストスコア更新（モード×難易度別）
+            const bestKey = `bestScore:${gameState.mode}:${gameState.difficulty}`;
+            const best = Number(localStorage.getItem(bestKey)) || 0;
+            if (gameState.score > best) localStorage.setItem(bestKey, gameState.score);
+            document.getElementById('bestScore').textContent = localStorage.getItem(bestKey) || 0;
+            
+            if (gameState.mode === 'multi') {
+                document.getElementById('playerInfo').style.display = 'block';
+                document.getElementById('currentPlayer').textContent = gameState.currentPlayer;
+            } else {
+                document.getElementById('playerInfo').style.display = 'none';
+            }
+        }
+        
+        function backToMenu() {
+            clearTimers();
+            gameState.isPlaying = false;
+            gameState.inputLocked = false;
+            
+            document.querySelector('.game-screen').classList.remove('active');
+            document.querySelector('.menu-screen').classList.add('active');
+            
+            // リセット
+            document.getElementById('result').textContent = '';
+            resetGame();
+            
+            // フォーカスを戻す（アクセシビリティ）
+            requestAnimationFrame(() => document.querySelector('.menu-screen .start-btn')?.focus());
+        }
+        
+        // キーボードマッピング
+        const keyMapWhite = ['a','s','d','f','g','h','j','k']; // C D E F G A B C2
+        const keyMapBlack = { 'w':'C#','e':'D#','t':'F#','y':'G#','u':'A#' };
+        
+        // デバウンス関数
+        function debounce(fn, ms = 150) {
+            let t;
+            return (...args) => {
+                clearTimeout(t);
+                t = setTimeout(() => fn(...args), ms);
+            };
+        }
+        
+        // キーボード操作
+        window.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            if (gameState.isPlaying || gameState.inputLocked) return;
+            if (!document.querySelector('.game-screen.active')) return;
+            
+            const whites = notes[gameState.difficulty].filter(n => !n.includes('#'));
+            const wi = keyMapWhite.indexOf(e.key.toLowerCase());
+            if (wi !== -1 && whites[wi]) {
+                e.preventDefault();
+                return selectNote(whites[wi]);
+            }
+            
+            const black = keyMapBlack[e.key.toLowerCase()];
+            if (black && notes[gameState.difficulty].includes(black)) {
+                e.preventDefault();
+                return selectNote(black);
+            }
+        });
+        
+        // リサイズ対応
+        window.addEventListener('resize', debounce(() => {
+            if (document.querySelector('.game-screen.active')) {
+                generatePiano();
+            }
+        }, 150));
+        
+        // 初期化
+        window.addEventListener('DOMContentLoaded', () => {
+            const firstMode = document.querySelector('.mode-buttons .mode-btn');
+            const firstDiff = document.querySelector('.difficulty-buttons .difficulty-btn');
+            if (firstMode) selectMode('solo', firstMode);
+            if (firstDiff) selectDifficulty('easy', firstDiff);
+            
+            // 初期表示時にハイスコアを更新
+            updateMenuHighScores();
+            
+            // プレビューピアノを初期生成
+            generatePreviewPiano();
+            
+            // 設定の復元
+            settings.visualOnPlayback = LS.get('visualOnPlayback', true);
+            settings.wave = LS.get('wave', 'sine');
+            settings.volume = LS.get('volume', 0.3);
+            settings.noteMs = LS.get('noteMs', 800);
+            settings.semitoneOffset = LS.get('semitoneOffset', 0);
+            
+            // 設定のイベントリスナー
+            const vpb = document.getElementById('visualPlayback');
+            const w   = document.getElementById('waveSelect');
+            const vr  = document.getElementById('volRange');
+            const lr  = document.getElementById('lenRange');
+            const oct = document.getElementById('octaveSelect');
+            const hl  = document.getElementById('hideLabels');
+            
+            if (vpb){ vpb.checked = settings.visualOnPlayback; vpb.onchange = e=>{ settings.visualOnPlayback = e.target.checked; LS.set('visualOnPlayback', settings.visualOnPlayback); }; }
+            if (w){ w.value = settings.wave; w.onchange = e=>{ settings.wave = e.target.value; LS.set('wave', settings.wave); }; }
+            if (vr){ vr.value = settings.volume; vr.oninput = e=>{ settings.volume = Number(e.target.value); LS.set('volume', settings.volume); }; }
+            if (lr){ lr.value = settings.noteMs; lr.oninput = e=>{ settings.noteMs = Number(e.target.value); LS.set('noteMs', settings.noteMs); }; }
+            if (oct){ oct.value = String(settings.semitoneOffset); oct.onchange = e=>{ settings.semitoneOffset = Number(e.target.value); LS.set('semitoneOffset', settings.semitoneOffset); }; }
+            if (hl){ hl.checked = LS.get('hideLabels', false); if (hl.checked) document.getElementById('piano').classList.add('hide-labels');
+                     hl.onchange = e=>{ document.getElementById('piano').classList.toggle('hide-labels', e.target.checked); LS.set('hideLabels', e.target.checked); }; }
+            
+            // プレビュー用設定のイベントリスナー
+            const pw = document.getElementById('previewWaveSelect');
+            const po = document.getElementById('previewOctaveSelect');
+            const pv = document.getElementById('previewVolRange');
+            
+            if (pw) { pw.value = settings.wave; }
+            if (po) { po.value = String(settings.semitoneOffset); }
+            if (pv) { pv.value = settings.volume; }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'977129e4e6c11a33',t:'MTc1NjUyNDE0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
