@@ -3027,7 +3027,7 @@ const YOON = {
         // フェーズ2: 飛び道具エフェクト（画面全体スケール）
         function playProjectileEffect(fxLayer, attr, config, startX, startY, endX, endY, duration) {
             return new Promise((resolve) => {
-                const projectile = createProjectile(attr, config, startX, startY);
+                const projectile = createProjectile(fxLayer, attr, config, startX, startY);
                 fxLayer.appendChild(projectile);
                 
                 // 移動アニメーション（画面全体を使った大きな軌道）
@@ -3066,7 +3066,7 @@ const YOON = {
         }
 
         // 属性別飛び道具作成（大型化）
-        function createProjectile(attr, config, x, y) {
+        function createProjectile(fxLayer, attr, config, x, y) {
             const projectile = document.createElement('div');
             projectile.className = 'projectile';
             projectile.style.left = x + 'px';
