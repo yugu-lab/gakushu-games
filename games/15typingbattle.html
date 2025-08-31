@@ -1406,6 +1406,28 @@
             border-color: #feca57;
             box-shadow: 0 0 25px rgba(254, 202, 87, 0.4);
         }
+    :root { --focus-color: #feca57; }
+
+/* キーボード操作時だけ出るフォーカス枠 */
+button:focus-visible,
+.mode-btn:focus-visible,
+.hp-btn:focus-visible,
+.character-btn:focus-visible,
+.card:focus-visible,
+.control-btn:focus-visible,
+.name-input:focus-visible,
+[role="button"]:focus-visible {
+  outline: 4px solid var(--focus-color);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(254, 202, 87, 0.35), 0 8px 18px rgba(0,0,0,0.25);
+}
+
+/* カードはフォーカス時に少し強調 */
+.card:focus-visible {
+  transform: translateY(-10px) scale(1.02);
+  border-color: rgba(254, 202, 87, 0.8);
+}
+    
     </style>
 </head>
 <body>
@@ -2898,6 +2920,7 @@
 
         // タイピングフェーズ開始
         async function startTypingPhase() {
+            answerLocked = false;
             gameState.gamePhase = 'typing';
             gameState.timer = 12;
             
@@ -2927,6 +2950,14 @@
             currentInputs: [], // 各候補での現在の入力状況
             typedKeys: ''
         };
+let answerLocked = false; // 一度確定したら二度と送らないロック
+function confirmAnswer() {
+  if (answerLocked) return;   // 既に確定していたら何もしない
+  answerLocked = true;
+  stopTimer();
+  disableTyping();
+  submitAnswer();
+}
 
         // キーボード入力処理（複数候補対応）
         function handleKeyPress(event) {
@@ -2957,9 +2988,7 @@ if (key === 'enter') {
 
   if (Array.isArray(typingState?.currentInputs) &&
       typingState.currentInputs.some(inp => inp.completed)) {
-    stopTimer();       // タイマー止める
-    disableTyping();   // 入力を一旦止める（多重送信防止）
-    submitAnswer();    // 1回だけ確定
+　　　confirmAnswer(); 
   }
   return;
 }
@@ -3021,15 +3050,9 @@ if (key === 'enter') {
                 refreshRomajiGuideToLeader();
                 
                 // いずれかの候補が完了したら即座に送信
-                if (completedCount > 0) {
-                    console.log('入力完了検出 - 即座に送信');
-                    // タイマーを停止
-                    stopTimer();
-                    // 少し遅延を入れて確実に処理
-                    setTimeout(() => {
-                        submitAnswer();
-                    }, 50);
-                }
+if (completedCount > 0) {
+  confirmAnswer();
+}
             } else {
                 // 間違ったキー - 2秒ペナルティ
                 adjustTimer(-2000);           // ← これだけでOK
