@@ -3171,43 +3171,330 @@ const YOON = {
                     }
                     break;
                     
-case 'light': {
-  const ring = document.createElement('div');
-  ring.style.position = 'absolute';
-  ring.style.left = (x - 100) + 'px';
-  ring.style.top = (y - 100) + 'px';
-  ring.style.width = '200px';
-  ring.style.height = '200px';
-  ring.style.border = `8px solid ${config.colors[0]}`;
-  ring.style.borderRadius = '50%';
-  ring.style.boxShadow = `0 0 60px ${config.colors[0]}, inset 0 0 60px white`;
-  ring.style.opacity = '0.9';
-  fxLayer.appendChild(ring);
+                case 'light': {
+                    // 外周リング
+                    const ring = document.createElement('div');
+                    ring.style.position = 'absolute';
+                    ring.style.left = (x - 100) + 'px';
+                    ring.style.top = (y - 100) + 'px';
+                    ring.style.width = '200px';
+                    ring.style.height = '200px';
+                    ring.style.border = `8px solid ${config.colors[0]}`;
+                    ring.style.borderRadius = '50%';
+                    ring.style.boxShadow = `0 0 60px ${config.colors[0]}, inset 0 0 60px white`;
+                    ring.style.opacity = '0.9';
+                    fxLayer.appendChild(ring);
 
-  ring.animate(
-    [{ transform:'scale(0.4)', opacity:0 }, { transform:'scale(4)', opacity:0 }],
-    { duration: 900, easing:'ease-out' }
-  ).addEventListener('finish', () => ring.remove());
+                    ring.animate(
+                        [{ transform:'scale(0.4)', opacity:0 }, { transform:'scale(4)', opacity:0 }],
+                        { duration: 900, easing:'ease-out' }
+                    ).addEventListener('finish', () => ring.remove());
 
-  // 星粒
-  for (let i = 0; i < Math.round(6 * getFXScale()); i++) {
-    const star = document.createElement('div');
-    star.textContent = '✨';
-    star.style.position = 'absolute';
-    star.style.left = x + 'px';
-    star.style.top = y + 'px';
-    star.style.fontSize = (16 + Math.random()*10) + 'px';
-    fxLayer.appendChild(star);
-    const dx = (Math.random()*2-1) * 240;
-    const dy = (Math.random()*2-1) * 240;
-    star.animate(
-      [{ transform:'translate(0,0)', opacity:1 }, { transform:`translate(${dx}px,${dy}px)`, opacity:0 }],
-      { duration: 800 + Math.random()*500, easing:'ease-out' }
-    ).addEventListener('finish', () => star.remove());
-  }
-  break;
-}
-// ← switch の default/break と関数の閉じカッコまで忘れずに！
+                    // 星粒のバースト
+                    const starCount = Math.round(6 * getFXScale());
+                    for (let i = 0; i < starCount; i++) {
+                        const star = document.createElement('div');
+                        star.textContent = '✨';
+                        star.style.position = 'absolute';
+                        star.style.left = x + 'px';
+                        star.style.top = y + 'px';
+                        star.style.fontSize = (16 + Math.random()*10) + 'px';
+                        star.style.willChange = 'transform, opacity';
+                        fxLayer.appendChild(star);
+
+                        const dx = (Math.random()*2-1) * 240;
+                        const dy = (Math.random()*2-1) * 240;
+                        star.animate(
+                            [
+                                { transform:'translate(0,0)', opacity:1 },
+                                { transform:`translate(${dx}px,${dy}px)`, opacity:0 }
+                            ],
+                            { duration: 800 + Math.random()*500, easing:'ease-out' }
+                        ).addEventListener('finish', () => star.remove());
+                    }
+                    break;
+                }
+            }
+        }
+
+        /* ============================
+           ここから“最低限の骨格関数”追加
+           （未定義呼び出しの解消）
+        ============================ */
+
+        // 残り秒（整数）を取得
+        function getRemainingSeconds(){
+            const ms = Math.max(0, timerDeadline - performance.now());
+            return Math.ceil(ms / 1000);
+        }
+
+        // ダメージ/回復の適用
+        function applyDamage(sourceIndex, amount, opts = {}){
+            const { self = false, heal = false } = opts;
+            const targetIndex = self ? sourceIndex : (1 - sourceIndex);
+            const target = gameState.players[targetIndex];
+
+            if (heal){
+                const before = target.hp;
+                target.hp = Math.min(target.maxHp, target.hp + amount);
+                spawnDamageNumber(document.getElementById(`player${targetIndex+1}Avatar`), `+${target.hp - before}`, { heal:true });
+            }else{
+                target.hp = Math.max(0, target.hp - amount);
+                spawnDamageNumber(document.getElementById(`player${targetIndex+1}Avatar`), `-${amount}`, { heal:false });
+            }
+
+            updateUI();
+
+            // 撃破チェック
+            if (target.hp <= 0){
+                stopTimer();
+                disableTyping();
+                showFinishModal(gameState.players[sourceIndex].name);
+            }
+        }
+
+        // 与ダメ/回復のポップ
+        function spawnDamageNumber(anchorEl, text, {heal} = {heal:false}){
+            const rect = anchorEl.getBoundingClientRect();
+            const div = document.createElement('div');
+            div.className = 'damage-number' + (heal ? ' heal' : '');
+            div.textContent = text;
+            // 画面座標に配置
+            div.style.left = (rect.left + rect.width/2) + 'px';
+            div.style.top  = (rect.top  - 10) + 'px';
+            document.body.appendChild(div);
+            setTimeout(()=> div.remove(), 1600);
+        }
+
+        // 終了モーダル
+        function showFinishModal(winnerName){
+            const modal = document.getElementById('modal');
+            const content = document.getElementById('modalContent');
+            content.innerHTML = `
+                <h2>🏆 勝者：${winnerName}</h2>
+                <p>おつかれさま！もう一戦しますか？</p>
+                <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
+                    <button class="btn btn-primary" onclick="location.reload()">もう一度遊ぶ</button>
+                    <button class="btn btn-secondary" onclick="backToMenu()">メニューに戻る</button>
+                </div>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        // タイムアップ（失敗＝自傷）
+        function timeUp(){
+            disableTyping();
+            const card = gameState.selectedCard;
+            if (card){
+                const n = countChars(card.text);
+                applyDamage(gameState.currentPlayer, n * 5, { self:true });
+                consumeCard(gameState.currentPlayer, card);
+            }
+            endTypingPhase();
+        }
+
+        // 入力完了（成功→攻撃/回復）
+        function submitAnswer(){
+            disableTyping();
+            const card = gameState.selectedCard;
+            if (!card) return;
+
+            const n = countChars(card.text);
+            const remain = getRemainingSeconds(); // 1〜12
+            const amount = Math.max(0, n * remain);
+
+            const isHeal = (card.category === 'いりょう');
+            if (isHeal){
+                applyDamage(gameState.currentPlayer, amount, { self:true, heal:true });
+            }else{
+                // 攻撃アニメ（任意）
+                const targetEl = document.getElementById(`player${(1 - gameState.currentPlayer)+1}Avatar`);
+                playAttackAnimation({
+                    attr: gameState.players[gameState.currentPlayer].attribute,
+                    from: gameState.currentPlayer === 0 ? 'left' : 'right',
+                    targetEl,
+                    impactMs: 600
+                }).catch(()=>{}).finally(()=>{
+                    applyDamage(gameState.currentPlayer, amount, { self:false, heal:false });
+                });
+            }
+
+            consumeCard(gameState.currentPlayer, card);
+            endTypingPhase();
+        }
+
+        // 選んだカードを手札から消費
+        function consumeCard(playerIdx, cardObj){
+            const hand = gameState.hands[playerIdx];
+            const i = hand.findIndex(c => c === cardObj);
+            if (i >= 0) hand.splice(i, 1);
+        }
+
+        // タイピング終了処理 → ターン交代
+        function endTypingPhase(){
+            stopTimer();
+            clearTypingDisplay();
+            gameState.gamePhase = 'result';
+            updatePhaseDisplay();
+            setTimeout(()=> nextTurn(), 600);
+        }
+
+        function nextTurn(){
+            gameState.currentPlayer = 1 - gameState.currentPlayer;
+            startTurn();
+        }
+
+        // ターン開始
+        function startTurn(){
+            gameState.selectedCard = null;
+            gameState.gamePhase = 'cardSelect';
+            updateUI();
+            drawPlayerHand();
+            drawCards();
+
+            // CPU戦ならCPUの手番を自動処理（超簡易AI）
+            if (gameState.mode === 'cpu' && gameState.currentPlayer === 1){
+                setTimeout(cpuAction, 700);
+            }
+        }
+
+        // とりあえずのCPU行動（難易度はカード難易度で変動）
+        function cpuAction(){
+            const idx = Math.floor(Math.random() * Math.min(6, gameState.hands[1].length));
+            const card = gameState.hands[1][idx];
+            if (!card) return nextTurn();
+
+            const n = countChars(card.text);
+            const baseRemain = 5 + Math.floor(Math.random() * 7); // 5〜11秒くらいの手応え
+            const successProb = Math.max(0.3, 0.85 - (card.difficulty-1)*0.08);
+            const success = Math.random() < successProb;
+
+            if (card.category === 'いりょう'){
+                if (success){
+                    applyDamage(1, n * baseRemain, { self:true, heal:true });
+                }else{
+                    applyDamage(1, n * 5, { self:true });
+                }
+            }else{
+                if (success){
+                    const targetEl = document.getElementById('player1Avatar');
+                    playAttackAnimation({
+                        attr: gameState.players[1].attribute,
+                        from: 'right',
+                        targetEl,
+                        impactMs: 600
+                    }).catch(()=>{}).finally(()=>{
+                        applyDamage(1, n * baseRemain, { self:false });
+                    });
+                }else{
+                    applyDamage(1, n * 5, { self:true });
+                }
+            }
+
+            consumeCard(1, card);
+            setTimeout(()=> nextTurn(), 600);
+        }
+
+        // ESCでのギブアップ（自傷扱い）
+        function giveUp(){
+            if (gameState.gamePhase !== 'typing') return;
+            stopTimer();
+            const card = gameState.selectedCard;
+            if (card){
+                const n = countChars(card.text);
+                applyDamage(gameState.currentPlayer, n * 5, { self:true });
+                consumeCard(gameState.currentPlayer, card);
+            }
+            endTypingPhase();
+        }
+
+        // ちょい効果音
+        function playSound(type){
+            if (!gameState.soundEnabled) return;
+            try{
+                ensureAudio();
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                let f = 440, dur = 0.12;
+                if (type === 'success'){ f = 880; dur = 0.12; }
+                else if (type === 'fail'){ f = 200; dur = 0.16; }
+                else if (type === 'charge'){ f = 520; dur = 0.08; }
+
+                o.frequency.setValueAtTime(f, now);
+                g.gain.setValueAtTime(0.06, now);
+                g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+                o.start(now);
+                o.stop(now + dur);
+            }catch(e){}
+        }
+
+        function showPenaltyEffect(){
+            document.body.classList.add('shake');
+            setTimeout(()=> document.body.classList.remove('shake'), 300);
+        }
+
+        // 一時停止
+        let pausedMsLeft = 0;
+        function pauseGame(){
+            if (!gameState.isPaused){
+                // pause
+                pausedMsLeft = Math.max(0, timerDeadline - performance.now());
+                stopTimer();
+                disableTyping();
+                gameState.isPaused = true;
+                document.getElementById('pauseBtn').textContent = '▶️';
+                document.getElementById('phaseDisplay').textContent = '一時停止中';
+            }else{
+                // resume
+                gameState.isPaused = false;
+                document.getElementById('pauseBtn').textContent = '⏸️';
+                if (gameState.gamePhase === 'typing' && pausedMsLeft > 0){
+                    startAccurateTimer(pausedMsLeft);
+                    enableTyping();
+                }
+                updatePhaseDisplay();
+            }
+        }
+
+        function toggleSound(){
+            gameState.soundEnabled = !gameState.soundEnabled;
+            document.getElementById('soundBtn').textContent = gameState.soundEnabled ? '🔊' : '🔈';
+        }
+
+        function showHelp(){
+            const modal = document.getElementById('modal');
+            const content = document.getElementById('modalContent');
+            content.innerHTML = `
+                <h2>ヘルプ</h2>
+                <p>カードを選んで、表示されたローマ字をタイプします。</p>
+                <p>成功：文字数×残り秒 = ダメージ／医療カードは回復</p>
+                <p>失敗：文字数×5 の自傷ダメージ</p>
+                <p>ミスタイプ：-2秒ペナルティ</p>
+                <div style="margin-top:12px;">
+                    <button class="btn btn-primary" onclick="document.getElementById('modal').style.display='none'">閉じる</button>
+                </div>
+            `;
+            modal.style.display = 'flex';
+        }
+
+        function backToMenu(){
+            // シンプルに再読込
+            location.reload();
+        }
+
+        // モーダル背景クリックで閉じる
+        (function(){
+            const modal = document.getElementById('modal');
+            modal.addEventListener('click', (e)=>{
+                if (e.target === modal){
+                    modal.style.display = 'none';
+                }
+            });
+        })();
+
 
 
         // フェーズ3: ヒットエフェクト
