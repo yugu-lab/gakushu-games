@@ -1674,9 +1674,10 @@ button:focus-visible,
             if(!s) return '';
             let t = s.normalize('NFKC');
             // カタカナ→ひらがな
-            t = t.replace(/[\u30A1-\u30FA\u30FD-\u30FF]/g, ch =>
-                String.fromCharCode(ch.charCodeAt(0) - 0x60)
-            );
+           t = t.replace(/[\u30A1-\u30FA\u30FD-\u30FF]/g, ch => {
+    if (ch === 'ー') return 'ー';
+    return String.fromCharCode(ch.charCodeAt(0) - 0x60);
+});
             // 記号・空白除去
             t = t.replace(/[、。，．・！!？?\s（）()［］\[\]「」『』]/g,'');
             return t;
@@ -2071,6 +2072,21 @@ button:focus-visible,
             { text: 'くも', difficulty: 1, category: 'しぜん' },
             { text: 'みち', difficulty: 1, category: 'もの' },
             { text: 'かぜ', difficulty: 1, category: 'しぜん' },
+            { text: 'はる', difficulty: 1, category: 'しぜん' },
+{ text: 'あき', difficulty: 1, category: 'しぜん' },
+{ text: 'ふゆ', difficulty: 1, category: 'しぜん' },
+{ text: 'なつ', difficulty: 1, category: 'しぜん' },
+{ text: 'こめ', difficulty: 1, category: 'たべもの' },
+{ text: 'えき', difficulty: 1, category: 'ばしょ' },
+{ text: 'はし', difficulty: 1, category: 'もの' },
+{ text: 'かど', difficulty: 1, category: 'ばしょ' },
+{ text: 'ゆめ', difficulty: 1, category: 'せいかつ' },
+{ text: 'かお', difficulty: 1, category: 'ひと' },
+{ text: 'こえ', difficulty: 1, category: 'ひと' },
+{ text: 'たに', difficulty: 1, category: 'しぜん' },
+{ text: 'むし', difficulty: 1, category: 'どうぶつ' },
+{ text: 'そば', difficulty: 1, category: 'たべもの' },
+{ text: 'うで', difficulty: 1, category: 'ひと' },
             
             // 3文字の単語（中級・20問）
             { text: 'たまご', difficulty: 2, category: 'たべもの' },
@@ -2093,7 +2109,22 @@ button:focus-visible,
             { text: 'あさひ', difficulty: 2, category: 'しぜん' },
             { text: 'すいか', difficulty: 2, category: 'たべもの' },
             { text: 'おかし', difficulty: 2, category: 'たべもの' },
-
+　　　　　　　{ text: 'こたつ', difficulty: 2, category: 'もの' },
+{ text: 'くじら', difficulty: 2, category: 'どうぶつ' },
+{ text: 'つくえ', difficulty: 2, category: 'もの' },
+{ text: 'ゆびわ', difficulty: 2, category: 'もの' },
+{ text: 'とまと', difficulty: 2, category: 'たべもの' },
+{ text: 'おさら', difficulty: 2, category: 'もの' },
+{ text: 'せかい', difficulty: 2, category: 'がくしゅう' },
+{ text: 'こおり', difficulty: 2, category: 'しぜん' },
+{ text: 'さとう', difficulty: 2, category: 'たべもの' },
+{ text: 'はっぱ', difficulty: 2, category: 'しぜん' },
+{ text: 'ひよこ', difficulty: 2, category: 'どうぶつ' },
+{ text: 'きせつ', difficulty: 2, category: 'しぜん' },
+{ text: 'かえる', difficulty: 2, category: 'どうぶつ' },
+{ text: 'ほうき', difficulty: 2, category: 'もの' },
+{ text: 'ねずみ', difficulty: 2, category: 'どうぶつ' },
+        
             // 4文字の単語（上級・20問）
             { text: 'ひこうき', difficulty: 3, category: 'のりもの' },
             { text: 'でんしゃ', difficulty: 3, category: 'のりもの' },
@@ -2115,6 +2146,22 @@ button:focus-visible,
             { text: 'にちよう', difficulty: 3, category: 'にちじ' },
             { text: 'ざぶとん', difficulty: 3, category: 'もの' },
             { text: 'そうじき', difficulty: 3, category: 'もの' },
+            { text: 'てぶくろ', difficulty: 3, category: 'もの' },
+{ text: 'たまねぎ', difficulty: 3, category: 'たべもの' },
+{ text: 'くだもの', difficulty: 3, category: 'たべもの' },
+{ text: 'けしごむ', difficulty: 3, category: 'もの' },
+{ text: 'すいどう', difficulty: 3, category: 'せいかつ' },
+{ text: 'ながぐつ', difficulty: 3, category: 'もの' },
+{ text: 'ふうせん', difficulty: 3, category: 'もの' },
+{ text: 'つりざお', difficulty: 3, category: 'あそび' },
+{ text: 'すずらん', difficulty: 3, category: 'しぜん' },
+{ text: 'ほしぞら', difficulty: 3, category: 'しぜん' },
+{ text: 'えだまめ', difficulty: 3, category: 'たべもの' },
+{ text: 'かたかな', difficulty: 3, category: 'がくしゅう' },
+{ text: 'ひらがな', difficulty: 3, category: 'がくしゅう' },
+{ text: 'おりがみ', difficulty: 3, category: 'あそび' },
+{ text: 'たけうま', difficulty: 3, category: 'あそび' },
+
             
             // 5〜6文字の単語（上級・30問）
             { text: 'しんかんせん', difficulty: 4, category: 'のりもの' },
@@ -2147,6 +2194,16 @@ button:focus-visible,
             { text: 'うんどうかい', difficulty: 4, category: 'イベント' },
             { text: 'じてんしゃ', difficulty: 4, category: 'のりもの' },
             { text: 'かいだんした', difficulty: 4, category: 'ばしょ' },
+            { text: 'きゅうしょく', difficulty: 4, category: 'せいかつ' },
+{ text: 'ぎゅうにゅう', difficulty: 4, category: 'たべもの' },
+{ text: 'こうさてん',   difficulty: 4, category: 'ばしょ' },
+{ text: 'うちゅうふく', difficulty: 4, category: 'もの' },
+{ text: 'たからばこ',   difficulty: 4, category: 'もの' },
+{ text: 'けっこんしき', difficulty: 4, category: 'イベント' },
+{ text: 'せんぷうき',   difficulty: 4, category: 'もの' },
+{ text: 'たんじょうび', difficulty: 4, category: 'イベント' },
+{ text: 'れいぞうこ',   difficulty: 4, category: 'もの' },
+{ text: 'すべりだい',   difficulty: 4, category: 'あそび' },
 
             // 7〜8文字の単語（最上級・20問）
             { text: 'アイスクリーム', difficulty: 5, category: 'たべもの' },
@@ -2169,6 +2226,17 @@ button:focus-visible,
             { text: 'こうさくクラブ', difficulty: 5, category: 'クラブ' },
             { text: 'がっきゅういいん', difficulty: 5, category: 'がくしゅう' },
             { text: 'かがくはっぴょう', difficulty: 5, category: 'がくしゅう' },
+            { text: 'ちゅうしゃじょう', difficulty: 5, category: 'ばしょ' },
+{ text: 'しょくいんしつ',   difficulty: 5, category: 'ばしょ' },
+{ text: 'じどうはんばいき', difficulty: 5, category: 'もの' },
+{ text: 'こうつうあんぜん', difficulty: 5, category: 'がくしゅう' },
+{ text: 'ぼうさいくんれん', difficulty: 5, category: 'イベント' },
+{ text: 'うんどうぐしつ',   difficulty: 5, category: 'ばしょ' },
+{ text: 'どうぶつかんさつ', difficulty: 5, category: 'がくしゅう' },
+{ text: 'かがくじっけん',   difficulty: 5, category: 'がくしゅう' },
+{ text: 'ゲームセンター',   difficulty: 5, category: 'ばしょ' },
+{ text: 'せいそうどうぐ',   difficulty: 5, category: 'もの' },
+
 
             // 9〜12文字の単語（超上級・20問）
             { text: 'おしょうがつやすみ', difficulty: 6, category: 'イベント' },
@@ -2191,8 +2259,30 @@ button:focus-visible,
             { text: 'とうきょうスカイツリー', difficulty: 6, category: 'ばしょ' },
             { text: 'えいがさいパンフレット', difficulty: 6, category: 'イベント' },
             { text: 'うんどうかいプログラム', difficulty: 6, category: 'イベント' },
+            { text: 'おたんじょうびパーティー',   difficulty: 6, category: 'イベント' },
+{ text: 'かがくはっぴょうポスター',   difficulty: 6, category: 'がくしゅう' },
+{ text: 'えいごスピーチたいかい',     difficulty: 6, category: 'イベント' },
+{ text: 'しょくぶつさいばいキット',   difficulty: 6, category: 'がくしゅう' },
+{ text: 'がくえんさいプログラム',     difficulty: 6, category: 'イベント' },
+{ text: 'しょくいんしつのそうじ',     difficulty: 6, category: 'せいかつ' },
+{ text: 'じしんたいさくマニュアル',   difficulty: 6, category: 'がくしゅう' },
+{ text: 'しょうがっこうライブラリー', difficulty: 6, category: 'ばしょ' },
+{ text: 'かんきょうポスターづくり',   difficulty: 6, category: 'がくしゅう' },
+{ text: 'きょういくテレビばんぐみ',   difficulty: 6, category: 'がくしゅう' },
+
             
             // 医療カテゴリー（回復効果・15問）
+            { text: 'サージカルマスク', difficulty: 5, category: 'いりょう' },
+　　　　　　　{ text: 'フェイスシールド', difficulty: 5, category: 'いりょう' },
+　　　　　　　{ text: 'アルコールジェル', difficulty: 5, category: 'いりょう' },
+　　　　　　　{ text: 'アルコールスプレー', difficulty: 6, category: 'いりょう' },
+            { text: 'しょうどくたいさく', difficulty: 5, category: 'いりょう' },
+　　　　　　　{ text: 'けんこうしんだん', difficulty: 5, category: 'いりょう' },
+　　　　　　　{ text: 'じんこうこきゅう', difficulty: 5, category: 'いりょう' },
+　　　　　　　{ text: 'ないかしんさつ', difficulty: 5, category: 'いりょう' },
+　　　　　　　{ text: 'てあらいうがい', difficulty: 5, category: 'いりょう' },
+　　　　　　{ text: 'しんさつけんまどぐち', difficulty: 6, category: 'いりょう' },
+　　　　　　{ text: 'けつえきけんさセンター', difficulty: 6, category: 'いりょう' },
             { text: 'くすり', difficulty: 2, category: 'いりょう' },
             { text: 'びょういん', difficulty: 3, category: 'いりょう' },
             { text: 'いしゃ', difficulty: 2, category: 'いりょう' },
@@ -2201,13 +2291,16 @@ button:focus-visible,
             { text: 'けんこう', difficulty: 3, category: 'いりょう' },
             { text: 'しんだん', difficulty: 3, category: 'いりょう' },
             { text: 'ほうたい', difficulty: 3, category: 'いりょう' },
+            { text: 'ほけんしつ', difficulty: 4, category: 'いりょう' },
+　　　　　　　{ text: 'しんさつしつ', difficulty: 4, category: 'いりょう' },
             { text: 'ちゅうしゃ', difficulty: 3, category: 'いりょう' },
             { text: 'たいおん', difficulty: 3, category: 'いりょう' },
             { text: 'きゅうきゅう', difficulty: 4, category: 'いりょう' },
             { text: 'やくざいし', difficulty: 4, category: 'いりょう' },
             { text: 'りはびり', difficulty: 3, category: 'いりょう' },
             { text: 'けんしん', difficulty: 3, category: 'いりょう' },
-            { text: 'ばんそうこう', difficulty: 4, category: 'いりょう' }
+            { text: 'ばんそうこう', difficulty: 4, category: 'いりょう' },
+            { text: 'きゅうきゅうばこ', difficulty: 5, category: 'いりょう' }
         ];
 
 
