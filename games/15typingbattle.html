@@ -1694,29 +1694,35 @@
             'ゔ':['vu'] // 追加
         };
 
-        // 拡張拗音
-        const YOON = {
-            'きゃ':['kya','kixya'], 'きゅ':['kyu','kixyu'], 'きょ':['kyo','kixyo'],
-            'ぎゃ':['gya','gixya'], 'ぎゅ':['gyu','gixyu'], 'ぎょ':['gyo','gixyo'],
-            'しゃ':['sha','sya'], 'しゅ':['shu','syu'], 'しょ':['sho','syo'],
-            'じゃ':['ja','jya','zya'], 'じゅ':['ju','jyu','zyu'], 'じょ':['jo','jyo','zyo'],
-            'ちゃ':['cha','tya','cya'], 'ちゅ':['chu','tyu','cyu'], 'ちょ':['cho','tyo','cyo'],
-            'にゃ':['nya'], 'にゅ':['nyu'], 'にょ':['nyo'],
-            'ひゃ':['hya'], 'ひゅ':['hyu'], 'ひょ':['hyo'],
-            'びゃ':['bya'], 'びゅ':['byu'], 'びょ':['byo'],
-            'ぴゃ':['pya'], 'ぴゅ':['pyu'], 'ぴょ':['pyo'],
-            'みゃ':['mya'], 'みゅ':['myu'], 'みょ':['myo'],
-            'りゃ':['rya'], 'りゅ':['ryu'], 'りょ':['ryo'],
-            'ゔぁ':['va'],'ゔぃ':['vi'],'ゔぇ':['ve'],'ゔぉ':['vo'],'ゔゅ':['vyu'],
-            // 拡張文字追加
-            'ふぁ':['fa','fua'],'ふぃ':['fi','fui'],'ふぇ':['fe','fue'],'ふぉ':['fo','fuo'],'ふゅ':['fyu'],
-            'しぇ':['she','sye'],'じぇ':['je','zye','jye'],'ちぇ':['che','tye','cye'],
-            'てぃ':['ti','thi'],'でぃ':['di','dhi'],'とぅ':['tu'],'どぅ':['du'],
-            'うぃ':['wi','ui'],'うぇ':['we','ue'],'うぉ':['wo','uo'],
-            'つぁ':['tsa'],'つぃ':['tsi'],'つぇ':['tse'],'つぉ':['tso'],
-            'くぁ':['qa','kwa'],'くぃ':['qi','kwi'],'くぇ':['qe','kwe'],'くぉ':['qo','kwo'],
-            'ぐぁ':['gwa'],'ぐぃ':['gwi'],'ぐぇ':['gwe'],'ぐぉ':['gwo']
-        };
+        // 拡張拗音（学習用に整理：Hepburn中心）
+const YOON = {
+  'きゃ':['kya'], 'きゅ':['kyu'], 'きょ':['kyo'],
+  'ぎゃ':['gya'], 'ぎゅ':['gyu'], 'ぎょ':['gyo'],
+  'しゃ':['sha','sya'], 'しゅ':['shu','syu'], 'しょ':['sho','syo'],
+  'じゃ':['ja','jya','zya'], 'じゅ':['ju','jyu','zyu'], 'じょ':['jo','jyo','zyo'],
+  'ちゃ':['cha','cya'], 'ちゅ':['chu','cyu'], 'ちょ':['cho','cyo'],
+  'にゃ':['nya'], 'にゅ':['nyu'], 'にょ':['nyo'],
+  'ひゃ':['hya'], 'ひゅ':['hyu'], 'ひょ':['hyo'],
+  'びゃ':['bya'], 'びゅ':['byu'], 'びょ':['byo'],
+  'ぴゃ':['pya'], 'ぴゅ':['pyu'], 'ぴょ':['pyo'],
+  'みゃ':['mya'], 'みゅ':['myu'], 'みょ':['myo'],
+  'りゃ':['rya'], 'りゅ':['ryu'], 'りょ':['ryo'],
+
+  'ゔぁ':['va'], 'ゔぃ':['vi'], 'ゔぇ':['ve'], 'ゔぉ':['vo'], 'ゔゅ':['vyu'],
+
+  // ★ここがポイント：ふぁ系は f + a/i/e/o/y を固定
+  'ふぁ':['fa'], 'ふぃ':['fi'], 'ふぇ':['fe'], 'ふぉ':['fo'], 'ふゅ':['fyu'],
+
+  'しぇ':['she'], 'じぇ':['je'], 'ちぇ':['che'],
+
+  'てぃ':['ti'], 'でぃ':['di'], 'とぅ':['tu'], 'どぅ':['du'],
+
+  // うぃ/うぇ/うぉ は wi/we/wo に統一（ui/ue/uo は削除）
+  'うぃ':['wi'], 'うぇ':['we'], 'うぉ':['wo'],
+
+  'つぁ':['tsa'], 'つぃ':['tsi'], 'つぇ':['tse'], 'つぉ':['tso']
+};
+
 
         // 文字列→トークン（拗音を1トークン化）
         function tokenize(h){
@@ -5256,7 +5262,161 @@ function backToMenu() {
     stopTimer(); disableTyping();
     location.reload(); // シンプルにリロードで開始画面へ
 }
+<script>
+// ====== [Fix] ラウンド解決の二重実行ガード ======
+let resolving = false;
 
+// 残り秒を整数で取得（リング表示と同じ丸めに合わせる）
+function getSecondsLeft() {
+  const msLeft = Math.max(0, timerDeadline - performance.now());
+  return Math.ceil(msLeft / 1000);
+}
+
+// 失敗（タイムアップ）時の処理
+function timeUp() {
+  if (gameState.gamePhase !== 'typing' || resolving) return;
+  resolving = true;
+  disableTyping();
+  const target = gameState.selectedCard?.text || '';
+  const selfDmg = countChars(target) * 5; // 仕様どおり：失敗は文字数×5 自傷
+  applyDamage(gameState.currentPlayer, selfDmg, /*self=*/true);
+  // 見た目をクリア
+  clearTypingDisplay();
+  // ラウンド後処理へ
+  afterResolveRound(false);
+}
+
+// 成功（Enter または自動完了）時の処理
+function submitAnswer() {
+  if (gameState.gamePhase !== 'typing' || resolving) return;
+  resolving = true;
+  disableTyping();
+  stopTimer();
+
+  const text = gameState.selectedCard?.text || '';
+  const len = countChars(text);
+  const secLeft = getSecondsLeft(); // 仕様：文字数 × 残り時間（秒）
+  const dmg = Math.max(1, secLeft) * len;
+
+  // 攻撃は相手へ
+  applyDamage(1 - gameState.currentPlayer, dmg, /*self=*/false);
+
+  // 見た目をクリア
+  clearTypingDisplay();
+
+  // ラウンド後処理へ
+  afterResolveRound(true);
+}
+
+// ダメージ適用＆UI更新
+function applyDamage(targetPlayerIndex, amount, self = false) {
+  gameState.players[targetPlayerIndex].hp = Math.max(0, gameState.players[targetPlayerIndex].hp - amount);
+  updateUI();
+}
+
+// ラウンド解決後の共通処理
+function afterResolveRound(success) {
+  // 選んだカードを捨て札へ（手札から除外）
+  if (gameState.selectedCard) {
+    const hand = gameState.hands[gameState.currentPlayer];
+    const idx = hand.indexOf(gameState.selectedCard);
+    if (idx >= 0) hand.splice(idx, 1);
+    gameState.discard.push(gameState.selectedCard);
+  }
+  gameState.selectedCard = null;
+
+  // ゲーム終了チェック → 結果モーダルを**ここで必ず**出す
+  if (checkGameOver()) {
+    resolving = false;
+    return;
+  }
+
+  // 次ターンへ
+  gameState.currentPlayer = 1 - gameState.currentPlayer;
+  gameState.gamePhase = 'cardSelect';
+  updatePhaseDisplay();
+  drawPlayerHand();
+  drawCards();
+  updateUI();
+  resolving = false;
+}
+
+// 終了条件と結果表示
+function checkGameOver() {
+  const p0 = gameState.players[0];
+  const p1 = gameState.players[1];
+
+  const hpEnd = (p0.hp <= 0 || p1.hp <= 0);
+  const noMoreCards = (gameState.deck.length === 0 &&
+                       gameState.hands[0].length === 0 &&
+                       gameState.hands[1].length === 0);
+
+  if (!hpEnd && !noMoreCards) return false;
+
+  stopTimer();
+  disableTyping();
+
+  showSummaryModal();
+  return true;
+}
+
+function showSummaryModal() {
+  const p0 = gameState.players[0], p1 = gameState.players[1];
+  let winnerText = '引き分け';
+  if (p0.hp !== p1.hp) {
+    winnerText = (p1.hp <= 0 || p0.hp > p1.hp) ? `${p0.name}` : `${p1.name}`;
+  }
+
+  const modal = document.getElementById('modal');
+  const content = document.getElementById('modalContent');
+  content.innerHTML = `
+    <h2>結果</h2>
+    <p><strong>勝者：</strong>${winnerText}</p>
+    <p>${p0.name}：${p0.hp}/${p0.maxHp}　｜　${p1.name}：${p1.hp}/${p1.maxHp}</p>
+    <div style="margin-top:16px; display:flex; gap:10px; justify-content:center;">
+      <button class="btn btn-primary" id="retryBtn">もう一度</button>
+      <button class="btn btn-secondary" id="backBtn">メニューへ</button>
+    </div>
+  `;
+  modal.style.display = 'flex';
+
+  document.getElementById('retryBtn').onclick = () => {
+    modal.style.display = 'none';
+    resetAndRestart();
+  };
+  document.getElementById('backBtn').onclick = () => {
+    modal.style.display = 'none';
+    backToMenu();
+  };
+}
+
+function resetAndRestart() {
+  // 最低限のリセットで再開
+  stopTimer();
+  disableTyping();
+  clearTypingDisplay();
+
+  gameState.deck = [];
+  gameState.discard = [];
+  gameState.hands = [[], []];
+  gameState.selectedCard = null;
+  gameState.gamePhase = 'cardSelect';
+  resolving = false;
+
+  initGame();
+}
+
+// backToMenuが未実装なら最低限の戻し
+if (typeof backToMenu !== 'function') {
+  function backToMenu() {
+    // スタート画面に戻す
+    document.getElementById('gameContainer').classList.add('hidden');
+    document.getElementById('startScreen').classList.remove('hidden');
+    stopTimer();
+    disableTyping();
+  }
+}
+</script>       
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'977b0e14f587d521',t:'MTc1NjYyNzg2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
