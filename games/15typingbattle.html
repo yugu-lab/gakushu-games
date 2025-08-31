@@ -3589,33 +3589,53 @@ const YOON = {
         }
 
         // 属性別特殊インパクトエフェクト（画面全体スケール）
-        function createSpecialImpactEffect(fxLayer, attr, config, x, y) {
-            switch (attr) {
-                case 'fire':
-                    // 巨大火花リング
-                    const fxScale = getFXScale();
-                    for (let i = 0; i < Math.round(5 * fxScale); i++) {
-                        const ring = document.createElement('div');
-                        ring.style.position = 'absolute';
-                        ring.style.left = (x - 100) + 'px';
-                        ring.style.top = (y - 100) + 'px';
-                        ring.style.width = '200px';
-                        ring.style.height = '200px';
-                        ring.style.border = `6px solid ${config.colors[0]}`;
-                        ring.style.borderRadius = '50%';
-                        ring.style.opacity = '0.8';
-                        ring.style.boxShadow = `0 0 40px ${config.colors[0]}, inset 0 0 40px ${config.colors[1]}`;
-                        fxLayer.appendChild(ring);
-                        
-                        ring.animate([
-                            { transform: 'scale(0) rotate(0deg)', opacity: 0.8 },
-                            { transform: 'scale(6) rotate(360deg)', opacity: 0 }
-                        ], {
-                            duration: 1000,
-                            delay: i * 150,
-                            easing: 'ease-out'
-                        }).addEventListener('finish', () => ring.remove());
-                    }
+       // ★ここから置換
+function createSpecialImpactEffect(fxLayer, attr, config, x, y) {
+  // 汎用：同心円のリップルを数回出す（CSSの @keyframes ripple を利用）
+  const makeRipple = (radius, thickness = 6, opacity = 0.8, dur = 700) => {
+    const ring = document.createElement('div');
+    ring.style.position = 'absolute';
+    ring.style.left = (x - radius) + 'px';
+    ring.style.top = (y - radius) + 'px';
+    ring.style.width = (radius * 2) + 'px';
+    ring.style.height = (radius * 2) + 'px';
+    ring.style.border = `${thickness}px solid ${config.colors[0]}`;
+    ring.style.borderRadius = '50%';
+    ring.style.opacity = opacity;
+    ring.style.willChange = 'transform, opacity';
+    fxLayer.appendChild(ring);
+
+    ring.animate(
+      [{ transform: 'scale(0)', opacity: opacity },
+       { transform: 'scale(3)', opacity: 0 }],
+      { duration: dur, easing: 'ease-out' }
+    ).addEventListener('finish', () => ring.remove());
+  };
+
+  // 属性ごとの差分（色だけ活かす）
+  switch (attr) {
+    case 'fire':
+      makeRipple(40, 8, 0.9, 800);
+      makeRipple(60, 6, 0.8, 900);
+      break;
+    case 'water':
+      makeRipple(36, 6, 0.85, 900);
+      makeRipple(56, 4, 0.7, 1000);
+      break;
+    case 'thunder':
+      makeRipple(32, 6, 1.0, 600);
+      break;
+    case 'wind':
+    case 'earth':
+    case 'light':
+    default:
+      makeRipple(40, 6, 0.8, 800);
+      makeRipple(58, 4, 0.6, 900);
+      break;
+  }
+}
+// ★ここまで置換
+
                     
                     // 火の柱エフェクト
                     const firePillar = document.createElement('div');
