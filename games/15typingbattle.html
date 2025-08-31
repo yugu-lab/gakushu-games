@@ -2840,11 +2840,34 @@ button:focus-visible,
                 cardElement.setAttribute('role', 'button');
                 cardElement.setAttribute('aria-label', `${card.text}、難易度${card.difficulty}`);
                 cardElement.addEventListener('keydown', e => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        selectCard(index);
-                    }
-                });
+  // Enter / Space で決定
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    selectCard(index);
+    return;
+  }
+
+  // ← → ↑ ↓ でフォーカス移動
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) {
+    e.preventDefault(); // ページのスクロール防止
+
+    const all  = container.querySelectorAll('.card'); // いま表示中のカード
+    const cols = getComputedStyle(container).gridTemplateColumns.split(' ').length || 3;
+    const max  = all.length - 1;
+
+    let next = index;
+    switch (e.key) {
+      case 'ArrowLeft':  next = Math.max(0, index - 1);     break;
+      case 'ArrowRight': next = Math.min(max, index + 1);   break;
+      case 'ArrowUp':    next = Math.max(0, index - cols);  break;
+      case 'ArrowDown':  next = Math.min(max, index + cols);break;
+    }
+
+    const nextEl = all[next];
+    if (nextEl) nextEl.focus();
+  }
+});
+
                 
                 const stars = '★'.repeat(card.difficulty);
                 const categoryDisplay = isHealCard ? '💚 いりょう' : '⚔️ ' + card.category;
@@ -2870,6 +2893,9 @@ button:focus-visible,
             // アニメーション
             setTimeout(() => {
                 container.classList.add('active');
+        const firstCard = container.querySelector('.card');
+  if (firstCard) firstCard.focus();
+ 
             }, 100);
         }
 
