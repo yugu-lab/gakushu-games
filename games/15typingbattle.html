@@ -30,7 +30,7 @@
 
         .game-container {
             width: 100vw;
-            height: 100vh;
+            height: calc(var(--vh, 1vh) * 100);
             display: flex;
             flex-direction: column;
             position: relative;
@@ -173,11 +173,11 @@
         }
 
         .player-hand.left {
-            left: 20px;
+            left: 5px;
         }
 
         .player-hand.right {
-            right: 20px;
+            right: 5px;
         }
 
         .hand-card {
@@ -211,6 +211,7 @@
             align-items: center;
             justify-content: center;
             min-height: 300px;
+            padding: 0 130px; /* 左右の手札エリアを避けるための余白 */
         }
 
         .cards-container {
@@ -322,12 +323,38 @@
             margin-bottom: 15px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
             letter-spacing: 0.05em;
+            line-height: 1.2;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+            white-space: normal;
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            max-height: 60px;
+            overflow: hidden;
         }
+
+        /* 文字数に応じたテキストサイズ調整（改行なしで統一レイアウト） */
+        .card-text.short { font-size: 26px; }      /* 1-3文字 */
+        .card-text.medium { font-size: 22px; }     /* 4-6文字 */
+        .card-text.long { font-size: 18px; }       /* 7-9文字 */
+        .card-text.very-long { font-size: 15px; }  /* 10-12文字 */
+        .card-text.extra-long { font-size: 12px; } /* 13文字以上 */
 
         .card-difficulty {
             font-size: 14px;
             color: #feca57;
             font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            margin-bottom: 5px;
+        }
+
+        .card-category {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
         }
 
@@ -484,26 +511,138 @@
             }
         }
 
-        /* ターン切り替えポップアップ */
-        .turn-popup {
+        /* ダメージ計算ポップアップ */
+        .damage-calculation-popup {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: linear-gradient(145deg, rgba(254, 202, 87, 0.95), rgba(255, 159, 243, 0.95));
+            z-index: 2000;
+            pointer-events: none;
+            animation: calculationPopup 5s ease-out forwards;
+        }
+
+        .calculation-content {
+            background: rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(20px);
-            border-radius: 25px;
-            padding: 30px 50px;
+            border-radius: 20px;
+            padding: 25px 35px;
             text-align: center;
-            z-index: 1000;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: turnPopup 2s ease-in-out forwards;
+            border: 3px solid;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            min-width: 300px;
+        }
+
+        .calculation-content.attack {
+            border-color: #ff6b6b;
+            box-shadow: 0 10px 40px rgba(255, 107, 107, 0.3), 0 0 30px rgba(255, 107, 107, 0.2);
+        }
+
+        .calculation-content.heal {
+            border-color: #4ecdc4;
+            box-shadow: 0 10px 40px rgba(76, 224, 196, 0.3), 0 0 30px rgba(76, 224, 196, 0.2);
+        }
+
+        .calculation-content.self-damage {
+            border-color: #ff9f43;
+            box-shadow: 0 10px 40px rgba(255, 159, 67, 0.3), 0 0 30px rgba(255, 159, 67, 0.2);
+        }
+
+        .calculation-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+            animation: iconBounce 0.6s ease-out;
+        }
+
+        .calculation-formula {
+            font-size: 24px;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            font-family: 'BIZ UDGothic', sans-serif;
+        }
+
+        .calculation-description {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+        }
+
+        @keyframes calculationPopup {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.3) rotateY(-90deg);
+            }
+            7.5% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.1) rotateY(0deg);
+            }
+            12.5% {
+                transform: translate(-50%, -50%) scale(0.95) rotateY(0deg);
+            }
+            87.5% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1) rotateY(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1.1) rotateY(90deg);
+            }
+        }
+
+        @keyframes iconBounce {
+            0% {
+                transform: scale(0.3) translateY(20px);
+            }
+            50% {
+                transform: scale(1.2) translateY(-10px);
+            }
+            100% {
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* ターン切り替えポップアップ */
+        .turn-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9));
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            animation: turnPopup 2.5s ease-in-out forwards;
+        }
+
+        .turn-popup-content {
+            text-align: center;
+            color: white;
+            transform: scale(0.5);
+            animation: turnContentPop 2.5s ease-in-out forwards;
         }
 
         .turn-popup h2 {
-            font-size: 28px;
+            font-size: clamp(48px, 8vw, 120px);
             font-weight: 900;
             color: white;
+            text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+            margin: 0 0 20px 0;
+            background: linear-gradient(45deg, #feca57, #ff9ff3, #4ecdc4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: textGlow 2.5s ease-in-out infinite;
+        }
+
+        .turn-popup-subtitle {
+            font-size: clamp(24px, 4vw, 48px);
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.9);
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
             margin: 0;
         }
@@ -511,19 +650,47 @@
         @keyframes turnPopup {
             0% {
                 opacity: 0;
-                transform: translate(-50%, -50%) scale(0.5);
             }
-            20% {
+            15% {
                 opacity: 1;
-                transform: translate(-50%, -50%) scale(1.1);
             }
-            80% {
+            85% {
                 opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
             }
             100% {
                 opacity: 0;
-                transform: translate(-50%, -50%) scale(0.9);
+            }
+        }
+
+        @keyframes turnContentPop {
+            0% {
+                transform: scale(0.3) rotateY(-90deg);
+                opacity: 0;
+            }
+            20% {
+                transform: scale(1.2) rotateY(0deg);
+                opacity: 1;
+            }
+            30% {
+                transform: scale(0.95) rotateY(0deg);
+                opacity: 1;
+            }
+            80% {
+                transform: scale(1) rotateY(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.1) rotateY(90deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes textGlow {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(254, 202, 87, 0.5));
+            }
+            50% {
+                filter: drop-shadow(0 0 40px rgba(254, 202, 87, 0.8)) drop-shadow(0 0 60px rgba(255, 159, 243, 0.6));
             }
         }
 
@@ -875,11 +1042,19 @@
             .cards-container {
                 grid-template-columns: repeat(3, 1fr);
             }
+            
+            .main-cards-area {
+                padding: 0 110px; /* タブレット用に余白を少し縮小 */
+            }
         }
 
         @media (max-width: 768px) {
             .cards-container {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .main-cards-area {
+                padding: 0 80px; /* スマホ用に余白をさらに縮小 */
             }
             
             .top-bar {
@@ -903,6 +1078,22 @@
             .character-selection {
                 grid-template-columns: repeat(6, 1fr);
                 max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-cards-area {
+                padding: 0 60px; /* 小さなスマホ用にさらに縮小 */
+            }
+            
+            .player-hand {
+                width: 80px; /* 手札カードも小さく */
+            }
+            
+            .hand-card {
+                width: 70px;
+                height: 60px;
+                font-size: 10px;
             }
         }
 
@@ -1022,7 +1213,7 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
+            height: calc(var(--vh, 1vh) * 100);
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
@@ -1060,6 +1251,8 @@
             min-width: 200px;
             text-align: center;
             font-size: 16px;
+            font-family: 'BIZ UDGothic', sans-serif;
+            outline: none;
         }
 
         .mode-btn:hover {
@@ -1223,12 +1416,12 @@
             <p style="font-size: 16px; margin-bottom: 20px;">学習しながら楽しくタイピング！</p>
             
             <div class="mode-selection">
-                <button class="mode-btn" id="cpuModeBtn" onclick="selectMode('cpu')">
+                <button type="button" class="mode-btn" id="cpuModeBtn" onclick="selectMode('cpu')">
                     <div class="mode-icon">🤖</div>
                     <div class="mode-title">CPU戦</div>
                     <div class="mode-desc">コンピューターと対戦</div>
                 </button>
-                <button class="mode-btn" id="pvpModeBtn" onclick="selectMode('pvp')">
+                <button type="button" class="mode-btn" id="pvpModeBtn" onclick="selectMode('pvp')">
                     <div class="mode-icon">👥</div>
                     <div class="mode-title">2人対戦</div>
                     <div class="mode-desc">友達と一緒に対戦</div>
@@ -1302,14 +1495,14 @@
                         <div class="rule-icon">📝</div>
                         <div class="rule-text">
                             <h4>タイピング</h4>
-                            <p>手札から1枚選んで15秒以内にローマ字で入力</p>
+                            <p>手札から1枚選んで12秒以内にローマ字で入力</p>
                         </div>
                     </div>
                     <div class="rule-item">
                         <div class="rule-icon">💥</div>
                         <div class="rule-text">
                             <h4>ダメージ</h4>
-                            <p>成功：文字数×残り時間でダメージ<br>失敗：文字数×10の自傷ダメージ<br>打ち間違え：3秒ペナルティ</p>
+                            <p>成功：文字数×残り時間でダメージ<br>失敗：文字数×5の自傷ダメージ<br>打ち間違え：2秒ペナルティ</p>
                         </div>
                     </div>
                 </div>
@@ -1318,7 +1511,7 @@
 
             <div style="margin-top: 20px; font-size: 12px; opacity: 0.8;">
                 <p>📱 iPad横向きで最適化されています</p>
-                <p>⌨️ ローマ字で入力してください（全角でもOK）</p>
+                <p>⌨️ ローマ字で入力してください（全角でもOK／長音はハイフン「-」）</p>
             </div>
         </div>
     </div>
@@ -1339,9 +1532,9 @@
             </div>
 
             <div class="center-info">
-                <div class="turn-display" id="turnDisplay">プレイヤー1のターン</div>
-                <div class="phase-display" id="phaseDisplay">カードを選択してください</div>
-                <div class="timer-ring" id="timerRing">15</div>
+                <div class="turn-display" id="turnDisplay" role="status" aria-live="polite">プレイヤー1のターン</div>
+                <div class="phase-display" id="phaseDisplay" role="status" aria-live="polite">カードを選択してください</div>
+                <div class="timer-ring" id="timerRing" role="progressbar" aria-valuemin="0" aria-valuemax="12" aria-live="polite">12</div>
             </div>
 
             <div class="player-info">
@@ -1372,21 +1565,21 @@
                 <div id="typingGuideJP" class="jp jp-progress"></div>
                 <div id="typingGuideSub" class="sub"></div>
             </div>
-            <div id="romajiGuide" class="romaji-guide"></div>
+            <div id="romajiGuide" class="romaji-guide" aria-live="polite"></div>
             <div class="progress-bar" style="display: none;">
                 <div class="progress-fill" id="progressFill"></div>
             </div>
             <div class="keyboard-hint">
-                <p>⌨️ キーボードで直接入力 | ESCキーでギブアップ</p>
+                <p>⌨️ キーボードで直接入力 | 長音は「-」| ESCキーでギブアップ</p>
             </div>
         </div>
 
         <!-- コントロール -->
         <div class="controls">
-            <button class="control-btn" onclick="showHelp()" title="ヘルプ">❓</button>
-            <button class="control-btn" onclick="toggleSound()" title="音量" id="soundBtn">🔊</button>
-            <button class="control-btn" onclick="pauseGame()" title="一時停止" id="pauseBtn">⏸️</button>
-            <button class="control-btn" onclick="backToMenu()" title="メニューに戻る">🏠</button>
+            <button class="control-btn" onclick="showHelp()" title="ヘルプ" aria-label="ヘルプ">❓</button>
+            <button class="control-btn" onclick="toggleSound()" title="音量" aria-label="音量" id="soundBtn">🔊</button>
+            <button class="control-btn" onclick="pauseGame()" title="一時停止" aria-label="一時停止" id="pauseBtn">⏸️</button>
+            <button class="control-btn" onclick="backToMenu()" title="メニューに戻る" aria-label="メニューに戻る">🏠</button>
         </div>
     </div>
 
@@ -1398,8 +1591,53 @@
     </div>
 
     <script>
+        // iPad/Safari 100vh問題対応
+        function setVh() {
+            document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
+        }
+        window.addEventListener('resize', setVh);
+        setVh();
+
         // 変換中フラグ（IME）
         let isComposing = false;
+
+        // 共通オーディオコンテキスト
+        let audioCtx = null;
+        function ensureAudio() {
+            if (!audioCtx) {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new Ctx();
+            }
+        }
+        document.addEventListener('pointerdown', () => {
+            try {
+                ensureAudio();
+                audioCtx.resume();
+            } catch (e) {}
+        }, { once: true, passive: true });
+
+        // IMEハンドラー関数（名前付きで重複登録を防ぐ）
+        function handleCompositionStart() {
+            isComposing = true;
+        }
+
+        function handleCompositionEnd() {
+            setTimeout(() => { isComposing = false; }, 0);
+        }
+
+        // タイピングハンドラーの付け外しラッパー関数
+        function enableTyping() {
+            disableTyping(); // 先に外す（二重登録防止）
+            document.addEventListener('keydown', handleKeyPress);
+            document.addEventListener('compositionstart', handleCompositionStart);
+            document.addEventListener('compositionend', handleCompositionEnd);
+        }
+
+        function disableTyping() {
+            document.removeEventListener('keydown', handleKeyPress);
+            document.removeEventListener('compositionstart', handleCompositionStart);
+            document.removeEventListener('compositionend', handleCompositionEnd);
+        }
 
         // 改良された日本語処理関数
         function toHiragana(s){
@@ -1410,7 +1648,7 @@
                 String.fromCharCode(ch.charCodeAt(0) - 0x60)
             );
             // 記号・空白除去
-            t = t.replace(/[、。，．\s]/g,'');
+            t = t.replace(/[、。，．・！!？?\s（）()［］\[\]「」『』]/g,'');
             return t;
         }
 
@@ -1420,7 +1658,7 @@
                 .replace(/[ぁァ]/g,'あ').replace(/[ぃィ]/g,'い').replace(/[ぅゥ]/g,'う')
                 .replace(/[ぇェ]/g,'え').replace(/[ぉォ]/g,'お')
                 .replace(/ゃ/g,'や').replace(/ゅ/g,'ゆ').replace(/ょ/g,'よ')
-                .replace(/っ/g,'つ').replace(/ー/g,''); // 長音は無視
+                .replace(/っ/g,'つ'); // 長音も1文字としてカウント
             return h.length;
         }
 
@@ -1430,6 +1668,9 @@
         /* =========================================================
            ローマ字：複数表記対応（促音/拗音/ん/代替表記）
         ========================================================= */
+
+
+        // 拡張ベース文字
         const BASE = {
             'あ':['a'],'い':['i'],'う':['u'],'え':['e'],'お':['o'],
             'か':['ka'],'き':['ki'],'く':['ku'],'け':['ke'],'こ':['ko'],
@@ -1449,12 +1690,13 @@
             'ん':['n','nn'],
             'ぁ':['xa','la','a'],'ぃ':['xi','li','i'],'ぅ':['xu','lu','u'],'ぇ':['xe','le','e'],'ぉ':['xo','lo','o'],
             'っ':['*sokuon*'], // 特殊
-            'ー':['*choon*']   // 長音（ここでは無視 or 直前母音）
+            'ー':['-'],   // 長音記号はハイフンで入力
+            'ゔ':['vu'] // 追加
         };
 
-        // 拗音
+        // 拡張拗音
         const YOON = {
-            'きゃ':['kya','kixya','kya'], 'きゅ':['kyu','kixyu'], 'きょ':['kyo','kixyo'],
+            'きゃ':['kya','kixya'], 'きゅ':['kyu','kixyu'], 'きょ':['kyo','kixyo'],
             'ぎゃ':['gya','gixya'], 'ぎゅ':['gyu','gixyu'], 'ぎょ':['gyo','gixyo'],
             'しゃ':['sha','sya'], 'しゅ':['shu','syu'], 'しょ':['sho','syo'],
             'じゃ':['ja','jya','zya'], 'じゅ':['ju','jyu','zyu'], 'じょ':['jo','jyo','zyo'],
@@ -1465,7 +1707,15 @@
             'ぴゃ':['pya'], 'ぴゅ':['pyu'], 'ぴょ':['pyo'],
             'みゃ':['mya'], 'みゅ':['myu'], 'みょ':['myo'],
             'りゃ':['rya'], 'りゅ':['ryu'], 'りょ':['ryo'],
-            'ゔぁ':['va'],'ゔぃ':['vi'],'ゔぇ':['ve'],'ゔぉ':['vo'],'ゔゅ':['vyu']
+            'ゔぁ':['va'],'ゔぃ':['vi'],'ゔぇ':['ve'],'ゔぉ':['vo'],'ゔゅ':['vyu'],
+            // 拡張文字追加
+            'ふぁ':['fa','fua'],'ふぃ':['fi','fui'],'ふぇ':['fe','fue'],'ふぉ':['fo','fuo'],'ふゅ':['fyu'],
+            'しぇ':['she','sye'],'じぇ':['je','zye','jye'],'ちぇ':['che','tye','cye'],
+            'てぃ':['ti','thi'],'でぃ':['di','dhi'],'とぅ':['tu'],'どぅ':['du'],
+            'うぃ':['wi','ui'],'うぇ':['we','ue'],'うぉ':['wo','uo'],
+            'つぁ':['tsa'],'つぃ':['tsi'],'つぇ':['tse'],'つぉ':['tso'],
+            'くぁ':['qa','kwa'],'くぃ':['qi','kwi'],'くぇ':['qe','kwe'],'くぉ':['qo','kwo'],
+            'ぐぁ':['gwa'],'ぐぃ':['gwi'],'ぐぇ':['gwe'],'ぐぉ':['gwo']
         };
 
         // 文字列→トークン（拗音を1トークン化）
@@ -1491,21 +1741,33 @@
         // 単一トークンのローマ字候補を取得
         function romajiOfToken(tok){
             if(YOON[tok]) return YOON[tok].slice();
-            if(tok==='ー') return ['']; // 長音はここでは無視
+            if(tok==='ー') return ['-']; // 長音は必須
             if(BASE[tok]) return BASE[tok].slice();
             return [tok]; // 未知はそのまま
         }
 
-        // 全候補列挙（分岐は多いが現実的な長さならOK）
+        // 最適化された候補列挙（上限と枝刈り付き）
         function buildRomajiOptions(h){
+            const MAX_OPTIONS = 128;
             const tokens = tokenize(h);
-            const results=[];
+            const results = [];
+            let bestFound = Infinity; // 最短長を追跡
+            
             function dfs(i, acc){
-                if(i>=tokens.length){ results.push(acc); return; }
-                const t=tokens[i];
+                // 早期終了条件
+                if (results.length >= MAX_OPTIONS) return;
+                if (acc.length > bestFound + 3) return; // 枝刈り
+                
+                if(i >= tokens.length){ 
+                    results.push(acc);
+                    bestFound = Math.min(bestFound, acc.length);
+                    return;
+                }
+                
+                const t = tokens[i];
 
-                if(t==='っ'){ // 促音
-                    if(i+1<tokens.length){
+                if(t === 'っ'){ // 促音
+                    if(i+1 < tokens.length){
                         const nextOpts = romajiOfToken(tokens[i+1]);
                         // 次の頭子音を重ねる（ch のときは tch / cch 両方許容）
                         nextOpts.forEach(no=>{
@@ -1523,11 +1785,18 @@
                     }
                 }
 
-                if(t==='ん'){
-                    // 次の頭が母音/ y なら nn or n'
-                    const nextHead = (i+1<tokens.length)? Array.from(initialsOfToken(tokens[i+1])) : [];
-                    const risky = nextHead.some(c=>['a','i','u','e','o','y'].includes(c));
-                    const cand = risky ? ["nn","n'"] : ["n","nn"];
+                if(t === 'ん'){
+                    // 次の頭が母音/ y なら nn or n'、それ以外でも nn を許可
+                    const nextHead = (i+1 < tokens.length)? Array.from(initialsOfToken(tokens[i+1])) : [];
+                    const vowelOrY = nextHead.some(c=>['a','i','u','e','o','y'].includes(c));
+                    const labial = nextHead.some(c=>['b','m','p'].includes(c));
+                    const cand = [];
+                    if (vowelOrY) {
+                        cand.push("nn", "n'");
+                    } else {
+                        cand.push("n", "nn");
+                        if (labial) cand.push("m"); // 例: しんぱい → shimpai
+                    }
                     cand.forEach(r=>dfs(i+1, acc+r));
                     return;
                 }
@@ -1536,9 +1805,18 @@
                 const opts = romajiOfToken(t);
                 opts.forEach(o=>dfs(i+1, acc+o));
             }
+            
             dfs(0,'');
-            // 重複除去
-            return Array.from(new Set(results));
+            
+            // 重複除去と長さフィルタ
+            const uniqueResults = Array.from(new Set(results));
+            
+            // bestFound+2 文字以内の候補だけを残す
+            if (bestFound !== Infinity) {
+                return uniqueResults.filter(result => result.length <= bestFound + 2);
+            }
+            
+            return uniqueResults;
         }
 
         // ひらがな文字列をローマ字に変換（最短候補を使用）
@@ -1597,6 +1875,9 @@
             if (displayRomaji.length > 0) {
                 romajiEl.children[0].classList.add('current');
             }
+            
+            // 最適な候補でガイドを更新
+            refreshRomajiGuideToLeader();
         }
 
         // 進捗更新：複数候補対応
@@ -1639,6 +1920,71 @@
             });
         }
 
+        // タイピング表示をクリア
+        function clearTypingDisplay() {
+            const jpEl = document.getElementById('typingGuideJP');
+            const subEl = document.getElementById('typingGuideSub');
+            const romajiEl = document.getElementById('romajiGuide');
+            
+            // 全ての表示をクリア
+            jpEl.textContent = '';
+            jpEl.style.setProperty('--fill', '0%');
+            subEl.innerHTML = '';
+            romajiEl.innerHTML = '';
+            
+            // タイピング状態もリセット
+            typingState.targetOptions = [];
+            typingState.currentInputs = [];
+            typingState.typedKeys = '';
+        }
+
+        // ---- 高精度タイマー（ドリフト補正付き） ----
+        let timerRaf = null;
+        let timerDeadline = 0;       // performance.now() の絶対時刻
+        let timerTotalMs = 12000;    // 表示用の合計時間
+
+        function updateTimerRingUI(msLeft){
+            const ring = document.getElementById('timerRing');
+            const clamped = Math.max(0, msLeft);
+            const sec = Math.ceil(clamped / 1000);
+            const prog = Math.max(0, Math.min(1, clamped / timerTotalMs));
+            const deg = prog * 360;
+            ring.textContent = sec;
+            ring.style.background =
+                `conic-gradient(#feca57 ${deg}deg, rgba(255,255,255,0.2) ${deg}deg)`;
+            // アクセシビリティ対応
+            ring.setAttribute('aria-valuenow', sec);
+        }
+
+        function tickTimer(){
+            const now = performance.now();
+            const msLeft = timerDeadline - now;
+            updateTimerRingUI(msLeft);
+            if (msLeft <= 0){
+                stopTimer();
+                timeUp();  // 既存の関数をそのまま呼ぶ
+                return;
+            }
+            timerRaf = requestAnimationFrame(tickTimer);
+        }
+
+        function startAccurateTimer(ms = 12000){
+            stopTimer();
+            timerTotalMs = ms;
+            timerDeadline = performance.now() + ms;
+            updateTimerRingUI(ms);
+            timerRaf = requestAnimationFrame(tickTimer);
+        }
+
+        function adjustTimer(deltaMs){
+            // ペナルティなど：締切を前後させる
+            timerDeadline = Math.max(performance.now(), timerDeadline + deltaMs);
+        }
+
+        function stopTimer(){
+            if (timerRaf){ cancelAnimationFrame(timerRaf); timerRaf = null; }
+        }
+
         // ゲーム状態
         let gameState = {
             mode: null, // 'cpu' or 'pvp'
@@ -1657,6 +2003,10 @@
             gamePhase: 'cardSelect', // 'cardSelect', 'typing', 'result'
             soundEnabled: true,
             isPaused: false,
+            playerStats: [
+                { totalChars: 0, correctChars: 0, totalTime: 0, combo: 0, maxCombo: 0 },
+                { totalChars: 0, correctChars: 0, totalTime: 0, combo: 0, maxCombo: 0 }
+            ],
             stats: {
                 totalChars: 0,
                 correctChars: 0,
@@ -1830,16 +2180,29 @@
 
 
 
-        // 全角文字を半角に変換
+        // 全角文字を半角に変換（改良版）
         function normalizeInput(text) {
             if (!text) return '';
-            
-            // 全角英数字を半角に
-            let normalized = text.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
-                return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-            });
-            
-            return normalized.toLowerCase();
+            return text
+                // 全角英数
+                .replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+                // 右/左のカール・プライム類も吸収
+                .replace(/[\u2018\u2019\u2032\uFF07']/g, "'")
+                // いろんなダッシュを半角ハイフンに（長音「ー」除外）
+                .replace(/[\u2010-\u2015\u2212\uFF0D\uFE63]/g, "-")
+                .toLowerCase();
+        }
+
+        // Fisher-Yates シャッフル（公平性向上）
+        function shuffle(array) {
+            const a = [...array];
+            const r = new Uint32Array(1);
+            for (let i = a.length - 1; i > 0; i--) {
+                crypto.getRandomValues(r);
+                const j = r[0] % (i + 1);
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
         }
 
         // ゲーム初期化
@@ -1851,7 +2214,7 @@
             });
             
             // デッキをシャッフル
-            gameState.deck = [...CARD_POOL].sort(() => Math.random() - 0.5);
+            gameState.deck = shuffle(CARD_POOL);
             
             // 初期手札を配る
             for (let i = 0; i < 2; i++) {
@@ -2017,26 +2380,57 @@
                 const container = document.createElement('div');
                 container.className = 'roulette-container';
                 
-                container.innerHTML = `
-                    <div class="roulette-title">🎯 先攻を決めよう！</div>
-                    <div class="player-info-simple">
-                        <div class="player-card left">
-                            <div class="player-avatar-simple">${gameState.players[0].avatar}</div>
-                            <div class="player-name-simple">${gameState.players[0].name}</div>
-                            <div class="player-side">左半分</div>
-                        </div>
-                        <div class="player-card right">
-                            <div class="player-avatar-simple">${gameState.players[1].avatar}</div>
-                            <div class="player-name-simple">${gameState.players[1].name}</div>
-                            <div class="player-side">右半分</div>
-                        </div>
-                    </div>
-                    <div class="roulette-wheel" id="rouletteWheel">
-                        <div class="roulette-pointer"></div>
-                        <div class="roulette-center">🎲</div>
-                    </div>
-                    <div class="roulette-result" id="rouletteResult"></div>
+                // XSS対策：テンプレートを使わずDOM構築
+                const title = document.createElement('div');
+                title.className = 'roulette-title';
+                title.textContent = '🎯 先攻を決めよう！';
+                
+                const playerInfo = document.createElement('div');
+                playerInfo.className = 'player-info-simple';
+                
+                // プレイヤー1カード
+                const leftCard = document.createElement('div');
+                leftCard.className = 'player-card left';
+                leftCard.innerHTML = `
+                    <div class="player-avatar-simple">${gameState.players[0].avatar}</div>
+                    <div class="player-side">左半分</div>
                 `;
+                const leftName = document.createElement('div');
+                leftName.className = 'player-name-simple';
+                leftName.textContent = gameState.players[0].name;
+                leftCard.insertBefore(leftName, leftCard.lastElementChild);
+                
+                // プレイヤー2カード
+                const rightCard = document.createElement('div');
+                rightCard.className = 'player-card right';
+                rightCard.innerHTML = `
+                    <div class="player-avatar-simple">${gameState.players[1].avatar}</div>
+                    <div class="player-side">右半分</div>
+                `;
+                const rightName = document.createElement('div');
+                rightName.className = 'player-name-simple';
+                rightName.textContent = gameState.players[1].name;
+                rightCard.insertBefore(rightName, rightCard.lastElementChild);
+                
+                playerInfo.appendChild(leftCard);
+                playerInfo.appendChild(rightCard);
+                
+                const wheel = document.createElement('div');
+                wheel.className = 'roulette-wheel';
+                wheel.id = 'rouletteWheel';
+                wheel.innerHTML = `
+                    <div class="roulette-pointer"></div>
+                    <div class="roulette-center">🎲</div>
+                `;
+                
+                const result = document.createElement('div');
+                result.className = 'roulette-result';
+                result.id = 'rouletteResult';
+                
+                container.appendChild(title);
+                container.appendChild(playerInfo);
+                container.appendChild(wheel);
+                container.appendChild(result);
                 
                 overlay.appendChild(container);
                 document.body.appendChild(overlay);
@@ -2076,15 +2470,32 @@
             setTimeout(() => {
                 const winnerName = gameState.players[winner].name;
                 const winnerAvatar = gameState.players[winner].avatar;
-                resultEl.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
-                        <div style="font-size: 32px;">${winnerAvatar}</div>
-                        <div>
-                            <div style="font-size: 20px; color: #feca57;">🎉 ${winnerName}の先攻！</div>
-                            <div style="font-size: 14px; opacity: 0.8; margin-top: 5px;">ゲームを開始します...</div>
-                        </div>
-                    </div>
-                `;
+                
+                // XSS対策：DOM構築で名前を安全に挿入
+                const resultContainer = document.createElement('div');
+                resultContainer.style.cssText = 'display: flex; align-items: center; justify-content: center; gap: 15px;';
+                
+                const avatarDiv = document.createElement('div');
+                avatarDiv.style.fontSize = '32px';
+                avatarDiv.textContent = winnerAvatar;
+                
+                const textDiv = document.createElement('div');
+                
+                const winText = document.createElement('div');
+                winText.style.cssText = 'font-size: 20px; color: #feca57;';
+                winText.textContent = `🎉 ${winnerName}の先攻！`;
+                
+                const subText = document.createElement('div');
+                subText.style.cssText = 'font-size: 14px; opacity: 0.8; margin-top: 5px;';
+                subText.textContent = 'ゲームを開始します...';
+                
+                textDiv.appendChild(winText);
+                textDiv.appendChild(subText);
+                resultContainer.appendChild(avatarDiv);
+                resultContainer.appendChild(textDiv);
+                
+                resultEl.innerHTML = '';
+                resultEl.appendChild(resultContainer);
                 
                 // 勝利音
                 playSound('success');
@@ -2103,19 +2514,20 @@
         function playRouletteSound() {
             if (!gameState.soundEnabled) return;
             
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            ensureAudio();
+            if (!audioCtx) return;
             
             // 回転音を3秒間再生
             let frequency = 200;
             const duration = 3000;
-            const startTime = audioContext.currentTime;
+            const startTime = audioCtx.currentTime;
             
             function createTick(time, freq) {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
                 
                 oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
+                gainNode.connect(audioCtx.destination);
                 
                 oscillator.frequency.setValueAtTime(freq, time);
                 gainNode.gain.setValueAtTime(0.05, time);
@@ -2148,7 +2560,7 @@
                 document.getElementById(`player${i + 1}Name`).textContent = player.name;
                 document.getElementById(`player${i + 1}Avatar`).textContent = player.avatar;
                 
-                const hpPercent = (player.hp / player.maxHp) * 100;
+                const hpPercent = Math.max(0, Math.min(100, (player.hp / player.maxHp) * 100));
                 document.getElementById(`player${i + 1}HpBar`).style.width = `${hpPercent}%`;
                 document.getElementById(`player${i + 1}HpText`).textContent = `${player.hp}/${player.maxHp}`;
             }
@@ -2219,8 +2631,9 @@
                     }
                     
                     handCard.innerHTML = `
-                        <div style="font-weight: 700; font-size: 12px;">${card.text}</div>
-                        <div style="font-size: 9px; opacity: 0.8;">${'★'.repeat(card.difficulty)}</div>
+                        <div style="font-weight: 700; font-size: 11px;">${card.text}</div>
+                        <div style="font-size: 8px; opacity: 0.8;">${'★'.repeat(card.difficulty)}</div>
+                        <div style="font-size: 7px; opacity: 0.7;">${card.category}</div>
                     `;
                     container.appendChild(handCard);
                 });
@@ -2248,12 +2661,33 @@
                 cardElement.className = isHealCard ? 'card heal' : 'card attack';
                 cardElement.onclick = () => selectCard(index);
                 
+                // キーボードアクセシビリティ対応
+                cardElement.tabIndex = 0;
+                cardElement.setAttribute('role', 'button');
+                cardElement.setAttribute('aria-label', `${card.text}、難易度${card.difficulty}`);
+                cardElement.addEventListener('keydown', e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        selectCard(index);
+                    }
+                });
+                
                 const stars = '★'.repeat(card.difficulty);
                 const categoryDisplay = isHealCard ? '💚 いりょう' : '⚔️ ' + card.category;
                 
+                // 文字数に応じてテキストサイズクラスを決定
+                const textLength = card.text.length;
+                let textSizeClass = 'medium';
+                if (textLength <= 3) textSizeClass = 'short';
+                else if (textLength <= 6) textSizeClass = 'medium';
+                else if (textLength <= 9) textSizeClass = 'long';
+                else if (textLength <= 12) textSizeClass = 'very-long';
+                else textSizeClass = 'extra-long';
+                
                 cardElement.innerHTML = `
-                    <div class="card-text">${card.text}</div>
-                    <div class="card-difficulty">${stars} ${categoryDisplay}</div>
+                    <div class="card-text ${textSizeClass}">${card.text}</div>
+                    <div class="card-difficulty">${stars}</div>
+                    <div class="card-category">${categoryDisplay}</div>
                 `;
                 
                 container.appendChild(cardElement);
@@ -2306,53 +2740,33 @@
                         overlay.remove();
                         resolve();
                     }, 800);
-                }, 1200);
+                }, 1200); // Readyを1.2秒表示
             });
         }
 
         // タイピングフェーズ開始
         async function startTypingPhase() {
             gameState.gamePhase = 'typing';
-            gameState.timer = 15;
+            gameState.timer = 12;
+            
+            // タイマーリングを即更新
+            const timerRing = document.getElementById('timerRing');
+            timerRing.textContent = 12;
+            timerRing.style.background = 'conic-gradient(#feca57 360deg, rgba(255,255,255,0.2) 360deg)';
             
             // カウントダウン表示
             await showCountdown();
             
-            // キーボードイベントを有効化
-            document.addEventListener('keydown', handleKeyPress);
-            
-            // IME入力イベントを追加
-            document.addEventListener('compositionstart', () => {
-                isComposing = true;
-            });
-            
-            document.addEventListener('compositionend', () => {
-                isComposing = false;
-            });
+            // タイピングハンドラーを有効化
+            enableTyping();
             
             // タイマー開始
             startTimer();
         }
 
         // タイマー開始
-        function startTimer() {
-            clearInterval(gameState.timerInterval);
-            gameState.timerInterval = setInterval(() => {
-                if (gameState.isPaused) return;
-
-                gameState.timer--;
-                
-                const timerRing = document.getElementById('timerRing');
-                timerRing.textContent = gameState.timer;
-
-                const progress = (gameState.timer / 15) * 360;
-                timerRing.style.background =
-                    `conic-gradient(#feca57 ${progress}deg, rgba(255,255,255,0.2) ${progress}deg)`;
-
-                if (gameState.timer <= 0) {
-                    timeUp();
-                }
-            }, 1000);
+        function startTimer() { 
+            startAccurateTimer(12000); 
         }
 
         // 複数候補対応のタイピング状態
@@ -2369,8 +2783,12 @@
             // IME入力中は処理しない
             if (isComposing) return;
             
+            // キー長押しの暴発を無効化
+            if (event.repeat) return;
+            
             // 全角文字を半角に変換
-            const key = normalizeInput(event.key);
+            let key = normalizeInput(event.key);
+            if (key === 'subtract') key = '-'; // NumpadSubtract 対応
             
             // 特殊キーの処理
             if (key === 'enter') {
@@ -2388,8 +2806,8 @@
                 return;
             }
             
-            // アルファベットのみ受け付け（全角も対応）
-            if (!/^[a-z]$/.test(key)) return;
+            // アルファベット・ハイフン・アポストロフィを許可（全角も対応）
+            if (!/^[a-z\-']$/.test(key)) return;
             
             event.preventDefault();
             
@@ -2424,64 +2842,63 @@
                 // 正しいキー
                 typingState.typedKeys += key;
                 
+                // 候補を間引く：入力プレフィックスに一致するもののみ残す
+                const pref = typingState.typedKeys;
+                const validIndices = [];
+                
+                typingState.targetOptions.forEach((opt, i) => {
+                    if (opt.startsWith(pref)) {
+                        validIndices.push(i);
+                    }
+                });
+                
+                // フィルタリング実行
+                typingState.targetOptions = validIndices.map(i => typingState.targetOptions[i]);
+                typingState.currentInputs = validIndices.map(i => typingState.currentInputs[i]);
+                
                 updateRomajiDisplay();
                 updateTypingGuideProgress();
+                refreshRomajiGuideToLeader();
                 
                 // いずれかの候補が完了したら即座に送信
                 if (completedCount > 0) {
                     console.log('入力完了検出 - 即座に送信');
                     // タイマーを停止
-                    clearInterval(gameState.timerInterval);
+                    stopTimer();
                     // 少し遅延を入れて確実に処理
                     setTimeout(() => {
                         submitAnswer();
                     }, 50);
                 }
             } else {
-                // 間違ったキー - 3秒ペナルティ
-                gameState.timer = Math.max(0, gameState.timer - 3);
-                
-                // タイマー表示を即座に更新
-                const timerRing = document.getElementById('timerRing');
-                timerRing.textContent = gameState.timer;
-                const progress = (gameState.timer / 15) * 360;
-                timerRing.style.background =
-                    `conic-gradient(#feca57 ${progress}deg, rgba(255,255,255,0.2) ${progress}deg)`;
-                
-                // ペナルティエフェクト表示
+                // 間違ったキー - 2秒ペナルティ
+                adjustTimer(-2000);           // ← これだけでOK
                 showPenaltyEffect();
-                
                 playSound('fail');
-                
-                // 時間切れチェック
-                if (gameState.timer <= 0) {
-                    timeUp();
-                }
             }
+        }
+
+        // ローマ字ガイドを最も進んだ候補に更新
+        function refreshRomajiGuideToLeader() {
+            const romajiEl = document.getElementById('romajiGuide');
+            if (!typingState.currentInputs.length) return;
+
+            let leaderIdx = 0, best = -1;
+            typingState.currentInputs.forEach((inp, i) => {
+                if (inp.position > best) { best = inp.position; leaderIdx = i; }
+            });
+
+            const leader = typingState.targetOptions[leaderIdx] || '';
+            const pos = typingState.currentInputs[leaderIdx].position || 0;
+
+            romajiEl.innerHTML = [...leader].map((ch, i) =>
+                `<span class="romaji-char ${i < pos ? 'typed' : (i === pos ? 'current' : '')}" data-index="${i}">${ch}</span>`
+            ).join('');
         }
 
         // ローマ字表示更新（複数候補対応）
         function updateRomajiDisplay() {
-            const romajiEl = document.getElementById('romajiGuide');
-            const chars = romajiEl.querySelectorAll('.romaji-char');
-            
-            // 最も進んでいる候補の位置を取得
-            let maxPosition = 0;
-            typingState.currentInputs.forEach(input => {
-                if (input.position > maxPosition) {
-                    maxPosition = input.position;
-                }
-            });
-            
-            chars.forEach((char, index) => {
-                char.classList.remove('typed', 'current');
-                
-                if (index < maxPosition) {
-                    char.classList.add('typed');
-                } else if (index === maxPosition) {
-                    char.classList.add('current');
-                }
-            });
+            refreshRomajiGuideToLeader();
         }
 
         // エフェクトレイヤー取得/作成
@@ -2494,6 +2911,19 @@
                 document.body.appendChild(fxLayer);
             }
             return fxLayer;
+        }
+
+        function getFXScale(){
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 0.4;
+            const mem   = navigator.deviceMemory || 4;
+            const cores = navigator.hardwareConcurrency || 4;
+            const saveData = navigator.connection && navigator.connection.saveData;
+            let scale = 1.0;
+            if (mem <= 2)   scale *= 0.5;
+            if (cores <= 4) scale *= 0.7;
+            if (saveData)   scale *= 0.6;
+            if (Math.min(window.innerWidth, window.innerHeight) < 700) scale *= 0.8; // 小画面
+            return Math.max(0.3, Math.min(1, scale));
         }
 
         // 属性別設定テーブル
@@ -2802,7 +3232,7 @@
 
         // パーティクル爆発生成（画面全体スケール）
         function createParticleExplosion(fxLayer, attr, config, x, y) {
-            const particleCount = Math.min(config.particles, 120); // スマホ配慮
+            const particleCount = Math.round(Math.min(config.particles, 120) * getFXScale());
             
             for (let i = 0; i < particleCount; i++) {
                 const particle = document.createElement('div');
@@ -2854,7 +3284,8 @@
             switch (attr) {
                 case 'fire':
                     // 巨大火花リング
-                    for (let i = 0; i < 5; i++) {
+                    const fxScale = getFXScale();
+                    for (let i = 0; i < Math.round(5 * fxScale); i++) {
                         const ring = document.createElement('div');
                         ring.style.position = 'absolute';
                         ring.style.left = (x - 100) + 'px';
@@ -2900,7 +3331,8 @@
                     
                 case 'water':
                     // 巨大水のリップル
-                    for (let i = 0; i < 4; i++) {
+                    const waterFxScale = getFXScale();
+                    for (let i = 0; i < Math.round(4 * waterFxScale); i++) {
                         const ripple = document.createElement('div');
                         ripple.style.position = 'absolute';
                         ripple.style.left = (x - 150) + 'px';
@@ -2946,7 +3378,8 @@
                     
                 case 'thunder':
                     // 巨大電撃アーク
-                    for (let i = 0; i < 8; i++) {
+                    const thunderFxScale = getFXScale();
+                    for (let i = 0; i < Math.round(8 * thunderFxScale); i++) {
                         const arc = document.createElement('div');
                         arc.style.position = 'absolute';
                         arc.style.left = x + 'px';
@@ -2994,7 +3427,8 @@
                     
                 case 'wind':
                     // 巨大竜巻エフェクト
-                    for (let i = 0; i < 3; i++) {
+                    const windFxScale = getFXScale();
+                    for (let i = 0; i < Math.round(3 * windFxScale); i++) {
                         const tornado = document.createElement('div');
                         tornado.style.position = 'absolute';
                         tornado.style.left = (x - 75) + 'px';
@@ -3020,7 +3454,8 @@
                     
                 case 'earth':
                     // 地面全体の亀裂エフェクト
-                    for (let i = 0; i < 6; i++) {
+                    const earthFxScale = getFXScale();
+                    for (let i = 0; i < Math.round(6 * earthFxScale); i++) {
                         const crack = document.createElement('div');
                         crack.style.position = 'absolute';
                         crack.style.left = '0px';
@@ -3044,48 +3479,52 @@
                     }
                     break;
                     
-                case 'light':
-                    // 巨大星型バースト
-                    const star = document.createElement('div');
-                    star.innerHTML = '✨';
-                    star.style.position = 'absolute';
-                    star.style.left = (x - 100) + 'px';
-                    star.style.top = (y - 100) + 'px';
-                    star.style.fontSize = '200px';
-                    star.style.filter = `drop-shadow(0 0 100px ${config.colors[0]}) drop-shadow(0 0 200px white)`;
-                    fxLayer.appendChild(star);
-                    
-                    star.animate([
-                        { transform: 'scale(0) rotate(0deg)', opacity: 1 },
-                        { transform: 'scale(3) rotate(360deg)', opacity: 0 }
-                    ], {
-                        duration: 800,
-                        easing: 'ease-out'
-                    }).addEventListener('finish', () => star.remove());
-                    
-                    // 光の柱エフェクト
-                    const lightBeam = document.createElement('div');
-                    lightBeam.style.position = 'absolute';
-                    lightBeam.style.left = (x - 25) + 'px';
-                    lightBeam.style.top = '0px';
-                    lightBeam.style.width = '50px';
-                    lightBeam.style.height = '100vh';
-                    lightBeam.style.background = `linear-gradient(0deg, transparent, ${config.colors[1]}, ${config.colors[0]}, transparent)`;
-                    lightBeam.style.opacity = '0.8';
-                    lightBeam.style.boxShadow = `0 0 100px ${config.colors[0]}`;
-                    fxLayer.appendChild(lightBeam);
-                    
-                    lightBeam.animate([
-                        { opacity: 0, transform: 'scaleX(0)' },
-                        { opacity: 0.8, transform: 'scaleX(1)' },
-                        { opacity: 0, transform: 'scaleX(0)' }
-                    ], {
-                        duration: 600,
-                        easing: 'ease-out'
-                    }).addEventListener('finish', () => lightBeam.remove());
+                                case 'light': {
+                    // シンプルな星型バースト＋外周リング（仮実装でも十分映える）
+                    const ring = document.createElement('div');
+                    ring.style.position = 'absolute';
+                    ring.style.left = (x - 100) + 'px';
+                    ring.style.top = (y - 100) + 'px';
+                    ring.style.width = '200px';
+                    ring.style.height = '200px';
+                    ring.style.borderRadius = '50%';
+                    ring.style.boxShadow = `0 0 60px ${config.colors[0]}, inset 0 0 40px white`;
+                    ring.style.opacity = '0.9';
+                    fxLayer.appendChild(ring);
+
+                    ring.animate(
+                        [{ transform: 'scale(0)', opacity: 1 },
+                         { transform: 'scale(5)', opacity: 0 }],
+                        { duration: 700, easing: 'ease-out' }
+                    ).addEventListener('finish', () => ring.remove());
+
+                    // 光の星粒を四方に
+                    for (let i = 0; i < 24; i++) {
+                        const p = document.createElement('div');
+                        p.textContent = '✨';
+                        p.style.position = 'absolute';
+                        p.style.left = x + 'px';
+                        p.style.top = y + 'px';
+                        p.style.fontSize = (16 + Math.random() * 10) + 'px';
+                        p.style.filter = 'drop-shadow(0 0 8px white)';
+                        fxLayer.appendChild(p);
+
+                        const ang = (i / 24) * Math.PI * 2;
+                        const dist = 160 + Math.random() * 120;
+                        const dx = Math.cos(ang) * dist;
+                        const dy = Math.sin(ang) * dist;
+
+                        p.animate(
+                            [{ transform: 'translate(0,0) scale(0.8)', opacity: 1 },
+                             { transform: `translate(${dx}px, ${dy}px) scale(1.2)`, opacity: 0 }],
+                            { duration: 800 + Math.random() * 300, easing: 'ease-out' }
+                        ).addEventListener('finish', () => p.remove());
+                    }
                     break;
-            }
-        }
+                }
+            } // ← switch(attr) の閉じ
+        } // ← function createSpecialImpactEffect の閉じ
+
 
         // 被弾エフェクト（不正解時）
         function playHitEffect(playerIndex) {
@@ -3129,94 +3568,484 @@
             }).addEventListener('finish', () => flash.remove());
         }
 
-        // 答え送信
-        async function submitAnswer() {
-            const target = gameState.selectedCard.text;
-            const targetLen = countChars(target);
-            const remainingTime = gameState.timer;
-            const timeUsed = Math.max(0, 15 - remainingTime);
-
-            // 統計：試行ごとに更新
-            gameState.stats.totalChars += targetLen;
-            gameState.stats.totalTime += timeUsed;
-
-            // いずれかの候補が完了していれば成功
-            const success = typingState.currentInputs.some(input => input.completed);
-            console.log('送信時の成功判定:', success);
-            console.log(`文字数: ${targetLen}, 残り時間: ${remainingTime}秒`);
-
-            if (success) {
-                // 正解処理
-                const isHealCard = gameState.selectedCard.category === 'いりょう';
-                
-                if (isHealCard) {
-                    // 医療カード - 回復処理
-                    const healAmount = Math.floor(targetLen * remainingTime);
-                    console.log(`回復計算: ${targetLen} × ${remainingTime} = ${healAmount}`);
-                    healPlayer(gameState.currentPlayer, healAmount);
-                    playSound('heal');
-                } else {
-                    // 通常カード - 攻撃処理
-                    const damage = Math.floor(targetLen * remainingTime);
-                    console.log(`攻撃計算: ${targetLen} × ${remainingTime} = ${damage}`);
-                    
-                    // 攻撃アニメーション
-                    await playAttackAnimation({
-                        attr: gameState.players[gameState.currentPlayer].attribute,
-                        from: gameState.currentPlayer === 0 ? 'left' : 'right',
-                        targetEl: document.getElementById(`player${2 - gameState.currentPlayer}Avatar`),
-                        impactMs: 600
-                    });
-                    
-                    // ダメージ処理
-                    dealDamage(1 - gameState.currentPlayer, damage);
-                }
-                
-                gameState.stats.correctChars += targetLen;
-                gameState.stats.combo++;
-                gameState.stats.maxCombo = Math.max(gameState.stats.maxCombo, gameState.stats.combo);
-            } else {
-                // 不正解 - 被弾エフェクト
-                playHitEffect(gameState.currentPlayer);
-                const selfDamage = targetLen * 10;
-                console.log(`自傷ダメージ計算: ${targetLen} × 10 = ${selfDamage}`);
-                dealDamage(gameState.currentPlayer, selfDamage);
-                gameState.stats.combo = 0;
-                playSound('fail');
-            }
-            
-            endTurn();
+        // HP管理の統一関数（事故防止）
+        function setHp(playerIndex, value) {
+            const player = gameState.players[playerIndex];
+            player.hp = Math.max(0, Math.min(player.maxHp, value));
+            updateUI();
         }
 
-        // ギブアップ
-        function giveUp() {
-            const targetLen = countChars(gameState.selectedCard.text);
-            const timeUsed = Math.max(0, 15 - gameState.timer);
-            gameState.stats.totalChars += targetLen;
-            gameState.stats.totalTime += timeUsed;
+        function addHp(playerIndex, delta) {
+            setHp(playerIndex, gameState.players[playerIndex].hp + delta);
+        }
 
-            // 被弾エフェクト
-            playHitEffect(gameState.currentPlayer);
-            const selfDamage = targetLen * 10;
-            dealDamage(gameState.currentPlayer, selfDamage);
-            gameState.stats.combo = 0;
-            playSound('fail');
-            endTurn();
+        // ペナルティエフェクト表示
+        function showPenaltyEffect() {
+            const timerRing = document.getElementById('timerRing');
+            const penaltyElement = document.createElement('div');
+            penaltyElement.className = 'damage-number';
+            penaltyElement.textContent = '-2秒';
+            penaltyElement.style.left = '50%';
+            penaltyElement.style.top = '20%';
+            penaltyElement.style.color = '#ff6b6b';
+            penaltyElement.style.fontSize = '20px';
+            
+            timerRing.style.position = 'relative';
+            timerRing.appendChild(penaltyElement);
+            
+            // タイマーリングを赤く点滅とシェイク
+            timerRing.style.boxShadow = '0 0 20px rgba(255, 107, 107, 0.8)';
+            timerRing.classList.add('shake');
+            setTimeout(() => {
+                timerRing.style.boxShadow = '';
+                timerRing.classList.remove('shake');
+                if (penaltyElement.parentNode) {
+                    penaltyElement.remove();
+                }
+            }, 1000);
         }
 
         // 時間切れ
         function timeUp() {
+            if (!gameState.selectedCard || gameState.gamePhase !== 'typing') return;
+            
+            // 入力ハンドラーを即座に無効化
+            disableTyping();
+            clearTypingDisplay();
+            
+            // 統計更新
+            const targetLen = countChars(gameState.selectedCard.text);
+            const currentPlayerIndex = gameState.currentPlayer;
+            
+            gameState.playerStats[currentPlayerIndex].totalChars += targetLen;
+            gameState.playerStats[currentPlayerIndex].totalTime += 12;
+            gameState.playerStats[currentPlayerIndex].combo = 0;
+            
+            // 全体統計も更新
+            gameState.stats.totalChars += targetLen;
+            gameState.stats.totalTime += 12;
+            gameState.stats.combo = 0;
+            
+            // 集約ロジックへ（失敗扱い）
+            applyResult({ success: false });
+        }
+
+        // ギブアップ
+        function giveUp() {
+            if (!gameState.selectedCard) return;
+            
+            // 入力ハンドラーを即座に無効化
+            disableTyping();
+            clearTypingDisplay();
+            
+            // 統計更新
+            const targetLen = countChars(gameState.selectedCard.text);
+            const timeUsed = Math.max(0, 12 - gameState.timer);
+            const currentPlayerIndex = gameState.currentPlayer;
+            
+            gameState.playerStats[currentPlayerIndex].totalChars += targetLen;
+            gameState.playerStats[currentPlayerIndex].totalTime += timeUsed;
+            gameState.playerStats[currentPlayerIndex].combo = 0;
+            
+            // 全体統計も更新
+            gameState.stats.totalChars += targetLen;
+            gameState.stats.totalTime += timeUsed;
+            gameState.stats.combo = 0;
+            
+            applyResult({ success: false });
+        }
+
+        // 音声再生
+        function playSound(type) {
+            if (!gameState.soundEnabled) return;
+            
+            ensureAudio();
+            if (!audioCtx) return;
+            
+            // 確実な起動のため再生直前でもresume
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            // 簡易音声（実際の実装では適切な音声ファイルを使用）
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (type === 'success') {
+                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                oscillator.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+            } else if (type === 'attack') {
+                // 攻撃音：力強い低音から高音へ
+                oscillator.frequency.setValueAtTime(150, audioCtx.currentTime); // 低音
+                oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.2);
+                oscillator.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.4);
+            } else if (type === 'heal') {
+                // 回復音：美しい和音
+                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                oscillator.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                oscillator.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+                oscillator.frequency.setValueAtTime(1046.50, audioCtx.currentTime + 0.3); // C6
+            } else if (type === 'charge') {
+                // 溜め音：低音から高音へ
+                oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.3);
+            } else if (type === 'fail') {
+                oscillator.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+                oscillator.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.3); // 下降
+            } else {
+                oscillator.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+            }
+            
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (type === 'heal' ? 0.5 : type === 'attack' ? 0.4 : 0.3));
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + (type === 'heal' ? 0.5 : type === 'attack' ? 0.4 : 0.3));
+        }
+
+        // ゲーム一時停止
+        function pauseGame() {
+            if (gameState.gamePhase !== 'typing') return;
+
+            if (!gameState.isPaused) {
+                gameState.isPaused = true;
+                stopTimer(); // rAF停止でCPU消費を抑制
+                document.getElementById('pauseBtn').textContent = '▶️';
+                showModal('⏸️ 一時停止', `
+                    <p>ゲームを一時停止しました</p>
+                    <button class="btn btn-primary" onclick="resumeGame()">再開</button>
+                `);
+            } else {
+                resumeGame();
+            }
+        }
+
+        // ゲーム再開
+        function resumeGame() {
+            gameState.isPaused = false;
+            document.getElementById('pauseBtn').textContent = '⏸️';
+            hideModal();
+            // 期限は保持してあるので残り時間で再開
+            const remainingMs = Math.max(0, timerDeadline - performance.now());
+            if (remainingMs > 0) {
+                startAccurateTimer(remainingMs);
+            }
+        }
+
+        // メニューに戻る
+        function backToMenu() {
+            // ゲーム状態リセット
+            gameState = {
+                mode: null,
+                maxHP: 200,
+                players: [
+                    { name: 'プレイヤー1', hp: 200, maxHp: 200, avatar: '🔥', attribute: 'fire' },
+                    { name: 'CPU', hp: 200, maxHp: 200, avatar: '🤖', attribute: 'water' }
+                ],
+                currentPlayer: 0,
+                selectedCard: null,
+                hands: [[], []],
+                deck: [],
+                discard: [],
+                timer: 15,
+                timerInterval: null,
+                gamePhase: 'cardSelect',
+                soundEnabled: true,
+                isPaused: false,
+                playerStats: [
+                    { totalChars: 0, correctChars: 0, totalTime: 0, combo: 0, maxCombo: 0 },
+                    { totalChars: 0, correctChars: 0, totalTime: 0, combo: 0, maxCombo: 0 }
+                ],
+                stats: {
+                    totalChars: 0,
+                    correctChars: 0,
+                    totalTime: 0,
+                    combo: 0,
+                    maxCombo: 0
+                }
+            };
+            
+            stopTimer();
+            disableTyping();
+            hideModal();
+            document.getElementById('gameContainer').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('characterSelection').classList.add('hidden');
+            document.getElementById('gameRules').classList.add('hidden');
+            document.getElementById('player2Setup').classList.add('hidden');
+            
+            // 選択状態をリセット
+            document.querySelectorAll('.mode-btn, .character-btn, .hp-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // デフォルトHP選択
+            document.querySelector('[data-hp="200"]').classList.add('selected');
+            
+            // 名前入力をリセット
+            document.getElementById('player1NameInput').value = 'プレイヤー1';
+            document.getElementById('player2NameInput').value = 'プレイヤー2';
+            document.getElementById('nextBtn').disabled = true;
+        }
+
+        // ターン開始
+        function startTurn() {
+            showTurnPopup(gameState.players[gameState.currentPlayer].name);
+            updateUI();
+            
+            // カード表示エリアを完全にクリア
+            const container = document.getElementById('cardsContainer');
+            container.innerHTML = '';
+            container.classList.remove('active');
+            
+            // タイピングガイドもクリア
+            clearTypingDisplay();
+            
+            // 新しいカードを描画
+            drawCards();
+            drawPlayerHand();
+            
+            // タイマーリセット
+            document.getElementById('timerRing').textContent = '12';
+            document.getElementById('timerRing').style.background = 
+                'conic-gradient(#feca57 360deg, rgba(255, 255, 255, 0.2) 360deg)';
+            
+            // CPU判定
+            if (gameState.mode === 'cpu' && gameState.currentPlayer === 1) {
+                setTimeout(cpuAct, 700);
+            }
+        }
+
+        // 結果適用ユーティリティ
+        async function applyResult({ success }) {
+            const card = gameState.selectedCard;
+            const isHeal = card?.category === 'いりょう';
+            const baseLen = countChars(card?.text || '');
+            const atk = gameState.currentPlayer;
+            const def = 1 - atk;
+
+            // 入力/タイマー停止を先に片付け
+            disableTyping();
+            stopTimer();
+
+            let amount = 0;
+            let effectDuration = 0; // エフェクトの待機時間
+
+            if (success) {
+                amount = baseLen * Math.max(0, gameState.timer); // 成功：文字数×残り秒
+                if (isHeal) {
+                    // 計算ポップアップ表示（回復）
+                    showDamageCalculation(baseLen, gameState.timer, amount, true, false);
+                    
+                    addHp(atk, amount);
+                    playSound('heal');
+                    showFloatingNumber(amount, atk, true);
+                    effectDuration = 1000; // 回復エフェクトの時間
+                } else {
+                    // 計算ポップアップ表示（攻撃）
+                    showDamageCalculation(baseLen, gameState.timer, amount, false, false);
+                    
+                    addHp(def, -amount);
+                    playSound('attack');
+                    const targetEl = document.getElementById(`player${def+1}Avatar`);
+                    // 攻撃アニメーションを待つ
+                    await playAttackAnimation({ attr: gameState.players[atk].attribute, from: atk===0?'left':'right', targetEl });
+                    showFloatingNumber(amount, def, false);
+                    effectDuration = 800; // 攻撃エフェクトの余韻時間
+                }
+            } else {
+                amount = baseLen * 5; // 失敗：自傷
+                
+                // 計算ポップアップ表示（自傷）
+                showDamageCalculation(baseLen, 0, amount, false, true);
+                
+                addHp(atk, -amount);
+                playSound('fail');
+                playHitEffect(atk);
+                showFloatingNumber(amount, atk, false);
+                effectDuration = 600; // 失敗エフェクトの時間
+            }
+
+            // 選んだカードを捨て＆補充
+            const hand = gameState.hands[atk];
+            const idx = hand.indexOf(card);
+            if (idx > -1) hand.splice(idx, 1);
+            if (gameState.deck.length > 0 && hand.length < 6) hand.push(gameState.deck.pop());
+
+            // 片付け
+            gameState.selectedCard = null;
+
+            // タイピング表示をクリア
+            clearTypingDisplay();
+
+            // HP/UIの即時更新
+            updateUI();
+
+            // 勝敗チェック（ここで確定終了）
+            const p0Dead = gameState.players[0].hp <= 0;
+            const p1Dead = gameState.players[1].hp <= 0;
+            if (p0Dead || p1Dead) {
+                const winner = p0Dead && p1Dead ? null : (p0Dead ? 1 : 0);
+                // エフェクト完了を待ってからゲーム終了
+                setTimeout(() => {
+                    endGame(winner);
+                }, effectDuration);
+                return;
+            }
+
+            // エフェクト完了を待ってからターン交代
+            setTimeout(() => {
+                // ★ここでターン交代してから描画★
+                gameState.currentPlayer = def;
+                gameState.gamePhase = 'cardSelect';
+
+                // 次手番の手札/カード描画（交代後！）
+                drawPlayerHand();
+                drawCards();
+
+                // 表示文言更新＆ターン告知
+                updateUI();
+                showTurnPopup(gameState.players[gameState.currentPlayer].name);
+            }, effectDuration);
+        }
+
+        // 浮遊ダメージ数値表示
+        function showFloatingNumber(num, playerIndex, isHeal){
+            const target = document.getElementById(`player${playerIndex+1}Avatar`);
+            const rect = target.getBoundingClientRect();
+            const n = document.createElement('div');
+            n.className = 'damage-number' + (isHeal?' heal':'');
+            n.style.left = rect.left + rect.width/2 + 'px';
+            n.style.top  = rect.top  + 'px';
+            n.textContent = (isHeal?'+':'-') + num;
+            document.body.appendChild(n);
+            setTimeout(()=> n.remove(), 1600);
+        }
+
+        // ダメージ計算ポップアップ表示
+        function showDamageCalculation(charCount, remainingTime, totalDamage, isHeal = false, isSelfDamage = false) {
+            const popup = document.createElement('div');
+            popup.className = 'damage-calculation-popup';
+            
+            let formula, description;
+            if (isSelfDamage) {
+                formula = `${charCount}文字 × 5 = ${totalDamage}ダメージ`;
+                description = '失敗による自傷ダメージ';
+            } else if (isHeal) {
+                formula = `${charCount}文字 × 残り${remainingTime}秒 = ${totalDamage}回復`;
+                description = '医療カードによる回復';
+            } else {
+                formula = `${charCount}文字 × 残り${remainingTime}秒 = ${totalDamage}ダメージ`;
+                description = '攻撃カードによるダメージ';
+            }
+            
+            popup.innerHTML = `
+                <div class="calculation-content ${isHeal ? 'heal' : isSelfDamage ? 'self-damage' : 'attack'}">
+                    <div class="calculation-icon">${isHeal ? '💚' : isSelfDamage ? '💥' : '⚔️'}</div>
+                    <div class="calculation-formula">${formula}</div>
+                    <div class="calculation-description">${description}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(popup);
+            
+            // アニメーション後に削除
+            setTimeout(() => {
+                popup.remove();
+            }, 5000);
+        }
+
+        // 答え送信
+        function submitAnswer() {
+            if (!gameState.selectedCard) return;
+            
+            // 入力ハンドラーを即座に無効化
+            disableTyping();
+            clearTypingDisplay();
+            
+            // 統計更新（現在のプレイヤー用）
+            const targetLen = countChars(gameState.selectedCard.text);
+            const timeUsed = Math.max(0, 12 - gameState.timer);
+            const currentPlayerIndex = gameState.currentPlayer;
+            
+            gameState.playerStats[currentPlayerIndex].totalChars += targetLen;
+            gameState.playerStats[currentPlayerIndex].totalTime += timeUsed;
+            
+            // 全体統計も更新（後方互換性のため）
+            gameState.stats.totalChars += targetLen;
+            gameState.stats.totalTime += timeUsed;
+            
+            // いずれかの候補が完了していれば成功
+            const success = typingState.currentInputs.some(input => input.completed);
+            
+            if (success) {
+                gameState.playerStats[currentPlayerIndex].correctChars += targetLen;
+                gameState.playerStats[currentPlayerIndex].combo++;
+                gameState.playerStats[currentPlayerIndex].maxCombo = Math.max(
+                    gameState.playerStats[currentPlayerIndex].maxCombo, 
+                    gameState.playerStats[currentPlayerIndex].combo
+                );
+                
+                // 全体統計も更新
+                gameState.stats.correctChars += targetLen;
+                gameState.stats.combo++;
+                gameState.stats.maxCombo = Math.max(gameState.stats.maxCombo, gameState.stats.combo);
+            } else {
+                gameState.playerStats[currentPlayerIndex].combo = 0;
+                gameState.stats.combo = 0;
+            }
+            
+            applyResult({ success });
+        }
+
+        // 時間切れ
+        function timeUp() {
+            if (!gameState.selectedCard) return;
+            
+            // 統計更新
             const targetLen = countChars(gameState.selectedCard.text);
             gameState.stats.totalChars += targetLen;
-            gameState.stats.totalTime += 15;
-
-            // 被弾エフェクト
-            playHitEffect(gameState.currentPlayer);
-            const selfDamage = targetLen * 10;
-            dealDamage(gameState.currentPlayer, selfDamage);
+            gameState.stats.totalTime += 12;
             gameState.stats.combo = 0;
-            playSound('fail');
-            endTurn();
+            
+            applyResult({ success: false });
+        }
+
+        // ギブアップ
+        function giveUp() {
+            if (!gameState.selectedCard) return;
+            
+            // 入力ハンドラーを即座に無効化
+            disableTyping();
+            clearTypingDisplay();
+            
+            // 統計更新
+            const targetLen = countChars(gameState.selectedCard.text);
+            const timeUsed = Math.max(0, 12 - gameState.timer);
+            gameState.stats.totalChars += targetLen;
+            gameState.stats.totalTime += timeUsed;
+            gameState.stats.combo = 0;
+            
+            applyResult({ success: false });
+        }
+
+        // 時間切れ
+        function timeUp() {
+            if (!gameState.selectedCard || gameState.gamePhase !== 'typing') return;
+            
+            // 入力ハンドラーを即座に無効化
+            disableTyping();
+            clearTypingDisplay();
+            // 統計
+            const targetLen = countChars(gameState.selectedCard.text);
+            gameState.stats.totalChars += targetLen;
+            gameState.stats.totalTime += 12;
+            gameState.stats.combo = 0;
+            // 集約ロジックへ（失敗扱い）
+            applyResult({ success: false });
         }
 
         // ダメージ処理
@@ -3352,7 +4181,7 @@
             const timerRing = document.getElementById('timerRing');
             const penaltyElement = document.createElement('div');
             penaltyElement.className = 'damage-number';
-            penaltyElement.textContent = '-3秒';
+            penaltyElement.textContent = '-2秒';
             penaltyElement.style.left = '50%';
             penaltyElement.style.top = '20%';
             penaltyElement.style.color = '#ff6b6b';
@@ -3361,86 +4190,114 @@
             timerRing.style.position = 'relative';
             timerRing.appendChild(penaltyElement);
             
-            // タイマーリングを赤く点滅
+            // タイマーリングを赤く点滅とシェイク
             timerRing.style.boxShadow = '0 0 20px rgba(255, 107, 107, 0.8)';
+            timerRing.classList.add('shake');
             setTimeout(() => {
                 timerRing.style.boxShadow = '';
+                timerRing.classList.remove('shake');
                 if (penaltyElement.parentNode) {
                     penaltyElement.remove();
                 }
             }, 1000);
         }
 
-        // ターン終了
-        function endTurn() {
-            clearInterval(gameState.timerInterval);
+
+
+        // ターン開始
+        function startTurn() {
+            showTurnPopup(gameState.players[gameState.currentPlayer].name);
+            updateUI();
             
-            // キーボードイベントを無効化
-            document.removeEventListener('keydown', handleKeyPress);
+            // カード表示エリアを完全にクリア
+            const container = document.getElementById('cardsContainer');
+            container.innerHTML = '';
+            container.classList.remove('active');
             
-            // 使用したカードを捨て札に
-            const handIndex = gameState.hands[gameState.currentPlayer].indexOf(gameState.selectedCard);
-            gameState.hands[gameState.currentPlayer].splice(handIndex, 1);
-            gameState.discard.push(gameState.selectedCard);
-            
-            // プログレスバーは非表示のためリセット不要
-            
-            // タイピングガイドをクリア
+            // タイピングガイドもクリア
+            document.getElementById('typingGuideJP').textContent = '';
             document.getElementById('typingGuideJP').style.setProperty('--fill', '0%');
             document.getElementById('typingGuideSub').innerHTML = '';
             document.getElementById('romajiGuide').innerHTML = '';
             
-            // タイピング状態をリセット
-            typingState = {
-                targetOptions: [],
-                currentInputs: [],
-                typedKeys: ''
-            };
-            
-            // 結果フェーズに移行
-            gameState.gamePhase = 'result';
-            updatePhaseDisplay();
-            
-            // 次のプレイヤーに交代
-            gameState.currentPlayer = 1 - gameState.currentPlayer;
-            gameState.gamePhase = 'cardSelect';
-            gameState.selectedCard = null;
-            
-            // CPUターンまたは次のターン開始（少し遅延を入れる）
-            setTimeout(() => {
-                if (gameState.mode === 'cpu' && gameState.currentPlayer === 1) {
-                    cpuTurn();
-                } else {
-                    startTurn();
-                }
-            }, 2000); // ダメージ演出を見せるため2秒に延長
-        }
-
-        // ターン開始
-        function startTurn() {
-            showTurnPopup();
-            updateUI();
+            // 新しいカードを描画
             drawCards();
             drawPlayerHand();
             
             // タイマーリセット
-            document.getElementById('timerRing').textContent = '15';
+            document.getElementById('timerRing').textContent = '12';
             document.getElementById('timerRing').style.background = 
                 'conic-gradient(#feca57 360deg, rgba(255, 255, 255, 0.2) 360deg)';
+            
+            // CPU判定
+            if (gameState.mode === 'cpu' && gameState.currentPlayer === 1) {
+                setTimeout(cpuAct, 700);
+            }
         }
 
         // ターン切り替えポップアップ表示
-        function showTurnPopup() {
-            const popup = document.createElement('div');
-            popup.className = 'turn-popup';
-            popup.innerHTML = `<h2>${gameState.players[gameState.currentPlayer].name}のターン</h2>`;
-            document.body.appendChild(popup);
+        function showTurnPopup(name) {
+            // 既存のダメージ計算ポップアップを削除
+            document.querySelectorAll('.damage-calculation-popup').forEach(popup => {
+                popup.remove();
+            });
             
-            setTimeout(() => {
-                if (popup.parentNode) {
-                    popup.remove();
-                }
-            }, 2000);
+            const div = document.createElement('div');
+            div.className = 'turn-popup';
+            
+            const content = document.createElement('div');
+            content.className = 'turn-popup-content';
+            
+            const title = document.createElement('h2');
+            title.textContent = `${name}のターン`;
+            
+            const subtitle = document.createElement('div');
+            subtitle.className = 'turn-popup-subtitle';
+            subtitle.textContent = 'カードを選択してください';
+            
+            content.appendChild(title);
+            content.appendChild(subtitle);
+            div.appendChild(content);
+            
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 2500);
+        }
+
+        // CPU行動
+        async function cpuAct() {
+            const hand = gameState.hands[1];
+            const pick = hand.reduce((a, b) => a.difficulty <= b.difficulty ? a : b, hand[0]); // 簡単目
+            gameState.selectedCard = pick;
+            // 90% 成功くらいの確率で
+            const success = Math.random() < 0.9;
+            gameState.timer = Math.floor(4 + Math.random() * 8); // 残秒を適当に
+            
+            // 統計更新（CPU用）
+            const targetLen = countChars(pick.text);
+            const timeUsed = (TURN_MS / 1000) - gameState.timer;
+            
+            gameState.playerStats[1].totalChars += targetLen;
+            gameState.playerStats[1].totalTime += timeUsed;
+            
+            // 全体統計も更新
+            gameState.stats.totalChars += targetLen;
+            gameState.stats.totalTime += timeUsed;
+            
+            if (success) {
+                gameState.playerStats[1].correctChars += targetLen;
+                gameState.playerStats[1].combo++;
+                gameState.playerStats[1].maxCombo = Math.max(gameState.playerStats[1].maxCombo, gameState.playerStats[1].combo);
+                
+                // 全体統計も更新
+                gameState.stats.correctChars += targetLen;
+                gameState.stats.combo++;
+                gameState.stats.maxCombo = Math.max(gameState.stats.maxCombo, gameState.stats.combo);
+            } else {
+                gameState.playerStats[1].combo = 0;
+                gameState.stats.combo = 0;
+            }
+            
+            await applyResult({ success });
         }
 
         // CPUターン
@@ -3505,10 +4362,10 @@
                         
                         gameState.stats.correctChars += charCount;
                         gameState.stats.totalChars += charCount;
-                        gameState.stats.totalTime += (15 - cpuRemainingTime);
+                        gameState.stats.totalTime += (12 - cpuRemainingTime);
                     } else {
                         const charCount = countChars(bestCard.text);
-                        const selfDamage = charCount * 10;
+                        const selfDamage = charCount * 5;
                         
                         console.log(`CPU自傷ダメージ計算: ${charCount} × 10 = ${selfDamage}`);
                         
@@ -3517,7 +4374,7 @@
                         dealDamage(1, selfDamage);
                         
                         gameState.stats.totalChars += charCount;
-                        gameState.stats.totalTime += 15;
+                        gameState.stats.totalTime += 12;
                         
                         playSound('fail');
                     }
@@ -3528,60 +4385,153 @@
         }
 
         // ゲーム終了
-        function endGame(winner) {
-            gameState.gamePhase = 'result';
+        function endGame(winnerIndex) {
+            stopTimer();
+            disableTyping();
+            gameState.gamePhase = 'ended';
+            gameState.selectedCard = null;
+
+            // カードクリックを実質無効化
+            const container = document.getElementById('cardsContainer');
+            if (container) container.innerHTML = '';
+
+            // 両プレイヤーの統計計算
+            const player1Stats = gameState.playerStats[0] || { totalChars: 0, correctChars: 0, totalTime: 0, maxCombo: 0 };
+            const player2Stats = gameState.playerStats[1] || { totalChars: 0, correctChars: 0, totalTime: 0, maxCombo: 0 };
             
-            const winnerName = gameState.players[winner].name;
-            const accuracy = gameState.stats.totalChars > 0 ? 
-                Math.round((gameState.stats.correctChars / gameState.stats.totalChars) * 100) : 0;
-            const avgTime = gameState.stats.totalChars > 0 ? 
-                Math.round((gameState.stats.totalTime / gameState.stats.totalChars) * 10) / 10 : 0;
-            
-            showModal(`🎉 ${winnerName}の勝利！`, `
-                <p>おめでとうございます！</p>
-                <p><strong>戦績</strong></p>
-                <p>最大コンボ: ${gameState.stats.maxCombo}</p>
-                <p>正確性: ${accuracy}%</p>
-                <p>平均入力時間: ${avgTime}秒/文字</p>
-                <button class="btn btn-primary" onclick="backToMenu()">メニューに戻る</button>
-                <button class="btn btn-secondary" onclick="restartGame()">もう一度</button>
-            `);
+            const p1Accuracy = player1Stats.totalChars > 0 ? 
+                Math.round((player1Stats.correctChars / player1Stats.totalChars) * 100) : 0;
+            const p1Speed = player1Stats.totalTime > 0 ? 
+                Math.round((player1Stats.correctChars / player1Stats.totalTime) * 60) : 0;
+                
+            const p2Accuracy = player2Stats.totalChars > 0 ? 
+                Math.round((player2Stats.correctChars / player2Stats.totalChars) * 100) : 0;
+            const p2Speed = player2Stats.totalTime > 0 ? 
+                Math.round((player2Stats.correctChars / player2Stats.totalTime) * 60) : 0;
+
+            // モーダル表示
+            const modal = document.getElementById('modal');
+            const content = document.getElementById('modalContent');
+            const isDraw = winnerIndex === null;
+            const title = isDraw ? '引き分け！' : `勝者：${gameState.players[winnerIndex].name}`;
+            const msg   = isDraw ? '両者のHPが同時に0になりました。' : `${gameState.players[winnerIndex].name}の勝利！`;
+
+            content.innerHTML = `
+                <h2>${title}</h2>
+                <p>${msg}</p>
+                
+                <!-- プレイヤー1の成績 -->
+                <div style="background: rgba(255,107,107,0.1); border: 2px solid rgba(255,107,107,0.3); border-radius: 15px; padding: 20px; margin: 15px 0; text-align: left;">
+                    <h3 style="margin: 0 0 15px 0; color: #ff6b6b; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        ${gameState.players[0].avatar} ${gameState.players[0].name}の成績
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; font-size: 14px;">
+                        <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                            <div style="font-size: 20px; font-weight: 700; color: #4ecdc4;">${p1Accuracy}%</div>
+                            <div style="opacity: 0.8; font-size: 12px;">正確さ</div>
+                            <div style="font-size: 11px; opacity: 0.6;">${player1Stats.correctChars}/${player1Stats.totalChars}文字</div>
+                        </div>
+                        <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                            <div style="font-size: 20px; font-weight: 700; color: #feca57;">${p1Speed}</div>
+                            <div style="opacity: 0.8; font-size: 12px;">文字/分</div>
+                            <div style="font-size: 11px; opacity: 0.6;">平均速度</div>
+                        </div>
+                        <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                            <div style="font-size: 20px; font-weight: 700; color: #ff6b6b;">${player1Stats.maxCombo}</div>
+                            <div style="opacity: 0.8; font-size: 12px;">最大コンボ</div>
+                            <div style="font-size: 11px; opacity: 0.6;">連続成功</div>
+                        </div>
+                        <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                            <div style="font-size: 20px; font-weight: 700; color: #95e1d3;">${Math.round(player1Stats.totalTime)}秒</div>
+                            <div style="opacity: 0.8; font-size: 12px;">総入力時間</div>
+                            <div style="font-size: 11px; opacity: 0.6;">実際の入力</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- プレイヤー2の成績 -->
+                <div style="background: rgba(76,224,196,0.1); border: 2px solid rgba(76,224,196,0.3); border-radius: 15px; padding: 20px; margin: 15px 0; text-align: left;">
+                    <h3 style="margin: 0 0 15px 0; color: #4ecdc4; text-align: center; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        ${gameState.players[1].avatar} ${gameState.players[1].name}の成績
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; font-size: 14px;">
+                        <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                            <div style="font-size: 20px; font-weight: 700; color: #4ecdc4;">${p2Accuracy}%</div>
+                            <div style="opacity: 0.8; font-size: 12px;">正確さ</div>
+                            <div style="font-size: 11px; opacity: 0.6;">${player2Stats.correctChars}/${player2Stats.totalChars}文字</div>
+                        </div>
+                        <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                            <div style="font-size: 20px; font-weight: 700; color: #feca57;">${p2Speed}</div>
+                            <div style="opacity: 0.8; font-size: 12px;">文字/分</div>
+                            <div style="font-size: 11px; opacity: 0.6;">平均速度</div>
+                        </div>
+                        <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                            <div style="font-size: 20px; font-weight: 700; color: #ff6b6b;">${player2Stats.maxCombo}</div>
+                            <div style="opacity: 0.8; font-size: 12px;">最大コンボ</div>
+                            <div style="font-size: 11px; opacity: 0.6;">連続成功</div>
+                        </div>
+                        <div style="text-align: center; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+                            <div style="font-size: 20px; font-weight: 700; color: #95e1d3;">${Math.round(player2Stats.totalTime)}秒</div>
+                            <div style="opacity: 0.8; font-size: 12px;">総入力時間</div>
+                            <div style="font-size: 11px; opacity: 0.6;">実際の入力</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="restartGame()">もう一度</button>
+                    <button class="btn btn-primary" onclick="backToMenu()">メニューへ戻る</button>
+                </div>
+            `;
+            modal.style.display = 'flex';
         }
 
         // 音声再生
         function playSound(type) {
             if (!gameState.soundEnabled) return;
             
-            // 簡易音声（実際の実装では適切な音声ファイルを使用）
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
+            ensureAudio();
+            if (!audioCtx) return;
             
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            if (type === 'success') {
-                oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
-                oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
-            } else if (type === 'heal') {
-                // 回復音：美しい和音
-                oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
-                oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
-                oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
-                oscillator.frequency.setValueAtTime(1046.50, audioContext.currentTime + 0.3); // C6
-            } else if (type === 'charge') {
-                // 溜め音：低音から高音へ
-                oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.3);
-            } else {
-                oscillator.frequency.setValueAtTime(220, audioContext.currentTime); // A3
+            // 確実な起動のため再生直前でもresume
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
             }
             
-            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + (type === 'heal' ? 0.5 : 0.3));
+            // 簡易音声（実際の実装では適切な音声ファイルを使用）
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
             
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + (type === 'heal' ? 0.5 : 0.3));
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (type === 'success') {
+                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                oscillator.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+            } else if (type === 'attack') {
+                // 攻撃音：力強い低音から高音へ
+                oscillator.frequency.setValueAtTime(150, audioCtx.currentTime); // 低音
+                oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.2);
+                oscillator.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.4);
+            } else if (type === 'heal') {
+                // 回復音：美しい和音
+                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                oscillator.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                oscillator.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+                oscillator.frequency.setValueAtTime(1046.50, audioCtx.currentTime + 0.3); // C6
+            } else if (type === 'charge') {
+                // 溜め音：低音から高音へ
+                oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.3);
+            } else {
+                oscillator.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+            }
+            
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (type === 'heal' ? 0.5 : type === 'attack' ? 0.4 : 0.3));
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + (type === 'heal' ? 0.5 : type === 'attack' ? 0.4 : 0.3));
         }
 
         // モーダル表示
@@ -3604,10 +4554,12 @@
                 <p><strong>基本ルール</strong></p>
                 <p>• 設定したHPでスタート</p>
                 <p>• 手札から1枚選んでタイピング</p>
-                <p>• 15秒以内にローマ字で入力</p>
+                <p>• 12秒以内にローマ字で入力</p>
                 <p>• 成功：文字数×残り時間でダメージ</p>
-                <p>• 失敗：文字数×10の自傷ダメージ</p>
-                <p>• 打ち間違え：3秒ペナルティ</p>
+                <p>• 失敗：文字数×5の自傷ダメージ</p>
+                <p>• 打ち間違え：2秒ペナルティ</p>
+                <p>• 長音「ー」はハイフン「-」で入力</p>
+                <p>• 「ん」は n, nn, n', m（次が b/m/p の場合）</p>
                 <p><strong>💚 医療カード</strong></p>
                 <p>• 緑色のオーラが目印</p>
                 <p>• 成功すると自分のHPが回復</p>
@@ -3632,6 +4584,7 @@
 
             if (!gameState.isPaused) {
                 gameState.isPaused = true;
+                stopTimer(); // rAF停止でCPU消費を抑制
                 document.getElementById('pauseBtn').textContent = '▶️';
                 showModal('⏸️ 一時停止', `
                     <p>ゲームを一時停止しました</p>
@@ -3647,6 +4600,11 @@
             gameState.isPaused = false;
             document.getElementById('pauseBtn').textContent = '⏸️';
             hideModal();
+            // 期限は保持してあるので残り時間で再開
+            const remainingMs = Math.max(0, timerDeadline - performance.now());
+            if (remainingMs > 0) {
+                startAccurateTimer(remainingMs);
+            }
         }
 
         // メニューに戻る
@@ -3669,6 +4627,10 @@
                 gamePhase: 'cardSelect',
                 soundEnabled: true,
                 isPaused: false,
+                playerStats: [
+                    { totalChars: 0, correctChars: 0, totalTime: 0, combo: 0, maxCombo: 0 },
+                    { totalChars: 0, correctChars: 0, totalTime: 0, combo: 0, maxCombo: 0 }
+                ],
                 stats: {
                     totalChars: 0,
                     correctChars: 0,
@@ -3678,7 +4640,7 @@
                 }
             };
             
-            clearInterval(gameState.timerInterval);
+            stopTimer();
             hideModal();
             document.getElementById('gameContainer').classList.add('hidden');
             document.getElementById('startScreen').classList.remove('hidden');
@@ -3709,7 +4671,11 @@
                 player.hp = player.maxHp;
             });
             
-            // 統計リセット
+            // 統計リセット（両プレイヤー分）
+            gameState.playerStats = [
+                { totalChars: 0, correctChars: 0, totalTime: 0, combo: 0, maxCombo: 0 },
+                { totalChars: 0, correctChars: 0, totalTime: 0, combo: 0, maxCombo: 0 }
+            ];
             gameState.stats = {
                 totalChars: 0,
                 correctChars: 0,
@@ -3718,10 +4684,23 @@
                 maxCombo: 0
             };
             
+            // ゲーム状態リセット
             gameState.currentPlayer = 0;
             gameState.gamePhase = 'cardSelect';
+            gameState.selectedCard = null;
+            gameState.hands = [[], []];
+            gameState.deck = [];
+            gameState.discard = [];
+            stopTimer();
             
-            initGame();
+            // 2人対戦の場合はルーレットでターン決定
+            if (gameState.mode === 'pvp') {
+                showRouletteAnimation().then(() => {
+                    initGame();
+                });
+            } else {
+                initGame();
+            }
         }
 
         // イベントリスナー
@@ -3745,11 +4724,539 @@
             });
         });
 
+        // モバイル安全装置（画面離脱でタイマー暴走を防止）
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && gameState.gamePhase === 'typing') {
+                gameState.isPaused = true;
+            }
+        });
+
+        // 追加の必要な関数
+        function showPenaltyEffect() {
+            document.body.classList.add('shake');
+            setTimeout(() => document.body.classList.remove('shake'), 300);
+        }
+
+        function showHelp() {
+            showModal('📖 ゲームの遊び方', `
+                <p><strong>基本ルール</strong></p>
+                <p>• 設定したHPでスタート</p>
+                <p>• 手札から1枚選んでタイピング</p>
+                <p>• 12秒以内にローマ字で入力</p>
+                <p>• 成功：文字数×残り時間でダメージ</p>
+                <p>• 失敗：文字数×5の自傷ダメージ</p>
+                <p>• 打ち間違え：2秒ペナルティ</p>
+                <p>• 長音「ー」はハイフン「-」で入力</p>
+                <p>• 「ん」は n, nn, n', m（次が b/m/p の場合）</p>
+                <p><strong>💚 医療カード</strong></p>
+                <p>• 緑色のオーラが目印</p>
+                <p>• 成功すると自分のHPが回復</p>
+                <p>• 回復量：文字数×残り時間</p>
+                <p><strong>操作方法</strong></p>
+                <p>• カードをタップして選択</p>
+                <p>• ローマ字で入力（全角でもOK）</p>
+                <p>• ESCキーでギブアップ</p>
+                <button class="btn btn-primary" onclick="hideModal()">閉じる</button>
+            `);
+        }
+
+        function toggleSound() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            const btn = document.getElementById('soundBtn');
+            if (btn) btn.textContent = gameState.soundEnabled ? '🔊' : '🔇';
+        }
+
+        function pauseGame() {
+            if (gameState.gamePhase !== 'typing') return;
+
+            if (!gameState.isPaused) {
+                gameState.isPaused = true;
+                stopTimer();
+                document.getElementById('pauseBtn').textContent = '▶️';
+                showModal('⏸️ 一時停止', `
+                    <p>ゲームを一時停止しました</p>
+                    <button class="btn btn-primary" onclick="resumeGame()">再開</button>
+                `);
+            } else {
+                resumeGame();
+            }
+        }
+
+        function resumeGame() {
+            gameState.isPaused = false;
+            document.getElementById('pauseBtn').textContent = '⏸️';
+            hideModal();
+            const remainingMs = Math.max(0, timerDeadline - performance.now());
+            if (remainingMs > 0) {
+                startAccurateTimer(remainingMs);
+            }
+        }
+
+        function backToMenu() {
+            location.reload();
+        }
+
+        function submitAnswer() {
+            if (!gameState.selectedCard) return;
+            
+            disableTyping();
+            stopTimer();
+            
+            const card = gameState.selectedCard;
+            const isHeal = card.category === 'いりょう';
+            const baseLen = countChars(card.text);
+            const leftMs = Math.max(0, timerDeadline - performance.now());
+            const remainingTime = Math.ceil(leftMs / 1000);
+            
+            const success = typingState.currentInputs.some(input => input.completed);
+            
+            if (success) {
+                const amount = baseLen * Math.max(1, remainingTime);
+                if (isHeal) {
+                    addHp(gameState.currentPlayer, amount);
+                    showFloatingNumber(amount, gameState.currentPlayer, true);
+                    playSound('heal');
+                } else {
+                    addHp(1 - gameState.currentPlayer, -amount);
+                    showFloatingNumber(amount, 1 - gameState.currentPlayer, false);
+                    playSound('attack');
+                }
+            } else {
+                const selfDamage = baseLen * 5;
+                addHp(gameState.currentPlayer, -selfDamage);
+                showFloatingNumber(selfDamage, gameState.currentPlayer, false);
+                playSound('fail');
+            }
+            
+            // カードを手札から削除
+            const hand = gameState.hands[gameState.currentPlayer];
+            const cardIndex = hand.indexOf(card);
+            if (cardIndex > -1) {
+                hand.splice(cardIndex, 1);
+            }
+            
+            // 新しいカードを引く
+            if (gameState.deck.length > 0 && hand.length < 6) {
+                hand.push(gameState.deck.pop());
+            }
+            
+            gameState.selectedCard = null;
+            clearTypingDisplay();
+            
+            // 勝敗チェック
+            const p1Dead = gameState.players[0].hp <= 0;
+            const p2Dead = gameState.players[1].hp <= 0;
+            
+            if (p1Dead || p2Dead) {
+                const winner = p1Dead && p2Dead ? null : (p1Dead ? 1 : 0);
+                setTimeout(() => endGame(winner), 500);
+                return;
+            }
+            
+            // ターン交代
+            setTimeout(() => {
+                gameState.currentPlayer = 1 - gameState.currentPlayer;
+                gameState.gamePhase = 'cardSelect';
+                startTurn();
+            }, 800);
+        }
+
+        function giveUp() {
+            timeUp();
+        }
+
+        function timeUp() {
+            if (!gameState.selectedCard || gameState.gamePhase !== 'typing') return;
+            
+            disableTyping();
+            clearTypingDisplay();
+            
+            const card = gameState.selectedCard;
+            const selfDamage = countChars(card.text) * 5;
+            
+            addHp(gameState.currentPlayer, -selfDamage);
+            showFloatingNumber(selfDamage, gameState.currentPlayer, false);
+            playSound('fail');
+            
+            // カードを手札から削除
+            const hand = gameState.hands[gameState.currentPlayer];
+            const cardIndex = hand.indexOf(card);
+            if (cardIndex > -1) {
+                hand.splice(cardIndex, 1);
+            }
+            
+            // 新しいカードを引く
+            if (gameState.deck.length > 0 && hand.length < 6) {
+                hand.push(gameState.deck.pop());
+            }
+            
+            gameState.selectedCard = null;
+            
+            // 勝敗チェック
+            const p1Dead = gameState.players[0].hp <= 0;
+            const p2Dead = gameState.players[1].hp <= 0;
+            
+            if (p1Dead || p2Dead) {
+                const winner = p1Dead && p2Dead ? null : (p1Dead ? 1 : 0);
+                setTimeout(() => endGame(winner), 500);
+                return;
+            }
+            
+            // ターン交代
+            setTimeout(() => {
+                gameState.currentPlayer = 1 - gameState.currentPlayer;
+                gameState.gamePhase = 'cardSelect';
+                startTurn();
+            }, 800);
+        }
+
+        // HP管理の統一関数
+        function setHp(playerIndex, value) {
+            const player = gameState.players[playerIndex];
+            player.hp = Math.max(0, Math.min(player.maxHp, value));
+            updateUI();
+        }
+
+        function addHp(playerIndex, delta) {
+            setHp(playerIndex, gameState.players[playerIndex].hp + delta);
+        }
+
+        // 浮遊ダメージ数値表示
+        function showFloatingNumber(num, playerIndex, isHeal) {
+            const target = document.getElementById(`player${playerIndex + 1}Avatar`);
+            const rect = target.getBoundingClientRect();
+            const n = document.createElement('div');
+            n.className = 'damage-number' + (isHeal ? ' heal' : '');
+            n.style.left = rect.left + rect.width / 2 + 'px';
+            n.style.top = rect.top + 'px';
+            n.textContent = (isHeal ? '+' : '-') + num;
+            document.body.appendChild(n);
+            setTimeout(() => n.remove(), 1600);
+        }
+
+        // ===== 最小スタブ＆進行ロジック =====
+        
+        // ターン開始：手札描画→カード選択フェーズへ
+        function startTurn(){
+            gameState.gamePhase = 'cardSelect';
+            clearTypingDisplay();
+            disableTyping();
+            stopTimer();
+            updateUI();
+            drawPlayerHand();
+            drawCards();
+            
+            // CPU判定
+            if (gameState.mode === 'cpu' && gameState.currentPlayer === 1) {
+                setTimeout(cpuAct, 700);
+            }
+        }
+
+        // ターン終了→相手に交代
+        function endTurn(){
+            gameState.selectedCard = null;
+            gameState.currentPlayer = 1 - gameState.currentPlayer;
+            startTurn();
+        }
+
+        // タイムアップ（失敗扱い）
+        function timeUp(){
+            if (!gameState.selectedCard) { endTurn(); return; }
+            
+            disableTyping();
+            clearTypingDisplay();
+            
+            const len = countChars(gameState.selectedCard.text);
+            const self = gameState.currentPlayer;
+            gameState.players[self].hp = Math.max(0, gameState.players[self].hp - len * 5);
+            
+            // 使ったカードを手札から捨てる
+            const hand = gameState.hands[self];
+            const idx = hand.indexOf(gameState.selectedCard);
+            if (idx >= 0) hand.splice(idx, 1);
+            
+            updateUI();
+            
+            // 勝敗チェック
+            if (gameState.players[0].hp <= 0 || gameState.players[1].hp <= 0) {
+                const winner = gameState.players[0].hp <= 0 ? 1 : 0;
+                setTimeout(() => endGame(winner), 500);
+                return;
+            }
+            
+            setTimeout(() => endTurn(), 800);
+        }
+
+        // 答え送信（成功ダメージ／回復）
+        function submitAnswer(){
+            if (!gameState.selectedCard) return;
+
+            disableTyping();
+            stopTimer();
+
+            // 残り時間からダメージ/回復量を概算
+            const msLeft = Math.max(0, timerDeadline - performance.now());
+            const remainSec = Math.max(1, Math.ceil(msLeft / 1000));
+            const len = countChars(gameState.selectedCard.text);
+            const amount = len * remainSec;
+
+            const me = gameState.currentPlayer;
+            const opp = 1 - me;
+
+            // 使ったカードを手札から捨てる
+            const hand = gameState.hands[me];
+            const idx = hand.indexOf(gameState.selectedCard);
+            if (idx >= 0) hand.splice(idx, 1);
+
+            // 回復カード（カテゴリ：いりょう）は回復、それ以外は攻撃
+            if (gameState.selectedCard.category === 'いりょう') {
+                gameState.players[me].hp = Math.min(gameState.players[me].maxHp, gameState.players[me].hp + amount);
+                showFloatingNumber(amount, me, true);
+                playSound('heal');
+            } else {
+                gameState.players[opp].hp = Math.max(0, gameState.players[opp].hp - amount);
+                showFloatingNumber(amount, opp, false);
+                playSound('attack');
+            }
+
+            clearTypingDisplay();
+            updateUI();
+            
+            // 勝敗チェック
+            if (gameState.players[0].hp <= 0 || gameState.players[1].hp <= 0) {
+                const winner = gameState.players[0].hp <= 0 ? 1 : 0;
+                setTimeout(() => endGame(winner), 500);
+                return;
+            }
+            
+            setTimeout(() => endTurn(), 800);
+        }
+
+        // ギブアップ＝即失敗
+        function giveUp(){
+            stopTimer();
+            timeUp();
+        }
+
         // 初期化
         console.log('🎮 タイピングバトル - 学習ゲーム');
         console.log('📝 カード追加方法: CARD_POOL配列に新しいオブジェクトを追加');
         console.log('🎨 属性カスタマイズ: CSS変数 --attr-color を変更');
         console.log('🔊 音声カスタマイズ: playSound関数を編集');
+        /* ====== 必須ロジックの最小実装（ゲームが進む） ====== */
+
+// 効果音（簡易）
+function playSound(type) {
+    if (!gameState.soundEnabled) return;
+    ensureAudio();
+    if (!audioCtx) return;
+
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.connect(g); g.connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+    const ENDS = now + 0.12;
+
+    // 種類別ピッチ
+    const freq = ({
+        success: 880,
+        fail: 220,
+        charge: 440
+    })[type] || 660;
+
+    osc.frequency.setValueAtTime(freq, now);
+    g.gain.setValueAtTime(0.08, now);
+    g.gain.exponentialRampToValueAtTime(0.001, ENDS);
+
+    osc.start(now);
+    osc.stop(ENDS);
+}
+
+// ダメージ/回復の共通反映
+function applyHp(targetIndex, delta) {
+    const p = gameState.players[targetIndex];
+    p.hp = Math.max(0, Math.min(p.maxHp, p.hp + delta)); // deltaは回復なら正、ダメージなら負
+    updateUI();
+
+    // 敗北/勝利判定
+    if (p.hp <= 0) {
+        stopTimer();
+        disableTyping();
+        showModal(`${gameState.players[1 - targetIndex].name} の勝ち！`, `${gameState.players[targetIndex].name} は倒れた…`);
+    }
+}
+
+// ざっくりモーダル（既存 #modal を利用）
+function showModal(title, text) {
+    const modal = document.getElementById('modal');
+    const content = document.getElementById('modalContent');
+    content.innerHTML = `<h2>${title}</h2><p>${text}</p><button class="btn btn-primary" id="modalOk">OK</button>`;
+    modal.style.display = 'flex';
+    document.getElementById('modalOk').onclick = () => { modal.style.display = 'none'; };
+}
+
+// 進行の起点：ターン開始
+function startTurn() {
+    gameState.gamePhase = 'cardSelect';
+    clearTypingDisplay();
+    updatePhaseDisplay();
+    updateUI();
+    drawPlayerHand();
+    drawCards();
+
+    // タイマー表示初期化
+    const ring = document.getElementById('timerRing');
+    ring.textContent = '12';
+    ring.style.background = 'conic-gradient(#feca57 360deg, rgba(255,255,255,0.2) 360deg)';
+
+    // CPU 戦ならCPUの番で自動行動
+    if (gameState.mode === 'cpu' && gameState.currentPlayer === 1) {
+        setTimeout(cpuTurn, 700);
+    }
+}
+
+// CPUの簡易AI（80%成功／3〜10秒残し）
+function cpuTurn() {
+    const hand = gameState.hands[1];
+    if (!hand.length) return endTurn(); // 念のため
+
+    const pick = Math.min(5, hand.length - 1); // 表示6枚のうち末尾
+    gameState.selectedCard = hand[pick];
+
+    // 成功/失敗
+    const succeed = Math.random() < 0.8;
+    if (succeed) {
+        const msLeft = (3000 + Math.random() * 7000); // 3〜10秒
+        const sec = Math.ceil(msLeft / 1000);
+        const base = countChars(gameState.selectedCard.text);
+        const amount = Math.max(1, base * sec);
+
+        // 攻撃 or 回復
+        if (gameState.selectedCard.category === 'いりょう') {
+            applyHp(1, +amount);
+        } else {
+            // 演出（省略可）
+            const targetEl = document.getElementById('player1Avatar');
+            const fromSide = 'right';
+            playAttackAnimation({
+                attr: gameState.players[1].attribute,
+                from: fromSide,
+                targetEl
+            }).catch(()=>{});
+            applyHp(0, -amount);
+        }
+    } else {
+        const selfdmg = countChars(gameState.selectedCard.text) * 5;
+        applyHp(1, -selfdmg);
+    }
+    endTurn();
+}
+
+// 入力完了（Enter不要・自動で呼ばれる想定）
+function submitAnswer() {
+    if (!gameState.selectedCard) return;
+
+    // 残り時間からダメージ計算
+    const msLeft = Math.max(0, timerDeadline - performance.now());
+    const sec = Math.ceil(msLeft / 1000);
+    const base = countChars(gameState.selectedCard.text);
+    const amount = Math.max(1, base * sec);
+
+    stopTimer();
+    disableTyping();
+
+    const me = gameState.currentPlayer;
+    const opp = 1 - me;
+
+    if (gameState.selectedCard.category === 'いりょう') {
+        applyHp(me, +amount);
+    } else {
+        // 攻撃演出（相手アバターをターゲット）
+        const targetEl = document.getElementById(`player${opp + 1}Avatar`);
+        const fromSide = (me === 0) ? 'left' : 'right';
+        playAttackAnimation({
+            attr: gameState.players[me].attribute,
+            from: fromSide,
+            targetEl
+        }).catch(()=>{});
+        applyHp(opp, -amount);
+    }
+    endTurn();
+}
+
+// 時間切れ（失敗）
+function timeUp() {
+    if (!gameState.selectedCard) return;
+    disableTyping();
+
+    const selfdmg = countChars(gameState.selectedCard.text) * 5;
+    const me = gameState.currentPlayer;
+    applyHp(me, -selfdmg);
+    endTurn();
+}
+
+// ギブアップ（ESC）
+function giveUp() {
+    if (!gameState.selectedCard) return;
+    stopTimer();
+    disableTyping();
+
+    const selfdmg = countChars(gameState.selectedCard.text) * 5;
+    const me = gameState.currentPlayer;
+    applyHp(me, -selfdmg);
+    endTurn();
+}
+
+// ペナルティの視覚効果（間違いキー時）
+function showPenaltyEffect() {
+    const tg = document.getElementById('typingGuide');
+    tg.classList.add('shake');
+    setTimeout(() => tg.classList.remove('shake'), 300);
+}
+
+// ターン終了 → 手札整理 → 手番交代 → 次ターンへ
+function endTurn() {
+    // 使用カードを捨て札へ
+    const hand = gameState.hands[gameState.currentPlayer];
+    const idx = hand.indexOf(gameState.selectedCard);
+    if (idx >= 0) {
+        gameState.discard.push(hand.splice(idx, 1)[0]);
+    }
+    gameState.selectedCard = null;
+
+    // 山から補充（常に6枚以下に）
+    if (gameState.deck.length && hand.length < 6) {
+        hand.push(gameState.deck.pop());
+    }
+
+    // 勝敗が出ていればここで止める
+    if (gameState.players[0].hp <= 0 || gameState.players[1].hp <= 0) return;
+
+    // 手番交代
+    gameState.currentPlayer = 1 - gameState.currentPlayer;
+    startTurn();
+}
+
+/* ========== 各種ボタンの最小実装 ========== */
+function showHelp() {
+    showModal('ヘルプ', 'カードを選び、表示されたことばをローマ字で入力します。成功すると残り時間に応じて攻撃（または回復）。失敗やギブアップは自傷になります。');
+}
+function toggleSound() {
+    gameState.soundEnabled = !gameState.soundEnabled;
+    document.getElementById('soundBtn').textContent = gameState.soundEnabled ? '🔊' : '🔇';
+}
+function pauseGame() {
+    gameState.isPaused = !gameState.isPaused;
+    if (gameState.isPaused) { stopTimer(); }
+    else if (gameState.gamePhase === 'typing') { startTimer(); }
+    document.getElementById('pauseBtn').textContent = gameState.isPaused ? '▶️' : '⏸️';
+}
+function backToMenu() {
+    stopTimer(); disableTyping();
+    location.reload(); // シンプルにリロードで開始画面へ
+}
+
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'977a3b766674d50c',t:'MTc1NjYxOTIzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'977b0e14f587d521',t:'MTc1NjYyNzg2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
