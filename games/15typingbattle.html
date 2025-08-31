@@ -3673,6 +3673,45 @@ function createSpecialImpactEffect(fxLayer, attr, config, x, y) {
             
             applyResult({ success: false });
         }
+　　　　function submitAnswer() {
+  // 二重実行ガード
+  if (gameState.gamePhase !== 'typing' || !gameState.selectedCard) return;
+
+  const success = Array.isArray(typingState.currentInputs)
+    && typingState.currentInputs.some(inp => inp.completed);
+
+  const targetLen = countChars(gameState.selectedCard.text);
+  const timeUsed  = Math.max(0, 12 - gameState.timer);
+  const i = gameState.currentPlayer;
+
+  // 個別統計
+  gameState.playerStats[i].totalChars += targetLen;
+  gameState.playerStats[i].totalTime += timeUsed;
+  if (success) {
+    gameState.playerStats[i].correctChars += targetLen;
+    gameState.playerStats[i].combo++;
+    gameState.playerStats[i].maxCombo = Math.max(
+      gameState.playerStats[i].maxCombo,
+      gameState.playerStats[i].combo
+    );
+  } else {
+    gameState.playerStats[i].combo = 0;
+  }
+
+  // 全体統計
+  gameState.stats.totalChars += targetLen;
+  gameState.stats.totalTime  += timeUsed;
+  if (success) {
+    gameState.stats.correctChars += targetLen;
+    gameState.stats.combo++;
+    gameState.stats.maxCombo = Math.max(gameState.stats.maxCombo, gameState.stats.combo);
+  } else {
+    gameState.stats.combo = 0;
+  }
+
+  // ダメージ/回復とターン交代はここでまとめて処理
+  applyResult({ success });
+}
 
         // 音声再生
         function playSound(type) {
