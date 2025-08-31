@@ -2957,14 +2957,20 @@
                 giveUp();
                 return;
             }
-            // Enterで確定（どれかの候補が完了しているとき）
-if (key === 'enter') {
+ // Enterで確定（タイピング画面のときだけ & どれかの候補が完了しているとき）
+if (
+  key === 'enter' &&
+  Array.isArray(typingState?.currentInputs) &&
+  typingState.currentInputs.length > 0
+) {
+  if (event.isComposing) return;     // IME 変換中の Enter は無視
   event.preventDefault();
   if (typingState.currentInputs.some(inp => inp.completed)) {
-    submitAnswer();   // ← stopTimerはsubmitAnswer内でやるのでここでは呼ばない
+    submitAnswer();
   }
   return;
 }
+
 
             // アルファベット・ハイフン・アポストロフィを許可（全角も対応）
             if (!/^[a-z\-']$/.test(key)) return;
