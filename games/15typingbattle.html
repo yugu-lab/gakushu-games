@@ -2336,15 +2336,6 @@ function setupNameInputs() {
                     }
                 }
                 
-                // プレイヤー1の名前入力フィールドを選択状態にする
-                setTimeout(() => {
-                    const nameInput = document.getElementById('player1NameInput');
-                    if (nameInput) {
-                        nameInput.focus();
-                        nameInput.select();
-                        console.log('プレイヤー1名前入力にフォーカス');
-                    }
-                }, 100);
 
                 // デフォルト選択（迷ったらすぐ進める）
                 console.log('デフォルト選択を実行');
