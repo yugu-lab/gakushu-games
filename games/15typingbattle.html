@@ -3429,34 +3429,106 @@
             }
         }
 
-        // 属性別特殊インパクトエフェクト（画面全体スケール）
-        function createSpecialImpactEffect(fxLayer, attr, config, x, y) {
-            switch (attr) {
-                case 'fire':
-                    // 巨大火花リング
-                    const fxScale = getFXScale();
-                    for (let i = 0; i < Math.round(5 * fxScale); i++) {
-                        const ring = document.createElement('div');
-                        ring.style.position = 'absolute';
-                        ring.style.left = (x - 100) + 'px';
-                        ring.style.top = (y - 100) + 'px';
-                        ring.style.width = '200px';
-                        ring.style.height = '200px';
-                        ring.style.border = `6px solid ${config.colors[0]}`;
-                        ring.style.borderRadius = '50%';
-                        ring.style.opacity = '0.8';
-                        ring.style.boxShadow = `0 0 40px ${config.colors[0]}, inset 0 0 40px ${config.colors[1]}`;
-                        fxLayer.appendChild(ring);
-                        
-                        ring.animate([
-                            { transform: 'scale(0) rotate(0deg)', opacity: 0.8 },
-                            { transform: 'scale(6) rotate(360deg)', opacity: 0 }
-                        ], {
-                            duration: 1000,
-                            delay: i * 150,
-                            easing: 'ease-out'
-                        }).addEventListener('finish', () => ring.remove());
-                    }
+       // 属性別特殊インパクトエフェクト（安全版・簡略）
+function createSpecialImpactEffect(fxLayer, attr, config, x, y) {
+  switch (attr) {
+    case 'fire': {
+      const fxScale = getFXScale();
+      for (let i = 0; i < Math.round(5 * fxScale); i++) {
+        const ring = document.createElement('div');
+        ring.style.position = 'absolute';
+        ring.style.left = (x - 100) + 'px';
+        ring.style.top = (y - 100) + 'px';
+        ring.style.width = '200px';
+        ring.style.height = '200px';
+        ring.style.border = `6px solid ${config.colors[0]}`;
+        ring.style.borderRadius = '50%';
+        ring.style.opacity = '0.8';
+        ring.style.boxShadow = `0 0 40px ${config.colors[0]}, inset 0 0 40px ${config.colors[1]}`;
+        fxLayer.appendChild(ring);
+
+        ring.animate(
+          [
+            { transform: 'scale(0) rotate(0deg)',   opacity: 0.8 },
+            { transform: 'scale(6) rotate(360deg)', opacity: 0 }
+          ],
+          { duration: 1000, delay: i * 150, easing: 'ease-out' }
+        ).addEventListener('finish', () => ring.remove());
+      }
+      const pillar = document.createElement('div');
+      pillar.style.position = 'absolute';
+      pillar.style.left = (x - 50) + 'px';
+      pillar.style.top = '0px';
+      pillar.style.width = '100px';
+      pillar.style.height = '100vh';
+      pillar.style.background = `linear-gradient(0deg, transparent, ${config.colors[0]}, ${config.colors[1]}, transparent)`;
+      pillar.style.opacity = '0.6';
+      fxLayer.appendChild(pillar);
+      pillar.animate(
+        [
+          { opacity: 0,   transform: 'scaleX(0)' },
+          { opacity: 0.6, transform: 'scaleX(1)' },
+          { opacity: 0,   transform: 'scaleX(0)' }
+        ],
+        { duration: 800, easing: 'ease-out' }
+      ).addEventListener('finish', () => pillar.remove());
+      break;
+    }
+
+    case 'water': {
+      const waterFxScale = getFXScale();
+      for (let i = 0; i < Math.round(4 * waterFxScale); i++) {
+        const ripple = document.createElement('div');
+        ripple.style.position = 'absolute';
+        ripple.style.left = (x - 150) + 'px';
+        ripple.style.top = (y - 150) + 'px';
+        ripple.style.width = '300px';
+        ripple.style.height = '300px';
+        ripple.style.border = `8px solid ${config.colors[1]}`;
+        ripple.style.borderRadius = '50%';
+        ripple.style.opacity = '0.7';
+        ripple.style.boxShadow = `0 0 60px ${config.colors[0]}`;
+        fxLayer.appendChild(ripple);
+
+        ripple.animate(
+          [
+            { transform: 'scale(0)', opacity: 0.7 },
+            { transform: 'scale(8)', opacity: 0 }
+          ],
+          { duration: 1200, delay: i * 250, easing: 'ease-out' }
+        ).addEventListener('finish', () => ripple.remove());
+      }
+      const wave = document.createElement('div');
+      wave.style.position = 'absolute';
+      wave.style.left = '0px';
+      wave.style.top = (y - 25) + 'px';
+      wave.style.width = '100vw';
+      wave.style.height = '50px';
+      wave.style.background = `linear-gradient(90deg, transparent, ${config.colors[0]}, ${config.colors[1]}, transparent)`;
+      wave.style.opacity = '0.5';
+      fxLayer.appendChild(wave);
+      wave.animate(
+        [
+          { opacity: 0,   transform: 'scaleY(0)' },
+          { opacity: 0.5, transform: 'scaleY(1)' },
+          { opacity: 0,   transform: 'scaleY(0)' }
+        ],
+        { duration: 600, easing: 'ease-out' }
+      ).addEventListener('finish', () => wave.remove());
+      break;
+    }
+
+    // ここから先は、ひとまず「何もしない」安全策にしておく
+    case 'thunder':
+    case 'wind':
+    case 'earth':
+    case 'light':
+    default:
+      // 後で演出を作るときにここを拡張する
+      break;
+  }
+}
+
                     
                     // 火の柱エフェクト
                     const firePillar = document.createElement('div');
