@@ -2943,33 +2943,27 @@
             if (key === 'subtract') key = '-'; // NumpadSubtract 対応
             
             // 特殊キーの処理
-            if (key === 'enter') {
-                event.preventDefault();
-                // いずれかの候補が完了していれば送信
-                if (typingState.currentInputs.some(input => input.completed)) {
-                    submitAnswer();
-                }
-                return;
-            }
-            
+
             if (key === 'escape') {
                 event.preventDefault();
                 giveUp();
                 return;
             }
  // Enterで確定（タイピング画面のときだけ & どれかの候補が完了しているとき）
-if (
-  key === 'enter' &&
-  Array.isArray(typingState?.currentInputs) &&
-  typingState.currentInputs.length > 0
-) {
-  if (event.isComposing) return;     // IME 変換中の Enter は無視
+            
+if (key === 'enter') {
+  if (event.isComposing) return; // 変換中のEnterは無視
   event.preventDefault();
-  if (typingState.currentInputs.some(inp => inp.completed)) {
-    submitAnswer();
+
+  if (Array.isArray(typingState?.currentInputs) &&
+      typingState.currentInputs.some(inp => inp.completed)) {
+    stopTimer();       // タイマー止める
+    disableTyping();   // 入力を一旦止める（多重送信防止）
+    submitAnswer();    // 1回だけ確定
   }
   return;
 }
+
 
 
             // アルファベット・ハイフン・アポストロフィを許可（全角も対応）
