@@ -247,6 +247,38 @@
             overflow: hidden;
         }
 
+        /* 攻撃カード（デフォルト） */
+        .card.attack {
+            background: linear-gradient(145deg, rgba(255, 107, 107, 0.3), rgba(255, 159, 243, 0.2));
+            border: 3px solid rgba(255, 107, 107, 0.5);
+            box-shadow: 0 8px 32px rgba(255, 107, 107, 0.2);
+        }
+
+        .card.attack:hover {
+            border-color: rgba(255, 107, 107, 0.8);
+            box-shadow: 0 20px 40px rgba(255, 107, 107, 0.3);
+        }
+
+        /* 回復カード */
+        .card.heal {
+            background: linear-gradient(145deg, rgba(76, 175, 80, 0.3), rgba(129, 199, 132, 0.2));
+            border: 3px solid rgba(76, 175, 80, 0.6);
+            box-shadow: 0 8px 32px rgba(76, 175, 80, 0.2);
+        }
+
+        .card.heal:hover {
+            border-color: rgba(76, 175, 80, 0.9);
+            box-shadow: 0 20px 40px rgba(76, 175, 80, 0.4);
+        }
+
+        .card.heal .card-text {
+            color: #e8f5e8;
+        }
+
+        .card.heal .card-difficulty {
+            color: #a5d6a7;
+        }
+
         .card::before {
             content: '';
             position: absolute;
@@ -696,55 +728,34 @@
         }
 
         .roulette-title {
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 700;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            animation: titlePulse 2s ease-in-out infinite;
-        }
-
-        @keyframes titlePulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
         }
 
         .roulette-wheel {
-            width: 350px;
-            height: 350px;
+            width: 200px;
+            height: 200px;
             border-radius: 50%;
-            background: conic-gradient(
-                from 0deg,
-                #ff6b6b 0deg 90deg,
-                #ff8a80 90deg 180deg,
-                #4ecdc4 180deg 270deg,
-                #80e5d1 270deg 360deg
-            );
-            border: 12px solid #feca57;
+            background: linear-gradient(90deg, #ff6b6b 50%, #4ecdc4 50%);
+            border: 6px solid #feca57;
             position: relative;
-            margin: 0 auto 40px auto;
-            box-shadow: 
-                0 0 60px rgba(254, 202, 87, 0.8),
-                inset 0 0 30px rgba(0, 0, 0, 0.3);
+            margin: 0 auto 30px auto;
+            box-shadow: 0 0 30px rgba(254, 202, 87, 0.5);
         }
 
         .roulette-pointer {
             position: absolute;
-            top: -25px;
+            top: -15px;
             left: 50%;
             transform: translateX(-50%);
             width: 0;
             height: 0;
-            border-left: 20px solid transparent;
-            border-right: 20px solid transparent;
-            border-top: 40px solid #feca57;
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 24px solid #feca57;
             z-index: 10;
-            animation: pointerGlow 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pointerGlow {
-            0%, 100% { filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)); }
-            50% { filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 20px #feca57); }
         }
 
         .roulette-center {
@@ -752,116 +763,76 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(45deg, #feca57, #ff9ff3);
+            width: 40px;
+            height: 40px;
+            background: #feca57;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-            z-index: 5;
-            border: 4px solid white;
-        }
-
-        .player-section {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
             font-size: 20px;
-            font-weight: 700;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            border: 3px solid white;
+            z-index: 5;
+        }
+
+        .player-info-simple {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 15px;
+            max-width: 400px;
+            margin: 0 auto 20px auto;
+            gap: 40px;
+        }
+
+        .player-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
             padding: 15px 20px;
-            background: rgba(0, 0, 0, 0.6);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            border: 3px solid currentColor;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            min-width: 140px;
         }
 
-        .player-section.left {
-            left: 30px;
-            color: #ff6b6b;
-            flex-direction: row;
+        .player-card.left {
+            border-color: #ff6b6b;
         }
 
-        .player-section.right {
-            right: 30px;
-            color: #4ecdc4;
-            flex-direction: row-reverse;
+        .player-card.right {
+            border-color: #4ecdc4;
         }
 
-        .player-avatar-roulette {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            border: 3px solid currentColor;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        .player-avatar-simple {
+            font-size: 32px;
+            margin-bottom: 8px;
         }
 
-        .wheel-labels {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-
-        .wheel-label {
-            position: absolute;
-            font-size: 18px;
+        .player-name-simple {
+            font-size: 16px;
             font-weight: 700;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 60px;
-            height: 30px;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 15px;
-            backdrop-filter: blur(5px);
+            margin-bottom: 4px;
         }
 
-        .wheel-label.top {
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #ff6b6b;
-        }
-
-        .wheel-label.bottom {
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #4ecdc4;
+        .player-side {
+            font-size: 12px;
+            opacity: 0.8;
         }
 
         .roulette-spinning {
-            animation: rouletteSpin 3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+            animation: rouletteSpin 2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
         }
 
         .roulette-result {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
-            margin-top: 20px;
+            margin-top: 15px;
             opacity: 0;
-            animation: resultFadeIn 0.5s ease-out 3.2s forwards;
+            animation: resultFadeIn 0.5s ease-out 2.2s forwards;
         }
 
         @keyframes rouletteSpin {
             0% { transform: rotate(0deg); }
-            70% { transform: rotate(1800deg); }
-            100% { transform: rotate(var(--final-rotation, 1980deg)); }
+            70% { transform: rotate(1080deg); }
+            100% { transform: rotate(var(--final-rotation, 1170deg)); }
         }
 
         @keyframes resultFadeIn {
@@ -1079,7 +1050,7 @@
         }
 
         .mode-btn {
-            padding: 25px 35px;
+            padding: 15px 35px;
             background: rgba(255, 255, 255, 0.2);
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 20px;
@@ -1104,8 +1075,8 @@
         }
 
         .mode-icon {
-            font-size: 32px;
-            margin-bottom: 8px;
+            font-size: 24px;
+            margin-bottom: 4px;
         }
 
         .mode-title {
@@ -1217,7 +1188,7 @@
         }
 
         .hp-btn {
-            padding: 20px 25px;
+            padding: 12px 25px;
             background: rgba(255, 255, 255, 0.2);
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 18px;
@@ -1269,19 +1240,19 @@
                     <h3 style="margin-bottom: 15px; font-size: 18px; color: white;">⚡ 初期HP設定</h3>
                     <div class="hp-options" style="display: flex; gap: 25px; justify-content: center; flex-wrap: wrap;">
                         <button class="hp-btn" data-hp="100" onclick="selectHP(100)">
-                            <div style="font-size: 24px; margin-bottom: 8px;">💚</div>
+                            <div style="font-size: 18px; margin-bottom: 4px;">💚</div>
                             <div style="font-size: 16px; font-weight: 700;">100HP</div>
-                            <div style="font-size: 13px; opacity: 0.8;">短期決戦</div>
+                            <div style="font-size: 12px; opacity: 0.8;">短期決戦</div>
                         </button>
                         <button class="hp-btn selected" data-hp="200" onclick="selectHP(200)">
-                            <div style="font-size: 24px; margin-bottom: 8px;">💛</div>
+                            <div style="font-size: 18px; margin-bottom: 4px;">💛</div>
                             <div style="font-size: 16px; font-weight: 700;">200HP</div>
-                            <div style="font-size: 13px; opacity: 0.8;">標準</div>
+                            <div style="font-size: 12px; opacity: 0.8;">標準</div>
                         </button>
                         <button class="hp-btn" data-hp="300" onclick="selectHP(300)">
-                            <div style="font-size: 24px; margin-bottom: 8px;">❤️</div>
+                            <div style="font-size: 18px; margin-bottom: 4px;">❤️</div>
                             <div style="font-size: 16px; font-weight: 700;">300HP</div>
-                            <div style="font-size: 13px; opacity: 0.8;">長期戦</div>
+                            <div style="font-size: 12px; opacity: 0.8;">長期戦</div>
                         </button>
                     </div>
                 </div>
@@ -1719,26 +1690,140 @@
             { text: 'みち', difficulty: 1, category: 'もの' },
             { text: 'かぜ', difficulty: 1, category: 'しぜん' },
             
-            // 3文字の単語（中級）
-            { text: 'たまご', difficulty: 2, category: 'たべもの' },
-            { text: 'くるま', difficulty: 2, category: 'のりもの' },
-            { text: 'きつね', difficulty: 2, category: 'どうぶつ' },
-            { text: 'うさぎ', difficulty: 2, category: 'どうぶつ' },
-            { text: 'さかな', difficulty: 2, category: 'どうぶつ' },
-            { text: 'けむし', difficulty: 2, category: 'どうぶつ' },
-            { text: 'きのこ', difficulty: 2, category: 'しぜん' },
-            { text: 'こども', difficulty: 2, category: 'ひと' },
-            { text: 'みかん', difficulty: 2, category: 'たべもの' },
-            { text: 'えがお', difficulty: 2, category: 'きもち' },
-            { text: 'すずめ', difficulty: 2, category: 'どうぶつ' },
-            { text: 'りんご', difficulty: 2, category: 'たべもの' },
-            { text: 'とけい', difficulty: 2, category: 'もの' },
-            { text: 'かばん', difficulty: 2, category: 'もの' },
-            { text: 'おふろ', difficulty: 2, category: 'もの' },
-            { text: 'えほん', difficulty: 2, category: 'もの' },
-            { text: 'のはら', difficulty: 2, category: 'しぜん' },
-            { text: 'やさい', difficulty: 2, category: 'たべもの' },
-            { text: 'でんき', difficulty: 2, category: 'もの' }
+
+  // 3文字（20問）
+  { text: 'たまご', difficulty: 2, category: 'たべもの' },
+  { text: 'くるま', difficulty: 2, category: 'のりもの' },
+  { text: 'きつね', difficulty: 2, category: 'どうぶつ' },
+  { text: 'うさぎ', difficulty: 2, category: 'どうぶつ' },
+  { text: 'さかな', difficulty: 2, category: 'どうぶつ' },
+  { text: 'きのこ', difficulty: 2, category: 'しぜん' },
+  { text: 'みかん', difficulty: 2, category: 'たべもの' },
+  { text: 'りんご', difficulty: 2, category: 'たべもの' },
+  { text: 'えほん', difficulty: 2, category: 'もの' },
+  { text: 'とけい', difficulty: 2, category: 'もの' },
+  { text: 'かばん', difficulty: 2, category: 'もの' },
+  { text: 'おふろ', difficulty: 2, category: 'もの' },
+  { text: 'こども', difficulty: 2, category: 'ひと' },
+  { text: 'でんき', difficulty: 2, category: 'もの' },
+  { text: 'すずめ', difficulty: 2, category: 'どうぶつ' },
+  { text: 'おちゃ', difficulty: 2, category: 'たべもの' },
+  { text: 'やさい', difficulty: 2, category: 'たべもの' },
+  { text: 'あさひ', difficulty: 2, category: 'しぜん' },
+  { text: 'すいか', difficulty: 2, category: 'たべもの' },
+  { text: 'おかし', difficulty: 2, category: 'たべもの' },
+
+  // 4文字（20問）
+  { text: 'ひこうき', difficulty: 3, category: 'のりもの' },
+  { text: 'でんしゃ', difficulty: 3, category: 'のりもの' },
+  { text: 'おにぎり', difficulty: 3, category: 'たべもの' },
+  { text: 'にわとり', difficulty: 3, category: 'どうぶつ' },
+  { text: 'せんせい', difficulty: 3, category: 'ひと' },
+  { text: 'あさがお', difficulty: 3, category: 'しぜん' },
+  { text: 'たいよう', difficulty: 3, category: 'しぜん' },
+  { text: 'やきそば', difficulty: 3, category: 'たべもの' },
+  { text: 'えんぴつ', difficulty: 3, category: 'もの' },
+  { text: 'うわばき', difficulty: 3, category: 'もの' },
+  { text: 'くつした', difficulty: 3, category: 'もの' },
+  { text: 'こくばん', difficulty: 3, category: 'もの' },
+  { text: 'せんたく', difficulty: 3, category: 'せいかつ' },
+  { text: 'たいいく', difficulty: 3, category: 'がくしゅう' },
+  { text: 'こうえん', difficulty: 3, category: 'ばしょ' },
+  { text: 'どようび', difficulty: 3, category: 'にちじ' },
+  { text: 'かようび', difficulty: 3, category: 'にちじ' },
+  { text: 'にちよう', difficulty: 3, category: 'にちじ' },
+  { text: 'ざぶとん', difficulty: 3, category: 'もの' },
+  { text: 'そうじき', difficulty: 3, category: 'もの' },
+
+  // 5〜6文字（30問）
+  { text: 'しんかんせん', difficulty: 4, category: 'のりもの' }, //6
+  { text: 'おべんとう', difficulty: 4, category: 'たべもの' },   //5
+  { text: 'たいようけい', difficulty: 4, category: 'しぜん' },   //6
+  { text: 'きょうしつ', difficulty: 4, category: 'ばしょ' },     //5
+  { text: 'どうぶつえん', difficulty: 4, category: 'ばしょ' },   //6
+  { text: 'すいぞくかん', difficulty: 4, category: 'ばしょ' },   //6
+  { text: 'おんがくしつ', difficulty: 4, category: 'ばしょ' },   //6
+  { text: 'あさごはん', difficulty: 4, category: 'たべもの' },   //5
+  { text: 'えいがかん', difficulty: 4, category: 'ばしょ' },     //5
+  { text: 'まほうつかい', difficulty: 4, category: 'ファンタジー' }, //6
+  { text: 'ほいくしつ', difficulty: 4, category: 'ばしょ' },     //5
+  { text: 'てがみばこ', difficulty: 4, category: 'もの' },       //5
+  { text: 'さくらまつり', difficulty: 4, category: 'イベント' }, //6
+  { text: 'かんこうバス', difficulty: 4, category: 'のりもの' }, //6
+  { text: 'うちゅうせん', difficulty: 4, category: 'のりもの' }, //6
+  { text: 'ホームラン', difficulty: 4, category: 'スポーツ' },   //5
+  { text: 'おかしづくり', difficulty: 4, category: 'せいかつ' }, //6
+  { text: 'たいいくかん', difficulty: 4, category: 'ばしょ' },   //6
+  { text: 'ゆうえんち', difficulty: 4, category: 'ばしょ' },     //5
+  { text: 'としょしつ', difficulty: 4, category: 'ばしょ' },     //5
+  { text: 'きょうかしょ', difficulty: 4, category: 'がくしゅう' }, //6
+  { text: 'けいさつしょ', difficulty: 4, category: 'ばしょ' },   //6
+  { text: 'あさのしたく', difficulty: 4, category: 'せいかつ' }, //6
+  { text: 'おひるやすみ', difficulty: 4, category: 'せいかつ' }, //6
+  { text: 'じゅぎょう', difficulty: 4, category: 'がくしゅう' }, //5
+  { text: 'けんがくかい', difficulty: 4, category: 'がくしゅう' }, //6
+  { text: 'おんがくかい', difficulty: 4, category: 'イベント' }, //6
+  { text: 'うんどうかい', difficulty: 4, category: 'イベント' }, //6
+  { text: 'じてんばこ', difficulty: 4, category: 'もの' },       //5
+  { text: 'かいだんした', difficulty: 4, category: 'ばしょ' },   //6
+
+  // 7〜8文字（20問）
+  { text: 'アイスクリーム', difficulty: 5, category: 'たべもの' },    //7
+  { text: 'サッカーボール', difficulty: 5, category: 'スポーツ' },    //7
+  { text: 'コンピューター', difficulty: 5, category: 'もの' },        //7
+  { text: 'ランドセルカバー', difficulty: 5, category: 'もの' },      //8
+  { text: 'ひまわりばたけ', difficulty: 5, category: 'しぜん' },      //7
+  { text: 'じゆうけんきゅう', difficulty: 5, category: 'がくしゅう' }, //8
+  { text: 'しゅくだいちょう', difficulty: 5, category: 'がくしゅう' }, //8
+  { text: 'おにごっこあそび', difficulty: 5, category: 'あそび' },    //8
+  { text: 'はなやさんのにわ', difficulty: 5, category: 'ばしょ' },    //8
+  { text: 'パソコンルーム', difficulty: 5, category: 'ばしょ' },      //7
+  { text: 'すいえいたいかい', difficulty: 5, category: 'イベント' },  //8
+  { text: 'じどうしゃどう', difficulty: 5, category: 'のりもの' },    //7
+  { text: 'クリスマスツリー', difficulty: 5, category: 'イベント' },  //8
+  { text: 'バスケットボール', difficulty: 5, category: 'スポーツ' },  //8
+  { text: 'てがみのかきかた', difficulty: 5, category: 'がくしゅう' }, //8
+  { text: 'えいごべんきょう', difficulty: 5, category: 'がくしゅう' }, //8
+  { text: 'たいいくずわり', difficulty: 5, category: 'がくしゅう' },  //7
+  { text: 'こうさくクラブ', difficulty: 5, category: 'クラブ' },      //7
+  { text: 'がっきゅういいん', difficulty: 5, category: 'がくしゅう' }, //8
+  { text: 'かがくはっぴょう', difficulty: 5, category: 'がくしゅう' }, //8
+
+  // 9〜12文字（20問）
+  { text: 'おしょうがつやすみ', difficulty: 6, category: 'イベント' },   //9
+  { text: 'かんきょうもんだい', difficulty: 6, category: 'がくしゅう' }, //9
+  { text: 'きょうりゅうはかば', difficulty: 6, category: 'ばしょ' },     //9
+  { text: 'じしんけいほうシステム', difficulty: 6, category: 'しぜん' }, //11
+  { text: 'ファミリーレストラン', difficulty: 6, category: 'ばしょ' },   //10
+  { text: 'しょうてんがいストリート', difficulty: 6, category: 'ばしょ' }, //12
+  { text: 'きゅうきゅうしゃしどう', difficulty: 6, category: 'のりもの' }, //11
+  { text: 'がくえんさいじっし', difficulty: 6, category: 'イベント' },   //9
+  { text: 'まんがライブラリー', difficulty: 6, category: 'ばしょ' },     //9
+  { text: 'サイエンスミュージアム', difficulty: 6, category: 'ばしょ' }, //11
+  { text: 'どうぶつあいごセンター', difficulty: 6, category: 'ばしょ' }, //11
+  { text: 'にゅうがくしきセレモニー', difficulty: 6, category: 'イベント' }, //12
+  { text: 'しぜんかんさつきょうしつ', difficulty: 6, category: 'がくしゅう' }, //12
+  { text: 'ショッピングモール', difficulty: 6, category: 'ばしょ' },     //9
+  { text: 'ハンバーガーセット', difficulty: 6, category: 'たべもの' },   //9
+  { text: 'ほうかごこどもクラブ', difficulty: 6, category: 'クラブ' },   //10
+  { text: 'じゅくごれんしゅうちょう', difficulty: 6, category: 'がくしゅう' }, //12
+  { text: 'とうきょうスカイツリー', difficulty: 6, category: 'ばしょ' }, //11
+  { text: 'えいがさいパンフレット', difficulty: 6, category: 'イベント' }, //11
+  { text: 'うんどうかいプログラム', difficulty: 6, category: 'イベント' }  //11
+];
+
+            
+            // 医療カテゴリー（回復効果）
+            { text: 'くすり', difficulty: 2, category: 'いりょう' },
+            { text: 'びょういん', difficulty: 3, category: 'いりょう' },
+            { text: 'いしゃ', difficulty: 2, category: 'いりょう' },
+            { text: 'かんごし', difficulty: 3, category: 'いりょう' },
+            { text: 'ちりょう', difficulty: 3, category: 'いりょう' },
+            { text: 'けんこう', difficulty: 3, category: 'いりょう' },
+            { text: 'しんだん', difficulty: 3, category: 'いりょう' },
+            { text: 'ほうたい', difficulty: 3, category: 'いりょう' },
+            { text: 'ちゅうしゃ', difficulty: 3, category: 'いりょう' },
+            { text: 'たいおん', difficulty: 3, category: 'いりょう' }
         ];
 
 
@@ -1932,27 +2017,21 @@
                 
                 container.innerHTML = `
                     <div class="roulette-title">🎯 先攻を決めよう！</div>
+                    <div class="player-info-simple">
+                        <div class="player-card left">
+                            <div class="player-avatar-simple">${gameState.players[0].avatar}</div>
+                            <div class="player-name-simple">${gameState.players[0].name}</div>
+                            <div class="player-side">左半分</div>
+                        </div>
+                        <div class="player-card right">
+                            <div class="player-avatar-simple">${gameState.players[1].avatar}</div>
+                            <div class="player-name-simple">${gameState.players[1].name}</div>
+                            <div class="player-side">右半分</div>
+                        </div>
+                    </div>
                     <div class="roulette-wheel" id="rouletteWheel">
                         <div class="roulette-pointer"></div>
                         <div class="roulette-center">🎲</div>
-                        <div class="wheel-labels">
-                            <div class="wheel-label top">P1</div>
-                            <div class="wheel-label bottom">P2</div>
-                        </div>
-                    </div>
-                    <div class="player-section left">
-                        <div class="player-avatar-roulette">${gameState.players[0].avatar}</div>
-                        <div>
-                            <div>${gameState.players[0].name}</div>
-                            <div style="font-size: 14px; opacity: 0.8;">上半分</div>
-                        </div>
-                    </div>
-                    <div class="player-section right">
-                        <div class="player-avatar-roulette">${gameState.players[1].avatar}</div>
-                        <div>
-                            <div>${gameState.players[1].name}</div>
-                            <div style="font-size: 14px; opacity: 0.8;">下半分</div>
-                        </div>
                     </div>
                     <div class="roulette-result" id="rouletteResult"></div>
                 `;
@@ -1977,8 +2056,8 @@
             const randomRotation = Math.random() * 360;
             const finalRotation = baseRotation + randomRotation;
             
-            // 結果を決定（0-180度：プレイヤー1、180-360度：プレイヤー2）
-            const normalizedAngle = randomRotation;
+            // 結果を決定（左半分：プレイヤー1、右半分：プレイヤー2）
+            const normalizedAngle = randomRotation % 360;
             const winner = normalizedAngle < 180 ? 0 : 1;
             gameState.currentPlayer = winner;
             
@@ -2014,8 +2093,8 @@
                     document.getElementById('gameContainer').classList.remove('hidden');
                     initGame();
                     callback();
-                }, 2000);
-            }, 3200);
+                }, 1500);
+            }, 2200);
         }
 
         // ルーレット音（回転音）
@@ -2163,13 +2242,16 @@
             
             displayCards.forEach((card, index) => {
                 const cardElement = document.createElement('div');
-                cardElement.className = 'card';
+                const isHealCard = card.category === 'いりょう';
+                cardElement.className = isHealCard ? 'card heal' : 'card attack';
                 cardElement.onclick = () => selectCard(index);
                 
                 const stars = '★'.repeat(card.difficulty);
+                const categoryDisplay = isHealCard ? '💚 いりょう' : '⚔️ ' + card.category;
+                
                 cardElement.innerHTML = `
                     <div class="card-text">${card.text}</div>
-                    <div class="card-difficulty">${stars} ${card.category}</div>
+                    <div class="card-difficulty">${stars} ${categoryDisplay}</div>
                 `;
                 
                 container.appendChild(cardElement);
@@ -2346,6 +2428,8 @@
                 // いずれかの候補が完了したら即座に送信
                 if (completedCount > 0) {
                     console.log('入力完了検出 - 即座に送信');
+                    // タイマーを停止
+                    clearInterval(gameState.timerInterval);
                     // 少し遅延を入れて確実に処理
                     setTimeout(() => {
                         submitAnswer();
@@ -3047,7 +3131,8 @@
         async function submitAnswer() {
             const target = gameState.selectedCard.text;
             const targetLen = countChars(target);
-            const timeUsed = Math.max(0, 15 - gameState.timer);
+            const remainingTime = gameState.timer;
+            const timeUsed = Math.max(0, 15 - remainingTime);
 
             // 統計：試行ごとに更新
             gameState.stats.totalChars += targetLen;
@@ -3056,21 +3141,35 @@
             // いずれかの候補が完了していれば成功
             const success = typingState.currentInputs.some(input => input.completed);
             console.log('送信時の成功判定:', success);
+            console.log(`文字数: ${targetLen}, 残り時間: ${remainingTime}秒`);
 
             if (success) {
-                // 正解 - 攻撃アニメーション実行
-                const damage = Math.round(targetLen * gameState.timer * 10) / 10;
+                // 正解処理
+                const isHealCard = gameState.selectedCard.category === 'いりょう';
                 
-                // 攻撃アニメーション
-                await playAttackAnimation({
-                    attr: gameState.players[gameState.currentPlayer].attribute,
-                    from: gameState.currentPlayer === 0 ? 'left' : 'right',
-                    targetEl: document.getElementById(`player${2 - gameState.currentPlayer}Avatar`),
-                    impactMs: 600
-                });
+                if (isHealCard) {
+                    // 医療カード - 回復処理
+                    const healAmount = Math.floor(targetLen * remainingTime);
+                    console.log(`回復計算: ${targetLen} × ${remainingTime} = ${healAmount}`);
+                    healPlayer(gameState.currentPlayer, healAmount);
+                    playSound('heal');
+                } else {
+                    // 通常カード - 攻撃処理
+                    const damage = Math.floor(targetLen * remainingTime);
+                    console.log(`攻撃計算: ${targetLen} × ${remainingTime} = ${damage}`);
+                    
+                    // 攻撃アニメーション
+                    await playAttackAnimation({
+                        attr: gameState.players[gameState.currentPlayer].attribute,
+                        from: gameState.currentPlayer === 0 ? 'left' : 'right',
+                        targetEl: document.getElementById(`player${2 - gameState.currentPlayer}Avatar`),
+                        impactMs: 600
+                    });
+                    
+                    // ダメージ処理
+                    dealDamage(1 - gameState.currentPlayer, damage);
+                }
                 
-                // ダメージ処理
-                dealDamage(1 - gameState.currentPlayer, damage);
                 gameState.stats.correctChars += targetLen;
                 gameState.stats.combo++;
                 gameState.stats.maxCombo = Math.max(gameState.stats.maxCombo, gameState.stats.combo);
@@ -3078,6 +3177,7 @@
                 // 不正解 - 被弾エフェクト
                 playHitEffect(gameState.currentPlayer);
                 const selfDamage = targetLen * 10;
+                console.log(`自傷ダメージ計算: ${targetLen} × 10 = ${selfDamage}`);
                 dealDamage(gameState.currentPlayer, selfDamage);
                 gameState.stats.combo = 0;
                 playSound('fail');
@@ -3133,6 +3233,19 @@
             }
         }
 
+        // 回復処理
+        function healPlayer(playerIndex, healAmount) {
+            const player = gameState.players[playerIndex];
+            const actualHeal = Math.min(healAmount, player.maxHp - player.hp);
+            player.hp = Math.min(player.maxHp, player.hp + actualHeal);
+            
+            // 回復エフェクト
+            showHealEffect(playerIndex, actualHeal);
+            
+            // HP更新
+            updateUI();
+        }
+
         // ダメージエフェクト表示
         function showDamageEffect(playerIndex, damage) {
             const avatar = document.getElementById(`player${playerIndex + 1}Avatar`);
@@ -3153,6 +3266,83 @@
                     damageElement.remove();
                 }
             }, 1000);
+        }
+
+        // 回復エフェクト表示
+        function showHealEffect(playerIndex, healAmount) {
+            const avatar = document.getElementById(`player${playerIndex + 1}Avatar`);
+            const healElement = document.createElement('div');
+            healElement.className = 'damage-number heal';
+            healElement.textContent = `+${healAmount}`;
+            healElement.style.left = '50%';
+            healElement.style.top = '50%';
+            healElement.style.color = '#4ecdc4';
+            
+            avatar.style.position = 'relative';
+            avatar.appendChild(healElement);
+            
+            // 回復の光エフェクト
+            avatar.style.boxShadow = '0 0 30px rgba(76, 220, 196, 0.8)';
+            avatar.style.transform = 'scale(1.1)';
+            
+            setTimeout(() => {
+                avatar.style.boxShadow = '';
+                avatar.style.transform = '';
+                if (healElement.parentNode) {
+                    healElement.remove();
+                }
+            }, 1000);
+            
+            // 回復パーティクル
+            createHealParticles(avatar);
+        }
+
+        // 回復パーティクル生成
+        function createHealParticles(avatarEl) {
+            const fxLayer = getOrCreateFxLayer();
+            const rect = avatarEl.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            for (let i = 0; i < 12; i++) {
+                const particle = document.createElement('div');
+                particle.innerHTML = '✨';
+                particle.style.position = 'absolute';
+                particle.style.left = centerX + 'px';
+                particle.style.top = centerY + 'px';
+                particle.style.fontSize = '20px';
+                particle.style.color = '#4ecdc4';
+                particle.style.pointerEvents = 'none';
+                particle.style.zIndex = '1000';
+                
+                const angle = (i / 12) * Math.PI * 2;
+                const distance = 60;
+                const dx = Math.cos(angle) * distance;
+                const dy = Math.sin(angle) * distance;
+                
+                fxLayer.appendChild(particle);
+                
+                particle.animate([
+                    { 
+                        transform: 'translate(-50%, -50%) scale(0)',
+                        opacity: 1
+                    },
+                    { 
+                        transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.5)`,
+                        opacity: 0.8,
+                        offset: 0.7
+                    },
+                    { 
+                        transform: `translate(calc(-50% + ${dx * 1.5}px), calc(-50% + ${dy * 1.5}px)) scale(0)`,
+                        opacity: 0
+                    }
+                ], {
+                    duration: 1000,
+                    easing: 'ease-out'
+                }).addEventListener('finish', () => {
+                    particle.remove();
+                });
+            }
         }
 
         // ペナルティエフェクト表示
@@ -3283,26 +3473,42 @@
                     const success = Math.random() > (bestCard.difficulty * 0.2); // 難易度による成功率
                     
                     if (success) {
-                        const cpuTime = Math.random() * 8 + 2; // 2-10秒
+                        const cpuRemainingTime = Math.random() * 8 + 2; // 2-10秒残り時間
                         const charCount = countChars(bestCard.text);
-                        const damage = Math.round(charCount * cpuTime * 10) / 10;
+                        const isHealCard = bestCard.category === 'いりょう';
                         
-                        // CPU攻撃アニメーション
-                        await playAttackAnimation({
-                            attr: gameState.players[1].attribute,
-                            from: 'right',
-                            targetEl: document.getElementById('player1Avatar'),
-                            impactMs: 600
-                        });
+                        console.log(`CPU: 文字数=${charCount}, 残り時間=${cpuRemainingTime.toFixed(1)}秒`);
                         
-                        dealDamage(0, damage);
+                        if (isHealCard) {
+                            // CPU回復処理
+                            const healAmount = Math.floor(charCount * cpuRemainingTime);
+                            console.log(`CPU回復計算: ${charCount} × ${cpuRemainingTime.toFixed(1)} = ${healAmount}`);
+                            healPlayer(1, healAmount);
+                            playSound('heal');
+                        } else {
+                            // CPU攻撃処理
+                            const damage = Math.floor(charCount * cpuRemainingTime);
+                            console.log(`CPU攻撃計算: ${charCount} × ${cpuRemainingTime.toFixed(1)} = ${damage}`);
+                            
+                            // CPU攻撃アニメーション
+                            await playAttackAnimation({
+                                attr: gameState.players[1].attribute,
+                                from: 'right',
+                                targetEl: document.getElementById('player1Avatar'),
+                                impactMs: 600
+                            });
+                            
+                            dealDamage(0, damage);
+                        }
                         
                         gameState.stats.correctChars += charCount;
                         gameState.stats.totalChars += charCount;
-                        gameState.stats.totalTime += (15 - cpuTime);
+                        gameState.stats.totalTime += (15 - cpuRemainingTime);
                     } else {
                         const charCount = countChars(bestCard.text);
                         const selfDamage = charCount * 10;
+                        
+                        console.log(`CPU自傷ダメージ計算: ${charCount} × 10 = ${selfDamage}`);
                         
                         // CPU被弾エフェクト
                         playHitEffect(1);
@@ -3355,6 +3561,12 @@
             if (type === 'success') {
                 oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
                 oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+            } else if (type === 'heal') {
+                // 回復音：美しい和音
+                oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+                oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+                oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+                oscillator.frequency.setValueAtTime(1046.50, audioContext.currentTime + 0.3); // C6
             } else if (type === 'charge') {
                 // 溜め音：低音から高音へ
                 oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
@@ -3364,10 +3576,10 @@
             }
             
             gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + (type === 'heal' ? 0.5 : 0.3));
             
             oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.3);
+            oscillator.stop(audioContext.currentTime + (type === 'heal' ? 0.5 : 0.3));
         }
 
         // モーダル表示
@@ -3394,6 +3606,10 @@
                 <p>• 成功：文字数×残り時間でダメージ</p>
                 <p>• 失敗：文字数×10の自傷ダメージ</p>
                 <p>• 打ち間違え：3秒ペナルティ</p>
+                <p><strong>💚 医療カード</strong></p>
+                <p>• 緑色のオーラが目印</p>
+                <p>• 成功すると自分のHPが回復</p>
+                <p>• 回復量：文字数×残り時間</p>
                 <p><strong>操作方法</strong></p>
                 <p>• カードをタップして選択</p>
                 <p>• ローマ字で入力（全角でもOK）</p>
@@ -3533,5 +3749,5 @@
         console.log('🎨 属性カスタマイズ: CSS変数 --attr-color を変更');
         console.log('🔊 音声カスタマイズ: playSound関数を編集');
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9779edf007c0e005',t:'MTc1NjYxNjA2MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'977a15fc87b79d04',t:'MTc1NjYxNzcwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
