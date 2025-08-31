@@ -8,8 +8,8 @@ const dayNumEl = document.getElementById('dayNum');
 
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-/** 100日チャレンジ：開始日を「2025-08-15（JST推定）」に固定 */
-const start = new Date('2025-08-15T00:00:00+09:00');
+/** 100日チャレンジ：開始日を「2025-08-17（JST推定）」に固定 */
+const start = new Date('2025-08-17T00:00:00+09:00');
 const now = new Date();
 const msPerDay = 24*60*60*1000;
 const diffDays = Math.min(100, Math.max(1, Math.floor((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(start.getFullYear(), start.getMonth(), start.getDate()))/msPerDay)+1));
