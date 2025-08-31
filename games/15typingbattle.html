@@ -1668,7 +1668,7 @@
 
         // カードプール（実用的なタイピング練習用）
         const CARD_POOL = [
-            // 2文字の単語（初級）
+            // 2文字の単語（初級・20問）
             { text: 'ねこ', difficulty: 1, category: 'どうぶつ' },
             { text: 'いぬ', difficulty: 1, category: 'どうぶつ' },
             { text: 'すし', difficulty: 1, category: 'たべもの' },
@@ -1690,129 +1690,127 @@
             { text: 'みち', difficulty: 1, category: 'もの' },
             { text: 'かぜ', difficulty: 1, category: 'しぜん' },
             
+            // 3文字の単語（中級・20問）
+            { text: 'たまご', difficulty: 2, category: 'たべもの' },
+            { text: 'くるま', difficulty: 2, category: 'のりもの' },
+            { text: 'きつね', difficulty: 2, category: 'どうぶつ' },
+            { text: 'うさぎ', difficulty: 2, category: 'どうぶつ' },
+            { text: 'さかな', difficulty: 2, category: 'どうぶつ' },
+            { text: 'きのこ', difficulty: 2, category: 'しぜん' },
+            { text: 'みかん', difficulty: 2, category: 'たべもの' },
+            { text: 'りんご', difficulty: 2, category: 'たべもの' },
+            { text: 'えほん', difficulty: 2, category: 'もの' },
+            { text: 'とけい', difficulty: 2, category: 'もの' },
+            { text: 'かばん', difficulty: 2, category: 'もの' },
+            { text: 'おふろ', difficulty: 2, category: 'もの' },
+            { text: 'こども', difficulty: 2, category: 'ひと' },
+            { text: 'でんき', difficulty: 2, category: 'もの' },
+            { text: 'すずめ', difficulty: 2, category: 'どうぶつ' },
+            { text: 'おちゃ', difficulty: 2, category: 'たべもの' },
+            { text: 'やさい', difficulty: 2, category: 'たべもの' },
+            { text: 'あさひ', difficulty: 2, category: 'しぜん' },
+            { text: 'すいか', difficulty: 2, category: 'たべもの' },
+            { text: 'おかし', difficulty: 2, category: 'たべもの' },
 
-  // 3文字（20問）
-  { text: 'たまご', difficulty: 2, category: 'たべもの' },
-  { text: 'くるま', difficulty: 2, category: 'のりもの' },
-  { text: 'きつね', difficulty: 2, category: 'どうぶつ' },
-  { text: 'うさぎ', difficulty: 2, category: 'どうぶつ' },
-  { text: 'さかな', difficulty: 2, category: 'どうぶつ' },
-  { text: 'きのこ', difficulty: 2, category: 'しぜん' },
-  { text: 'みかん', difficulty: 2, category: 'たべもの' },
-  { text: 'りんご', difficulty: 2, category: 'たべもの' },
-  { text: 'えほん', difficulty: 2, category: 'もの' },
-  { text: 'とけい', difficulty: 2, category: 'もの' },
-  { text: 'かばん', difficulty: 2, category: 'もの' },
-  { text: 'おふろ', difficulty: 2, category: 'もの' },
-  { text: 'こども', difficulty: 2, category: 'ひと' },
-  { text: 'でんき', difficulty: 2, category: 'もの' },
-  { text: 'すずめ', difficulty: 2, category: 'どうぶつ' },
-  { text: 'おちゃ', difficulty: 2, category: 'たべもの' },
-  { text: 'やさい', difficulty: 2, category: 'たべもの' },
-  { text: 'あさひ', difficulty: 2, category: 'しぜん' },
-  { text: 'すいか', difficulty: 2, category: 'たべもの' },
-  { text: 'おかし', difficulty: 2, category: 'たべもの' },
-
-  // 4文字（20問）
-  { text: 'ひこうき', difficulty: 3, category: 'のりもの' },
-  { text: 'でんしゃ', difficulty: 3, category: 'のりもの' },
-  { text: 'おにぎり', difficulty: 3, category: 'たべもの' },
-  { text: 'にわとり', difficulty: 3, category: 'どうぶつ' },
-  { text: 'せんせい', difficulty: 3, category: 'ひと' },
-  { text: 'あさがお', difficulty: 3, category: 'しぜん' },
-  { text: 'たいよう', difficulty: 3, category: 'しぜん' },
-  { text: 'やきそば', difficulty: 3, category: 'たべもの' },
-  { text: 'えんぴつ', difficulty: 3, category: 'もの' },
-  { text: 'うわばき', difficulty: 3, category: 'もの' },
-  { text: 'くつした', difficulty: 3, category: 'もの' },
-  { text: 'こくばん', difficulty: 3, category: 'もの' },
-  { text: 'せんたく', difficulty: 3, category: 'せいかつ' },
-  { text: 'たいいく', difficulty: 3, category: 'がくしゅう' },
-  { text: 'こうえん', difficulty: 3, category: 'ばしょ' },
-  { text: 'どようび', difficulty: 3, category: 'にちじ' },
-  { text: 'かようび', difficulty: 3, category: 'にちじ' },
-  { text: 'にちよう', difficulty: 3, category: 'にちじ' },
-  { text: 'ざぶとん', difficulty: 3, category: 'もの' },
-  { text: 'そうじき', difficulty: 3, category: 'もの' },
-
-  // 5〜6文字（30問）
-  { text: 'しんかんせん', difficulty: 4, category: 'のりもの' }, //6
-  { text: 'おべんとう', difficulty: 4, category: 'たべもの' },   //5
-  { text: 'たいようけい', difficulty: 4, category: 'しぜん' },   //6
-  { text: 'きょうしつ', difficulty: 4, category: 'ばしょ' },     //5
-  { text: 'どうぶつえん', difficulty: 4, category: 'ばしょ' },   //6
-  { text: 'すいぞくかん', difficulty: 4, category: 'ばしょ' },   //6
-  { text: 'おんがくしつ', difficulty: 4, category: 'ばしょ' },   //6
-  { text: 'あさごはん', difficulty: 4, category: 'たべもの' },   //5
-  { text: 'えいがかん', difficulty: 4, category: 'ばしょ' },     //5
-  { text: 'まほうつかい', difficulty: 4, category: 'ファンタジー' }, //6
-  { text: 'ほいくしつ', difficulty: 4, category: 'ばしょ' },     //5
-  { text: 'てがみばこ', difficulty: 4, category: 'もの' },       //5
-  { text: 'さくらまつり', difficulty: 4, category: 'イベント' }, //6
-  { text: 'かんこうバス', difficulty: 4, category: 'のりもの' }, //6
-  { text: 'うちゅうせん', difficulty: 4, category: 'のりもの' }, //6
-  { text: 'ホームラン', difficulty: 4, category: 'スポーツ' },   //5
-  { text: 'おかしづくり', difficulty: 4, category: 'せいかつ' }, //6
-  { text: 'たいいくかん', difficulty: 4, category: 'ばしょ' },   //6
-  { text: 'ゆうえんち', difficulty: 4, category: 'ばしょ' },     //5
-  { text: 'としょしつ', difficulty: 4, category: 'ばしょ' },     //5
-  { text: 'きょうかしょ', difficulty: 4, category: 'がくしゅう' }, //6
-  { text: 'けいさつしょ', difficulty: 4, category: 'ばしょ' },   //6
-  { text: 'あさのしたく', difficulty: 4, category: 'せいかつ' }, //6
-  { text: 'おひるやすみ', difficulty: 4, category: 'せいかつ' }, //6
-  { text: 'じゅぎょう', difficulty: 4, category: 'がくしゅう' }, //5
-  { text: 'けんがくかい', difficulty: 4, category: 'がくしゅう' }, //6
-  { text: 'おんがくかい', difficulty: 4, category: 'イベント' }, //6
-  { text: 'うんどうかい', difficulty: 4, category: 'イベント' }, //6
-  { text: 'じてんばこ', difficulty: 4, category: 'もの' },       //5
-  { text: 'かいだんした', difficulty: 4, category: 'ばしょ' },   //6
-
-  // 7〜8文字（20問）
-  { text: 'アイスクリーム', difficulty: 5, category: 'たべもの' },    //7
-  { text: 'サッカーボール', difficulty: 5, category: 'スポーツ' },    //7
-  { text: 'コンピューター', difficulty: 5, category: 'もの' },        //7
-  { text: 'ランドセルカバー', difficulty: 5, category: 'もの' },      //8
-  { text: 'ひまわりばたけ', difficulty: 5, category: 'しぜん' },      //7
-  { text: 'じゆうけんきゅう', difficulty: 5, category: 'がくしゅう' }, //8
-  { text: 'しゅくだいちょう', difficulty: 5, category: 'がくしゅう' }, //8
-  { text: 'おにごっこあそび', difficulty: 5, category: 'あそび' },    //8
-  { text: 'はなやさんのにわ', difficulty: 5, category: 'ばしょ' },    //8
-  { text: 'パソコンルーム', difficulty: 5, category: 'ばしょ' },      //7
-  { text: 'すいえいたいかい', difficulty: 5, category: 'イベント' },  //8
-  { text: 'じどうしゃどう', difficulty: 5, category: 'のりもの' },    //7
-  { text: 'クリスマスツリー', difficulty: 5, category: 'イベント' },  //8
-  { text: 'バスケットボール', difficulty: 5, category: 'スポーツ' },  //8
-  { text: 'てがみのかきかた', difficulty: 5, category: 'がくしゅう' }, //8
-  { text: 'えいごべんきょう', difficulty: 5, category: 'がくしゅう' }, //8
-  { text: 'たいいくずわり', difficulty: 5, category: 'がくしゅう' },  //7
-  { text: 'こうさくクラブ', difficulty: 5, category: 'クラブ' },      //7
-  { text: 'がっきゅういいん', difficulty: 5, category: 'がくしゅう' }, //8
-  { text: 'かがくはっぴょう', difficulty: 5, category: 'がくしゅう' }, //8
-
-  // 9〜12文字（20問）
-  { text: 'おしょうがつやすみ', difficulty: 6, category: 'イベント' },   //9
-  { text: 'かんきょうもんだい', difficulty: 6, category: 'がくしゅう' }, //9
-  { text: 'きょうりゅうはかば', difficulty: 6, category: 'ばしょ' },     //9
-  { text: 'じしんけいほうシステム', difficulty: 6, category: 'しぜん' }, //11
-  { text: 'ファミリーレストラン', difficulty: 6, category: 'ばしょ' },   //10
-  { text: 'しょうてんがいストリート', difficulty: 6, category: 'ばしょ' }, //12
-  { text: 'きゅうきゅうしゃしどう', difficulty: 6, category: 'のりもの' }, //11
-  { text: 'がくえんさいじっし', difficulty: 6, category: 'イベント' },   //9
-  { text: 'まんがライブラリー', difficulty: 6, category: 'ばしょ' },     //9
-  { text: 'サイエンスミュージアム', difficulty: 6, category: 'ばしょ' }, //11
-  { text: 'どうぶつあいごセンター', difficulty: 6, category: 'ばしょ' }, //11
-  { text: 'にゅうがくしきセレモニー', difficulty: 6, category: 'イベント' }, //12
-  { text: 'しぜんかんさつきょうしつ', difficulty: 6, category: 'がくしゅう' }, //12
-  { text: 'ショッピングモール', difficulty: 6, category: 'ばしょ' },     //9
-  { text: 'ハンバーガーセット', difficulty: 6, category: 'たべもの' },   //9
-  { text: 'ほうかごこどもクラブ', difficulty: 6, category: 'クラブ' },   //10
-  { text: 'じゅくごれんしゅうちょう', difficulty: 6, category: 'がくしゅう' }, //12
-  { text: 'とうきょうスカイツリー', difficulty: 6, category: 'ばしょ' }, //11
-  { text: 'えいがさいパンフレット', difficulty: 6, category: 'イベント' }, //11
-  { text: 'うんどうかいプログラム', difficulty: 6, category: 'イベント' }  //11
-
+            // 4文字の単語（上級・20問）
+            { text: 'ひこうき', difficulty: 3, category: 'のりもの' },
+            { text: 'でんしゃ', difficulty: 3, category: 'のりもの' },
+            { text: 'おにぎり', difficulty: 3, category: 'たべもの' },
+            { text: 'にわとり', difficulty: 3, category: 'どうぶつ' },
+            { text: 'せんせい', difficulty: 3, category: 'ひと' },
+            { text: 'あさがお', difficulty: 3, category: 'しぜん' },
+            { text: 'たいよう', difficulty: 3, category: 'しぜん' },
+            { text: 'やきそば', difficulty: 3, category: 'たべもの' },
+            { text: 'えんぴつ', difficulty: 3, category: 'もの' },
+            { text: 'うわばき', difficulty: 3, category: 'もの' },
+            { text: 'くつした', difficulty: 3, category: 'もの' },
+            { text: 'こくばん', difficulty: 3, category: 'もの' },
+            { text: 'せんたく', difficulty: 3, category: 'せいかつ' },
+            { text: 'たいいく', difficulty: 3, category: 'がくしゅう' },
+            { text: 'こうえん', difficulty: 3, category: 'ばしょ' },
+            { text: 'どようび', difficulty: 3, category: 'にちじ' },
+            { text: 'かようび', difficulty: 3, category: 'にちじ' },
+            { text: 'にちよう', difficulty: 3, category: 'にちじ' },
+            { text: 'ざぶとん', difficulty: 3, category: 'もの' },
+            { text: 'そうじき', difficulty: 3, category: 'もの' },
             
-            // 医療カテゴリー（回復効果）
+            // 5〜6文字の単語（上級・30問）
+            { text: 'しんかんせん', difficulty: 4, category: 'のりもの' },
+            { text: 'おべんとう', difficulty: 4, category: 'たべもの' },
+            { text: 'たいようけい', difficulty: 4, category: 'しぜん' },
+            { text: 'きょうしつ', difficulty: 4, category: 'ばしょ' },
+            { text: 'どうぶつえん', difficulty: 4, category: 'ばしょ' },
+            { text: 'すいぞくかん', difficulty: 4, category: 'ばしょ' },
+            { text: 'おんがくしつ', difficulty: 4, category: 'ばしょ' },
+            { text: 'あさごはん', difficulty: 4, category: 'たべもの' },
+            { text: 'えいがかん', difficulty: 4, category: 'ばしょ' },
+            { text: 'まほうつかい', difficulty: 4, category: 'ファンタジー' },
+            { text: 'ほいくしつ', difficulty: 4, category: 'ばしょ' },
+            { text: 'てがみばこ', difficulty: 4, category: 'もの' },
+            { text: 'さくらまつり', difficulty: 4, category: 'イベント' },
+            { text: 'かんこうバス', difficulty: 4, category: 'のりもの' },
+            { text: 'うちゅうせん', difficulty: 4, category: 'のりもの' },
+            { text: 'ホームラン', difficulty: 4, category: 'スポーツ' },
+            { text: 'おかしづくり', difficulty: 4, category: 'せいかつ' },
+            { text: 'たいいくかん', difficulty: 4, category: 'ばしょ' },
+            { text: 'ゆうえんち', difficulty: 4, category: 'ばしょ' },
+            { text: 'としょしつ', difficulty: 4, category: 'ばしょ' },
+            { text: 'きょうかしょ', difficulty: 4, category: 'がくしゅう' },
+            { text: 'けいさつしょ', difficulty: 4, category: 'ばしょ' },
+            { text: 'あさのしたく', difficulty: 4, category: 'せいかつ' },
+            { text: 'おひるやすみ', difficulty: 4, category: 'せいかつ' },
+            { text: 'じゅぎょう', difficulty: 4, category: 'がくしゅう' },
+            { text: 'けんがくかい', difficulty: 4, category: 'がくしゅう' },
+            { text: 'おんがくかい', difficulty: 4, category: 'イベント' },
+            { text: 'うんどうかい', difficulty: 4, category: 'イベント' },
+            { text: 'じてんしゃ', difficulty: 4, category: 'のりもの' },
+            { text: 'かいだんした', difficulty: 4, category: 'ばしょ' },
+
+            // 7〜8文字の単語（最上級・20問）
+            { text: 'アイスクリーム', difficulty: 5, category: 'たべもの' },
+            { text: 'サッカーボール', difficulty: 5, category: 'スポーツ' },
+            { text: 'コンピューター', difficulty: 5, category: 'もの' },
+            { text: 'ランドセルカバー', difficulty: 5, category: 'もの' },
+            { text: 'ひまわりばたけ', difficulty: 5, category: 'しぜん' },
+            { text: 'じゆうけんきゅう', difficulty: 5, category: 'がくしゅう' },
+            { text: 'しゅくだいちょう', difficulty: 5, category: 'がくしゅう' },
+            { text: 'おにごっこあそび', difficulty: 5, category: 'あそび' },
+            { text: 'はなやさんのにわ', difficulty: 5, category: 'ばしょ' },
+            { text: 'パソコンルーム', difficulty: 5, category: 'ばしょ' },
+            { text: 'すいえいたいかい', difficulty: 5, category: 'イベント' },
+            { text: 'じどうしゃどう', difficulty: 5, category: 'のりもの' },
+            { text: 'クリスマスツリー', difficulty: 5, category: 'イベント' },
+            { text: 'バスケットボール', difficulty: 5, category: 'スポーツ' },
+            { text: 'てがみのかきかた', difficulty: 5, category: 'がくしゅう' },
+            { text: 'えいごべんきょう', difficulty: 5, category: 'がくしゅう' },
+            { text: 'たいいくずわり', difficulty: 5, category: 'がくしゅう' },
+            { text: 'こうさくクラブ', difficulty: 5, category: 'クラブ' },
+            { text: 'がっきゅういいん', difficulty: 5, category: 'がくしゅう' },
+            { text: 'かがくはっぴょう', difficulty: 5, category: 'がくしゅう' },
+
+            // 9〜12文字の単語（超上級・20問）
+            { text: 'おしょうがつやすみ', difficulty: 6, category: 'イベント' },
+            { text: 'かんきょうもんだい', difficulty: 6, category: 'がくしゅう' },
+            { text: 'きょうりゅうはかば', difficulty: 6, category: 'ばしょ' },
+            { text: 'じしんけいほうシステム', difficulty: 6, category: 'しぜん' },
+            { text: 'ファミリーレストラン', difficulty: 6, category: 'ばしょ' },
+            { text: 'しょうてんがいストリート', difficulty: 6, category: 'ばしょ' },
+            { text: 'きゅうきゅうしゃしどう', difficulty: 6, category: 'のりもの' },
+            { text: 'がくえんさいじっし', difficulty: 6, category: 'イベント' },
+            { text: 'まんがライブラリー', difficulty: 6, category: 'ばしょ' },
+            { text: 'サイエンスミュージアム', difficulty: 6, category: 'ばしょ' },
+            { text: 'どうぶつあいごセンター', difficulty: 6, category: 'ばしょ' },
+            { text: 'にゅうがくしきセレモニー', difficulty: 6, category: 'イベント' },
+            { text: 'しぜんかんさつきょうしつ', difficulty: 6, category: 'がくしゅう' },
+            { text: 'ショッピングモール', difficulty: 6, category: 'ばしょ' },
+            { text: 'ハンバーガーセット', difficulty: 6, category: 'たべもの' },
+            { text: 'ほうかごこどもクラブ', difficulty: 6, category: 'クラブ' },
+            { text: 'じゅくごれんしゅうちょう', difficulty: 6, category: 'がくしゅう' },
+            { text: 'とうきょうスカイツリー', difficulty: 6, category: 'ばしょ' },
+            { text: 'えいがさいパンフレット', difficulty: 6, category: 'イベント' },
+            { text: 'うんどうかいプログラム', difficulty: 6, category: 'イベント' },
+            
+            // 医療カテゴリー（回復効果・15問）
             { text: 'くすり', difficulty: 2, category: 'いりょう' },
             { text: 'びょういん', difficulty: 3, category: 'いりょう' },
             { text: 'いしゃ', difficulty: 2, category: 'いりょう' },
@@ -1822,7 +1820,12 @@
             { text: 'しんだん', difficulty: 3, category: 'いりょう' },
             { text: 'ほうたい', difficulty: 3, category: 'いりょう' },
             { text: 'ちゅうしゃ', difficulty: 3, category: 'いりょう' },
-            { text: 'たいおん', difficulty: 3, category: 'いりょう' }
+            { text: 'たいおん', difficulty: 3, category: 'いりょう' },
+            { text: 'きゅうきゅう', difficulty: 4, category: 'いりょう' },
+            { text: 'やくざいし', difficulty: 4, category: 'いりょう' },
+            { text: 'りはびり', difficulty: 3, category: 'いりょう' },
+            { text: 'けんしん', difficulty: 3, category: 'いりょう' },
+            { text: 'ばんそうこう', difficulty: 4, category: 'いりょう' }
         ];
 
 
@@ -3748,5 +3751,5 @@
         console.log('🎨 属性カスタマイズ: CSS変数 --attr-color を変更');
         console.log('🔊 音声カスタマイズ: playSound関数を編集');
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'977a15fc87b79d04',t:'MTc1NjYxNzcwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'977a3b766674d50c',t:'MTc1NjYxOTIzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
