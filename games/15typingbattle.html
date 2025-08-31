@@ -1,758 +1,3537 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>タイピングバトル - 学習ゲーム</title>
-  <link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'BIZ UDGothic',sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;overflow-x:hidden;user-select:none}
-    .game-container{width:100vw;height:100vh;display:flex;flex-direction:column;position:relative}
-    .top-bar{height:80px;background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:space-between;padding:0 20px}
-    .player-info{display:flex;align-items:center;gap:15px;min-width:300px}
-    .avatar{width:50px;height:50px;border-radius:50%;background:linear-gradient(45deg,#ff6b6b,#feca57);display:flex;align-items:center;justify-content:center;font-size:24px;border:3px solid rgba(255,255,255,.3)}
-    .player-stats{flex:1}
-    .player-name{font-weight:700;color:#fff;font-size:16px;margin-bottom:5px}
-    .hp-bar-container{width:200px;height:20px;background:rgba(0,0,0,.3);border-radius:10px;overflow:hidden;position:relative}
-    .hp-bar{height:100%;background:linear-gradient(90deg,#ff6b6b,#feca57);transition:width .5s ease;border-radius:10px}
-    .hp-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:12px;font-weight:700;text-shadow:1px 1px 2px rgba(0,0,0,.5)}
-    .center-info{text-align:center;color:#fff}
-    .turn-display{font-size:18px;font-weight:700;margin-bottom:5px}
-    .phase-display{font-size:14px;opacity:.8;margin-bottom:10px}
-    .timer-ring{width:60px;height:60px;border-radius:50%;background:conic-gradient(#feca57 0deg,rgba(255,255,255,.2) 0deg);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;margin:0 auto}
-    .card-area{flex:1;padding:20px;display:flex;flex-direction:column;gap:20px}
-    .cards-container{display:grid;grid-template-columns:repeat(6,1fr);gap:15px;max-width:1200px;margin:0 auto}
-    .card{background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:2px solid rgba(255,255,255,.2);border-radius:15px;padding:20px;text-align:center;cursor:pointer;transition:all .3s ease;min-height:120px;display:flex;flex-direction:column;justify-content:center;position:relative}
-    .card:hover{transform:translateY(-5px);box-shadow:0 10px 25px rgba(0,0,0,.2)}
-    .card.selected{border-color:#feca57;box-shadow:0 0 20px rgba(254,202,87,.5);transform:scale(1.05)}
-    .card-text{font-size:18px;font-weight:700;color:#fff;margin-bottom:10px}
-    .card-difficulty{font-size:12px;color:#feca57}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>タイピングバトル - 学習ゲーム</title>
+    <link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    /* 入力エリア（ガイドのみ表示。可視入力と送信UIは非表示） */
-    .input-area{height:150px;background:rgba(255,255,255,.1);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.2);padding:20px;display:flex;align-items:center;gap:20px}
-    .input-container,.action-buttons{display:none !important}
-    .visually-hidden-input{position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none}
+        /* 安全領域（iPad/iPhoneノッチ） */
+        :root{
+            --safe-top: env(safe-area-inset-top);
+            --safe-right: env(safe-area-inset-right);
+            --safe-bottom: env(safe-area-inset-bottom);
+            --safe-left: env(safe-area-inset-left);
+        }
 
-    .typing-guide{text-align:center;color:#fff;margin-bottom:6px;user-select:none}
-    .typing-guide .jp{font-size:32px;line-height:1.1;letter-spacing:.06em;font-weight:700}
-    @media (min-width:1024px){.typing-guide .jp{font-size:40px}}
-    .typing-guide .sub{font-size:14px;opacity:.9;margin-top:6px;letter-spacing:.08em}
+        body {
+            font-family: 'BIZ UDGothic', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            user-select: none;
+        }
 
-    .jp-progress{display:inline-block;background:linear-gradient(90deg,#feca57 var(--fill,0%),rgba(255,255,255,.95) var(--fill,0%));-webkit-background-clip:text;background-clip:text;color:transparent;transition:background .12s linear}
-    .sub .char{padding:0 .06em;transition:color .08s,transform .04s}
-    .sub .char.matched{color:#feca57}
-    .sub .char.current{border-bottom:2px solid #feca57}
-    .sub .char.pending{color:rgba(255,255,255,.85);opacity:.75}
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
 
-    .romaji-guide{text-align:center;color:#fff;margin-bottom:6px;font-size:24px;font-weight:700;letter-spacing:.1em;min-height:40px}
-    .romaji-char{display:inline-block;padding:0 2px;transition:color .1s ease}
-    .romaji-char.typed{color:#feca57}
-    .romaji-char.current{background:rgba(254,202,87,.3);border-radius:4px}
-    .romaji-note{font-size:12px;color:#fff;opacity:.8;text-align:center}
+        /* トップバー：左右にHP、中央にターン/タイマー */
+        .top-bar{
+            min-height: 80px;
+            padding: calc(8px + var(--safe-top)) clamp(12px, 2vw, 24px) 8px clamp(12px, 2vw, 24px);
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
 
-    .controls{position:fixed;bottom:20px;left:20px;display:flex;gap:10px}
-    .control-btn{width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s ease}
-    .control-btn:hover{background:rgba(255,255,255,.3)}
-    .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:1000}
-    .modal-content{background:rgba(255,255,255,.95);backdrop-filter:blur(20px);border-radius:20px;padding:40px;text-align:center;max-width:500px;width:90%}
-    .modal h2{color:#333;margin-bottom:20px;font-size:24px}
-    .modal p{color:#666;margin-bottom:15px;line-height:1.6}
+            /* Grid で左右端に固定 */
+            display: grid;
+            grid-template-columns: 1fr auto 1fr; /* 左 HP | 中央 info | 右 HP */
+            align-items: center;
+            gap: 12px;
+        }
 
-    .damage-number{position:absolute;font-size:24px;font-weight:700;color:#ff6b6b;pointer-events:none;animation:damageFloat 1s ease-out forwards}
-    @keyframes damageFloat{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-50px)}}
-    .fire{--attr-color:#ff6b6b}.water{--attr-color:#4ecdc4}.thunder{--attr-color:#ffe66d}.wind{--attr-color:#95e1d3}.earth{--attr-color:#a8e6cf}.light{--attr-color:#ffd93d}
-    @media (max-width:1024px){.cards-container{grid-template-columns:repeat(3,1fr)}}
-    @media (max-width:768px){.cards-container{grid-template-columns:repeat(2,1fr)}.top-bar{height:60px;padding:0 10px}.player-info{min-width:200px}.hp-bar-container{width:150px}}
-    .hidden{display:none !important}
-    .shake{animation:shake .5s ease-in-out}
-    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
-    .countdown-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:1500}
-    .countdown-number{font-size:120px;font-weight:900;color:#feca57;text-shadow:0 0 30px rgba(254,202,87,.5);animation:countdownPulse 1s ease-in-out}
-    @keyframes countdownPulse{0%{transform:scale(.5);opacity:0}50%{transform:scale(1.2);opacity:1}100%{transform:scale(1);opacity:1}}
-    .start-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;z-index:2000}
-    .start-content{text-align:center;color:#fff}
-    .start-content h1{font-size:48px;margin-bottom:30px;text-shadow:2px 2px 4px rgba(0,0,0,.3)}
-    .mode-selection{display:flex;gap:30px;margin-bottom:30px;justify-content:center}
-    .mode-btn{padding:30px 40px;background:rgba(255,255,255,.2);border:3px solid rgba(255,255,255,.3);border-radius:20px;color:#fff;cursor:pointer;transition:all .3s ease;min-width:200px;text-align:center}
-    .mode-btn:hover{background:rgba(255,255,255,.3);transform:translateY(-5px);box-shadow:0 10px 30px rgba(0,0,0,.3)}
-    .mode-btn.selected{background:rgba(254,202,87,.3);border-color:#feca57;box-shadow:0 0 30px rgba(254,202,87,.5)}
-    .mode-icon{font-size:48px;margin-bottom:10px}
-    .mode-title{font-size:24px;font-weight:700;margin-bottom:8px}
-    .mode-desc{font-size:14px;opacity:.8}
-    .character-selection{display:grid;grid-template-columns:repeat(6,1fr);gap:15px;margin:20px 0;max-width:600px}
-    .character-btn{width:80px;height:80px;border-radius:50%;border:3px solid rgba(255,255,255,.3);cursor:pointer;transition:all .3s ease;display:flex;align-items:center;justify-content:center;font-size:32px}
-    .character-btn.selected{border-color:#feca57;box-shadow:0 0 20px rgba(254,202,87,.5)}
-    .name-input{width:300px;height:50px;border:2px solid rgba(255,255,255,.3);border-radius:25px;padding:0 20px;font-size:18px;font-family:'BIZ UDGothic',sans-serif;background:rgba(255,255,255,.9);outline:none;margin-bottom:20px;text-align:center}
-    .name-input:focus{border-color:#feca57;box-shadow:0 0 10px rgba(254,202,87,.3)}
-    .rules-content{text-align:left;max-width:600px;margin:0 auto}
-    .rule-item{display:flex;align-items:flex-start;gap:20px;margin-bottom:25px;padding:20px;background:rgba(255,255,255,.1);border-radius:15px;backdrop-filter:blur(10px)}
-    .rule-icon{font-size:32px;min-width:50px}
-    .rule-text h4{margin:0 0 8px 0;font-size:18px;color:#feca57}
-    .rule-text p{margin:0;line-height:1.5}
-  </style>
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-width: 0;          /* 端に寄せるため最小幅制約を外す */
+            justify-self: start;   /* 左側は左端へ */
+        }
+
+        .player-info:last-child{
+            justify-self: end;     /* 右側は右端へ */
+            flex-direction: row-reverse; /* アイコンを右寄せのままにする */
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .player-stats {
+            flex: 1;
+        }
+
+        .player-name {
+            font-weight: 700;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .hp-bar-container {
+            width: 200px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .hp-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        .hp-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .center-info {
+            text-align: center;
+            color: white;
+            justify-self: center;
+        }
+
+        .turn-display {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .phase-display {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+
+        .timer-ring {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: conic-gradient(#feca57 0deg, rgba(255, 255, 255, 0.2) 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            margin: 0 auto;
+        }
+
+        /* カードエリア */
+        .card-area {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+        }
+
+        /* プレイヤーの手札エリア（左右に配置） */
+        .player-hand {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .player-hand.left {
+            left: 20px;
+        }
+
+        .player-hand.right {
+            right: 20px;
+        }
+
+        .hand-card {
+            width: 90px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 6px;
+            text-align: center;
+            font-size: 11px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transform: translateX(10px);
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .hand-card:hover {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* メインカード表示エリア */
+        .main-cards-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.5s ease;
+        }
+
+        .cards-container.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+            backdrop-filter: blur(15px);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .card:hover::before {
+            transform: translateX(100%);
+        }
+
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            border-color: rgba(254, 202, 87, 0.6);
+        }
+
+        .card.selected {
+            border-color: #feca57;
+            box-shadow: 0 0 30px rgba(254, 202, 87, 0.8);
+            transform: scale(1.1) translateY(-15px);
+            background: linear-gradient(145deg, rgba(254, 202, 87, 0.3), rgba(255, 159, 243, 0.2));
+            animation: cardSelect 0.6s ease;
+        }
+
+        @keyframes cardSelect {
+            0% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.15) translateY(-20px) rotateY(10deg); }
+            100% { transform: scale(1.1) translateY(-15px); }
+        }
+
+        .card-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            letter-spacing: 0.05em;
+        }
+
+        .card-difficulty {
+            font-size: 14px;
+            color: #feca57;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        /* タイピング表示エリア */
+        .typing-display {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px 20px calc(20px + var(--safe-bottom)) 20px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            max-width: 600px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px auto;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #feca57);
+            width: 0%;
+            transition: width 0.2s ease;
+        }
+
+        .keyboard-hint {
+            margin-top: 15px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-family: 'BIZ UDGothic', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #feca57, #ff9ff3);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* コントロールエリア */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* モーダル */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .modal p {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        /* ダメージエフェクト */
+        .damage-number {
+            position: absolute;
+            font-size: 32px;
+            font-weight: 900;
+            color: #ff6b6b;
+            pointer-events: none;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            animation: damageFloat 1.5s ease-out forwards;
+        }
+
+        .damage-number.heal {
+            color: #4ecdc4;
+        }
+
+        @keyframes damageFloat {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(0.5);
+            }
+            20% {
+                transform: translateY(-10px) scale(1.2);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) scale(0.8);
+            }
+        }
+
+        /* ターン切り替えポップアップ */
+        .turn-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, rgba(254, 202, 87, 0.95), rgba(255, 159, 243, 0.95));
+            backdrop-filter: blur(20px);
+            border-radius: 25px;
+            padding: 30px 50px;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: turnPopup 2s ease-in-out forwards;
+        }
+
+        .turn-popup h2 {
+            font-size: 28px;
+            font-weight: 900;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin: 0;
+        }
+
+        @keyframes turnPopup {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+            80% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+        }
+
+        /* 属性カラー */
+        .fire { --attr-color: #ff6b6b; }
+        .water { --attr-color: #4ecdc4; }
+        .thunder { --attr-color: #ffe66d; }
+        .wind { --attr-color: #95e1d3; }
+        .earth { --attr-color: #a8e6cf; }
+        .light { --attr-color: #ffd93d; }
+
+        /* エフェクトレイヤー */
+        .fx-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        /* 攻撃アニメーション用スタイル */
+        .charge-effect {
+            position: absolute;
+            border-radius: 50%;
+            will-change: transform, opacity;
+            contain: layout paint;
+        }
+
+        .projectile {
+            position: absolute;
+            will-change: transform, opacity;
+            contain: layout paint;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            will-change: transform, opacity;
+            contain: layout paint;
+        }
+
+        .impact-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            will-change: opacity;
+        }
+
+        /* 強いシェイクアニメーション */
+        .shake-strong {
+            animation: shakeStrong 0.4s ease-in-out;
+        }
+
+        @keyframes shakeStrong {
+            0%, 100% { transform: translate3d(0, 0, 0); }
+            10% { transform: translate3d(-8px, -4px, 0); }
+            20% { transform: translate3d(6px, -8px, 0); }
+            30% { transform: translate3d(-6px, 4px, 0); }
+            40% { transform: translate3d(8px, 6px, 0); }
+            50% { transform: translate3d(-4px, -6px, 0); }
+            60% { transform: translate3d(6px, 8px, 0); }
+            70% { transform: translate3d(-8px, -2px, 0); }
+            80% { transform: translate3d(4px, -8px, 0); }
+            90% { transform: translate3d(-6px, 6px, 0); }
+        }
+
+        /* 溜めエフェクト */
+        @keyframes chargeGlow {
+            0% { 
+                transform: scale(1);
+                box-shadow: 0 0 10px var(--glow-color);
+            }
+            50% { 
+                transform: scale(1.15);
+                box-shadow: 0 0 30px var(--glow-color), 0 0 60px var(--glow-color);
+            }
+            100% { 
+                transform: scale(1.2);
+                box-shadow: 0 0 40px var(--glow-color), 0 0 80px var(--glow-color);
+            }
+        }
+
+        /* 火球アニメーション */
+        @keyframes fireball {
+            0% { 
+                transform: scale(0.5) rotate(0deg);
+                opacity: 1;
+            }
+            100% { 
+                transform: scale(1.2) rotate(360deg);
+                opacity: 0.8;
+            }
+        }
+
+        /* 水刃アニメーション */
+        @keyframes waterBlade {
+            0% { 
+                transform: scaleX(0) rotate(-15deg);
+                opacity: 1;
+            }
+            100% { 
+                transform: scaleX(1) rotate(15deg);
+                opacity: 0.9;
+            }
+        }
+
+        /* 雷アニメーション */
+        @keyframes lightning {
+            0%, 100% { opacity: 0; }
+            10%, 30%, 50%, 70%, 90% { opacity: 1; }
+            20%, 40%, 60%, 80% { opacity: 0.3; }
+        }
+
+        /* 風刃アニメーション */
+        @keyframes windBlade {
+            0% { 
+                transform: scale(0) rotate(0deg);
+                opacity: 0.8;
+            }
+            100% { 
+                transform: scale(1.5) rotate(180deg);
+                opacity: 0.3;
+            }
+        }
+
+        /* 岩柱アニメーション */
+        @keyframes rockSpike {
+            0% { 
+                transform: scaleY(0) translateY(50px);
+                opacity: 1;
+            }
+            100% { 
+                transform: scaleY(1) translateY(0);
+                opacity: 0.9;
+            }
+        }
+
+        /* 光線アニメーション */
+        @keyframes lightBeam {
+            0% { 
+                transform: scaleX(0);
+                opacity: 1;
+            }
+            50% { 
+                transform: scaleX(1);
+                opacity: 1;
+            }
+            100% { 
+                transform: scaleX(1.2);
+                opacity: 0.7;
+            }
+        }
+
+        /* パーティクル爆発 */
+        @keyframes particleExplode {
+            0% { 
+                transform: scale(0) translate3d(0, 0, 0);
+                opacity: 1;
+            }
+            100% { 
+                transform: scale(1) translate3d(var(--dx), var(--dy), 0);
+                opacity: 0;
+            }
+        }
+
+        /* リップル効果 */
+        @keyframes ripple {
+            0% { 
+                transform: scale(0);
+                opacity: 0.8;
+            }
+            100% { 
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+
+        /* ルーレット演出 */
+        .roulette-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2500;
+        }
+
+        .roulette-container {
+            text-align: center;
+            color: white;
+            position: relative;
+        }
+
+        .roulette-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            animation: titlePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .roulette-wheel {
+            width: 350px;
+            height: 350px;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 0deg,
+                #ff6b6b 0deg 90deg,
+                #ff8a80 90deg 180deg,
+                #4ecdc4 180deg 270deg,
+                #80e5d1 270deg 360deg
+            );
+            border: 12px solid #feca57;
+            position: relative;
+            margin: 0 auto 40px auto;
+            box-shadow: 
+                0 0 60px rgba(254, 202, 87, 0.8),
+                inset 0 0 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .roulette-pointer {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 40px solid #feca57;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+            z-index: 10;
+            animation: pointerGlow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pointerGlow {
+            0%, 100% { filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)); }
+            50% { filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 20px #feca57); }
+        }
+
+        .roulette-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #feca57, #ff9ff3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            z-index: 5;
+            border: 4px solid white;
+        }
+
+        .player-section {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 3px solid currentColor;
+        }
+
+        .player-section.left {
+            left: 30px;
+            color: #ff6b6b;
+            flex-direction: row;
+        }
+
+        .player-section.right {
+            right: 30px;
+            color: #4ecdc4;
+            flex-direction: row-reverse;
+        }
+
+        .player-avatar-roulette {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            border: 3px solid currentColor;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .wheel-labels {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .wheel-label {
+            position: absolute;
+            font-size: 18px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+        }
+
+        .wheel-label.top {
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff6b6b;
+        }
+
+        .wheel-label.bottom {
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #4ecdc4;
+        }
+
+        .roulette-spinning {
+            animation: rouletteSpin 3s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+        }
+
+        .roulette-result {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 20px;
+            opacity: 0;
+            animation: resultFadeIn 0.5s ease-out 3.2s forwards;
+        }
+
+        @keyframes rouletteSpin {
+            0% { transform: rotate(0deg); }
+            70% { transform: rotate(1800deg); }
+            100% { transform: rotate(var(--final-rotation, 1980deg)); }
+        }
+
+        @keyframes resultFadeIn {
+            from { 
+                opacity: 0;
+                transform: translateY(20px) scale(0.8);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* アクセシビリティ対応 */
+        @media (prefers-reduced-motion: reduce) {
+            .shake-strong {
+                animation: none;
+            }
+            
+            .impact-flash {
+                opacity: 0.3 !important;
+            }
+            
+            @keyframes shakeStrong {
+                0%, 100% { transform: translate3d(0, 0, 0); }
+            }
+
+            .roulette-spinning {
+                animation: rouletteSpinReduced 1s ease-out forwards;
+            }
+
+            @keyframes rouletteSpinReduced {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(var(--final-rotation, 180deg)); }
+            }
+        }
+
+        /* レスポンシブ調整 */
+        @media (max-width: 1024px) {
+            .cards-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .cards-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .top-bar {
+                height: 60px;
+                padding: 0 10px;
+            }
+            
+            .player-info {
+                min-width: 200px;
+            }
+            
+            .hp-bar-container {
+                width: 150px;
+            }
+
+            .player-setup-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .character-selection {
+                grid-template-columns: repeat(6, 1fr);
+                max-width: 100%;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* 問題テキストの上下間隔も微調整 */
+        .typing-guide {
+            text-align: center;
+            color: white;
+            margin-bottom: 10px;
+            user-select: none;
+        }
+        .typing-guide .jp {
+            font-size: 32px;
+            line-height: 1.1;
+            letter-spacing: .06em;
+            font-weight: 700;
+        }
+        @media (min-width: 1024px){ .typing-guide .jp { font-size: 40px; } }
+
+        .typing-guide .sub {
+            font-size: 14px;
+            opacity: .9;
+            margin-top: 6px;
+            letter-spacing: .08em;
+        }
+
+        /* 上段：左から色が満ちる（文字単位じゃなく"面"でスーッと） */
+        .jp-progress {
+            display: inline-block;
+            background: linear-gradient(
+                90deg,
+                #feca57 var(--fill, 0%),
+                rgba(255,255,255,.95) var(--fill, 0%)
+            );
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            transition: background .12s linear;
+        }
+
+        /* 下段：1文字ずつ点灯 */
+        .sub .char { padding: 0 .06em; transition: color .08s, transform .04s; }
+        .sub .char.matched { color: #feca57; }
+        .sub .char.current { border-bottom: 2px solid #feca57; }
+        .sub .char.pending { color: rgba(255,255,255,.85); opacity: .75; }
+
+        /* ローマ字ガイド */
+        .romaji-guide {
+            text-align: center;
+            color: white;
+            margin-bottom: 8px;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            min-height: 40px;
+        }
+
+        .romaji-char {
+            display: inline-block;
+            padding: 0 2px;
+            transition: color 0.1s ease;
+        }
+
+        .romaji-char.typed {
+            color: #feca57;
+        }
+
+        .romaji-char.current {
+            background: rgba(254, 202, 87, 0.3);
+            border-radius: 4px;
+        }
+
+        /* カウントダウン */
+        .countdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500;
+        }
+
+        .countdown-number {
+            font-size: 120px;
+            font-weight: 900;
+            color: #feca57;
+            text-shadow: 0 0 30px rgba(254, 202, 87, 0.5);
+            animation: countdownPulse 1s ease-in-out;
+        }
+
+        @keyframes countdownPulse {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ゲーム開始画面 */
+        .start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .start-content {
+            text-align: center;
+            color: white;
+        }
+
+        .start-content h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .mode-selection {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 25px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 25px 35px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 200px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .mode-btn.selected {
+            background: rgba(254, 202, 87, 0.3);
+            border-color: #feca57;
+            box-shadow: 0 0 30px rgba(254, 202, 87, 0.5);
+        }
+
+        .mode-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .mode-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .mode-desc {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .player-setup-container {
+            display: flex;
+            gap: 50px;
+            justify-content: center;
+            align-items: flex-start;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .player-setup {
+            flex: 1;
+            max-width: 350px;
+            min-width: 300px;
+            text-align: center;
+        }
+
+        .character-selection {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+            max-width: 280px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .character-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .character-btn.selected {
+            border-color: #feca57;
+            box-shadow: 0 0 20px rgba(254, 202, 87, 0.5);
+        }
+
+        .name-input {
+            width: 280px;
+            height: 45px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 22px;
+            padding: 0 20px;
+            font-size: 17px;
+            font-family: 'BIZ UDGothic', sans-serif;
+            background: rgba(255, 255, 255, 0.9);
+            outline: none;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .name-input:focus {
+            border-color: #feca57;
+            box-shadow: 0 0 10px rgba(254, 202, 87, 0.3);
+        }
+
+        .rules-content {
+            text-align: left;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .rule-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .rule-icon {
+            font-size: 24px;
+            min-width: 40px;
+        }
+
+        .rule-text h4 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            color: #feca57;
+        }
+
+        .rule-text p {
+            margin: 0;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+
+        .hp-btn {
+            padding: 20px 25px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 18px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 140px;
+            text-align: center;
+            font-family: 'BIZ UDGothic', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .hp-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .hp-btn.selected {
+            background: rgba(254, 202, 87, 0.3);
+            border-color: #feca57;
+            box-shadow: 0 0 25px rgba(254, 202, 87, 0.4);
+        }
+    </style>
 </head>
 <body>
-  <!-- スタート画面 -->
-  <div class="start-screen" id="startScreen">
-    <div class="start-content">
-      <h1>⚔️ タイピングバトル</h1>
-      <p style="font-size:18px;margin-bottom:30px;">学習しながら楽しくタイピング！</p>
+    <!-- ゲーム開始画面 -->
+    <div class="start-screen" id="startScreen">
+        <div class="start-content">
+            <h1>⚔️ タイピングバトル</h1>
+            <p style="font-size: 16px; margin-bottom: 20px;">学習しながら楽しくタイピング！</p>
+            
+            <div class="mode-selection">
+                <button class="mode-btn" id="cpuModeBtn" onclick="selectMode('cpu')">
+                    <div class="mode-icon">🤖</div>
+                    <div class="mode-title">CPU戦</div>
+                    <div class="mode-desc">コンピューターと対戦</div>
+                </button>
+                <button class="mode-btn" id="pvpModeBtn" onclick="selectMode('pvp')">
+                    <div class="mode-icon">👥</div>
+                    <div class="mode-title">2人対戦</div>
+                    <div class="mode-desc">友達と一緒に対戦</div>
+                </button>
+            </div>
 
-      <div class="mode-selection">
-        <button class="mode-btn" id="cpuModeBtn" onclick="selectMode('cpu')">
-          <div class="mode-icon">🤖</div>
-          <div class="mode-title">CPU戦</div>
-          <div class="mode-desc">コンピューターと対戦</div>
-        </button>
-        <button class="mode-btn" id="pvpModeBtn" onclick="selectMode('pvp')">
-          <div class="mode-icon">👥</div>
-          <div class="mode-title">2人対戦</div>
-          <div class="mode-desc">友達と一緒に対戦</div>
-        </button>
-      </div>
+            <div id="characterSelection" class="hidden">
+                <div class="hp-selection" style="margin-bottom: 25px;">
+                    <h3 style="margin-bottom: 15px; font-size: 18px; color: white;">⚡ 初期HP設定</h3>
+                    <div class="hp-options" style="display: flex; gap: 25px; justify-content: center; flex-wrap: wrap;">
+                        <button class="hp-btn" data-hp="100" onclick="selectHP(100)">
+                            <div style="font-size: 24px; margin-bottom: 8px;">💚</div>
+                            <div style="font-size: 16px; font-weight: 700;">100HP</div>
+                            <div style="font-size: 13px; opacity: 0.8;">短期決戦</div>
+                        </button>
+                        <button class="hp-btn selected" data-hp="200" onclick="selectHP(200)">
+                            <div style="font-size: 24px; margin-bottom: 8px;">💛</div>
+                            <div style="font-size: 16px; font-weight: 700;">200HP</div>
+                            <div style="font-size: 13px; opacity: 0.8;">標準</div>
+                        </button>
+                        <button class="hp-btn" data-hp="300" onclick="selectHP(300)">
+                            <div style="font-size: 24px; margin-bottom: 8px;">❤️</div>
+                            <div style="font-size: 16px; font-weight: 700;">300HP</div>
+                            <div style="font-size: 13px; opacity: 0.8;">長期戦</div>
+                        </button>
+                    </div>
+                </div>
 
-      <div id="characterSelection" class="hidden">
-        <div id="player1Setup">
-          <h3 style="margin-bottom:20px;">プレイヤー1の設定</h3>
-          <input type="text" id="player1NameInput" class="name-input" value="プレイヤー1" placeholder="名前を入力">
-          <div class="character-selection">
-            <div class="character-btn fire" data-attr="fire" data-player="1" onclick="selectCharacter('fire',1)">🔥</div>
-            <div class="character-btn water" data-attr="water" data-player="1" onclick="selectCharacter('water',1)">💧</div>
-            <div class="character-btn thunder" data-attr="thunder" data-player="1" onclick="selectCharacter('thunder',1)">⚡</div>
-            <div class="character-btn wind" data-attr="wind" data-player="1" onclick="selectCharacter('wind',1)">🌪️</div>
-            <div class="character-btn earth" data-attr="earth" data-player="1" onclick="selectCharacter('earth',1)">🌱</div>
-            <div class="character-btn light" data-attr="light" data-player="1" onclick="selectCharacter('light',1)">✨</div>
-          </div>
+                <div class="player-setup-container">
+                    <div id="player1Setup" class="player-setup">
+                        <h3 style="margin-bottom: 15px; font-size: 18px;">プレイヤー1の設定</h3>
+                        <input type="text" id="player1NameInput" class="name-input" value="プレイヤー1" placeholder="名前を入力">
+                        <div class="character-selection">
+                            <div class="character-btn fire" data-attr="fire" data-player="1" onclick="selectCharacter('fire', 1)">🔥</div>
+                            <div class="character-btn water" data-attr="water" data-player="1" onclick="selectCharacter('water', 1)">💧</div>
+                            <div class="character-btn thunder" data-attr="thunder" data-player="1" onclick="selectCharacter('thunder', 1)">⚡</div>
+                            <div class="character-btn wind" data-attr="wind" data-player="1" onclick="selectCharacter('wind', 1)">🌪️</div>
+                            <div class="character-btn earth" data-attr="earth" data-player="1" onclick="selectCharacter('earth', 1)">🌱</div>
+                            <div class="character-btn light" data-attr="light" data-player="1" onclick="selectCharacter('light', 1)">✨</div>
+                        </div>
+                    </div>
+                    
+                    <div id="player2Setup" class="player-setup hidden">
+                        <h3 style="margin-bottom: 15px; font-size: 18px;">プレイヤー2の設定</h3>
+                        <input type="text" id="player2NameInput" class="name-input" value="プレイヤー2" placeholder="名前を入力">
+                        <div class="character-selection">
+                            <div class="character-btn fire" data-attr="fire" data-player="2" onclick="selectCharacter('fire', 2)">🔥</div>
+                            <div class="character-btn water" data-attr="water" data-player="2" onclick="selectCharacter('water', 2)">💧</div>
+                            <div class="character-btn thunder" data-attr="thunder" data-player="2" onclick="selectCharacter('thunder', 2)">⚡</div>
+                            <div class="character-btn wind" data-attr="wind" data-player="2" onclick="selectCharacter('wind', 2)">🌪️</div>
+                            <div class="character-btn earth" data-attr="earth" data-player="2" onclick="selectCharacter('earth', 2)">🌱</div>
+                            <div class="character-btn light" data-attr="light" data-player="2" onclick="selectCharacter('light', 2)">✨</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" id="nextBtn" onclick="showGameRules()" style="margin-top: 15px;" disabled>ゲームの遊び方を見る</button>
+            </div>
+            
+            <div id="gameRules" class="hidden">
+                <h2 style="margin-bottom: 20px; font-size: 22px;">📖 ゲームの遊び方</h2>
+                <div class="rules-content">
+                    <div class="rule-item">
+                        <div class="rule-icon">⚔️</div>
+                        <div class="rule-text">
+                            <h4>基本ルール</h4>
+                            <p>設定したHPでスタート。相手のHPを0にしたら勝利！</p>
+                        </div>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-icon">📝</div>
+                        <div class="rule-text">
+                            <h4>タイピング</h4>
+                            <p>手札から1枚選んで15秒以内にローマ字で入力</p>
+                        </div>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-icon">💥</div>
+                        <div class="rule-text">
+                            <h4>ダメージ</h4>
+                            <p>成功：文字数×残り時間でダメージ<br>失敗：文字数×10の自傷ダメージ<br>打ち間違え：3秒ペナルティ</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="startGame()" style="margin-top: 20px; font-size: 16px; padding: 12px 30px;">🎮 ゲーム開始！</button>
+            </div>
+
+            <div style="margin-top: 20px; font-size: 12px; opacity: 0.8;">
+                <p>📱 iPad横向きで最適化されています</p>
+                <p>⌨️ ローマ字で入力してください（全角でもOK）</p>
+            </div>
         </div>
-
-        <div id="player2Setup" class="hidden">
-          <h3 style="margin-bottom:20px;">プレイヤー2の設定</h3>
-          <input type="text" id="player2NameInput" class="name-input" value="プレイヤー2" placeholder="名前を入力">
-          <div class="character-selection">
-            <div class="character-btn fire" data-attr="fire" data-player="2" onclick="selectCharacter('fire',2)">🔥</div>
-            <div class="character-btn water" data-attr="water" data-player="2" onclick="selectCharacter('water',2)">💧</div>
-            <div class="character-btn thunder" data-attr="thunder" data-player="2" onclick="selectCharacter('thunder',2)">⚡</div>
-            <div class="character-btn wind" data-attr="wind" data-player="2" onclick="selectCharacter('wind',2)">🌪️</div>
-            <div class="character-btn earth" data-attr="earth" data-player="2" onclick="selectCharacter('earth',2)">🌱</div>
-            <div class="character-btn light" data-attr="light" data-player="2" onclick="selectCharacter('light',2)">✨</div>
-          </div>
-        </div>
-
-        <button class="btn btn-primary" id="nextBtn" onclick="showGameRules()" style="margin-top:20px;" disabled>ゲームの遊び方を見る</button>
-      </div>
-
-      <div id="gameRules" class="hidden">
-        <h2 style="margin-bottom:30px;">📖 ゲームの遊び方</h2>
-        <div class="rules-content">
-          <div class="rule-item"><div class="rule-icon">⚔️</div><div class="rule-text"><h4>基本ルール</h4><p>各プレイヤーHP300でスタート。相手のHPを0にしたら勝利！</p></div></div>
-          <div class="rule-item"><div class="rule-icon">📝</div><div class="rule-text"><h4>タイピング</h4><p>手札から1枚選んで15秒以内に入力。タイプ完了で自動判定。</p></div></div>
-          <div class="rule-item"><div class="rule-icon">💥</div><div class="rule-text"><h4>ダメージ</h4><p>成功：文字数×残り時間 / 失敗：文字数×10の自傷</p></div></div>
-          <p style="text-align:center;opacity:.85">※ Escでギブアップできます</p>
-          <p class="romaji-note">別表記OK：tsu/tu, shi/si, chi/ti, ji/zi, di/ji, du/zu, fu/hu, wo/o, n/nn</p>
-        </div>
-        <button class="btn btn-primary" onclick="startGame()" style="margin-top:30px;font-size:18px;padding:15px 40px;">ゲーム開始！</button>
-      </div>
-
-      <div style="margin-top:30px;font-size:14px;opacity:.8;">
-        <p>📱 iPad横向きで最適化</p>
-        <p>⌨️ ローマ字でタイプ（可視入力欄はありません）</p>
-      </div>
     </div>
-  </div>
 
-  <!-- メインゲーム画面 -->
-  <div class="game-container hidden" id="gameContainer">
-    <div class="top-bar">
-      <div class="player-info">
-        <div class="avatar" id="player1Avatar">🔥</div>
-        <div class="player-stats">
-          <div class="player-name" id="player1Name">プレイヤー1</div>
-          <div class="hp-bar-container"><div class="hp-bar" id="player1HpBar" style="width:100%;"></div><div class="hp-text" id="player1HpText">300/300</div></div>
+    <!-- メインゲーム画面 -->
+    <div class="game-container hidden" id="gameContainer">
+        <!-- トップバー -->
+        <div class="top-bar">
+            <div class="player-info">
+                <div class="avatar" id="player1Avatar">🔥</div>
+                <div class="player-stats">
+                    <div class="player-name" id="player1Name">プレイヤー1</div>
+                    <div class="hp-bar-container">
+                        <div class="hp-bar" id="player1HpBar" style="width: 100%;"></div>
+                        <div class="hp-text" id="player1HpText">300/300</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="center-info">
+                <div class="turn-display" id="turnDisplay">プレイヤー1のターン</div>
+                <div class="phase-display" id="phaseDisplay">カードを選択してください</div>
+                <div class="timer-ring" id="timerRing">15</div>
+            </div>
+
+            <div class="player-info">
+                <div class="avatar" id="player2Avatar">🤖</div>
+                <div class="player-stats" style="text-align: right;">
+                    <div class="player-name" id="player2Name">CPU</div>
+                    <div class="hp-bar-container">
+                        <div class="hp-bar" id="player2HpBar" style="width: 100%;"></div>
+                        <div class="hp-text" id="player2HpText">300/300</div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="center-info">
-        <div class="turn-display" id="turnDisplay">プレイヤー1のターン</div>
-        <div class="phase-display" id="phaseDisplay">カードを選択してください</div>
-        <div class="timer-ring" id="timerRing">15</div>
-      </div>
-      <div class="player-info" style="flex-direction:row-reverse;">
-        <div class="avatar" id="player2Avatar">🤖</div>
-        <div class="player-stats" style="text-align:right;">
-          <div class="player-name" id="player2Name">CPU</div>
-          <div class="hp-bar-container"><div class="hp-bar" id="player2HpBar" style="width:100%;"></div><div class="hp-text" id="player2HpText">300/300</div></div>
+
+        <!-- カードエリア -->
+        <div class="card-area">
+            <!-- メインカード選択エリア -->
+            <div class="main-cards-area">
+                <div class="cards-container" id="cardsContainer">
+                    <!-- カードは動的生成 -->
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="card-area">
-      <div class="cards-container" id="cardsContainer"></div>
-    </div>
-
-    <div class="input-area">
-      <div style="flex:1">
-        <div id="typingGuide" class="typing-guide">
-          <div id="typingGuideJP" class="jp jp-progress"></div>
-          <div id="typingGuideSub" class="sub"></div>
+        <!-- タイピングガイド表示エリア -->
+        <div class="typing-display">
+            <div id="typingGuide" class="typing-guide">
+                <div id="typingGuideJP" class="jp jp-progress"></div>
+                <div id="typingGuideSub" class="sub"></div>
+            </div>
+            <div id="romajiGuide" class="romaji-guide"></div>
+            <div class="progress-bar" style="display: none;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="keyboard-hint">
+                <p>⌨️ キーボードで直接入力 | ESCキーでギブアップ</p>
+            </div>
         </div>
-        <div id="romajiGuide" class="romaji-guide"></div>
-        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-      </div>
-      <input id="softKeyboard" class="visually-hidden-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="latin">
+
+        <!-- コントロール -->
+        <div class="controls">
+            <button class="control-btn" onclick="showHelp()" title="ヘルプ">❓</button>
+            <button class="control-btn" onclick="toggleSound()" title="音量" id="soundBtn">🔊</button>
+            <button class="control-btn" onclick="pauseGame()" title="一時停止" id="pauseBtn">⏸️</button>
+            <button class="control-btn" onclick="backToMenu()" title="メニューに戻る">🏠</button>
+        </div>
     </div>
 
-    <div class="controls">
-      <button class="control-btn" onclick="showHelp()" title="ヘルプ">❓</button>
-      <button class="control-btn" onclick="toggleSound()" title="音量" id="soundBtn">🔊</button>
-      <button class="control-btn" onclick="pauseGame()" title="一時停止" id="pauseBtn">⏸️</button>
-      <button class="control-btn" onclick="backToMenu()" title="メニューに戻る">🏠</button>
+    <!-- モーダル -->
+    <div class="modal" id="modal">
+        <div class="modal-content" id="modalContent">
+            <!-- 動的コンテンツ -->
+        </div>
     </div>
-  </div>
 
-  <div class="modal" id="modal"><div class="modal-content" id="modalContent"></div></div>
+    <script>
+        // 変換中フラグ（IME）
+        let isComposing = false;
 
-  <script>
-    // ====== 正規化 ======
-    const normalizeJP=(text)=>{
-      if(!text) return '';
-      let n=text.normalize('NFKC');
-      n=n.replace(/[\u30A1-\u30F6]/g,m=>String.fromCharCode(m.charCodeAt(0)-0x60)); // カタカナ→ひらがな
-      n=n.replace(/[Ａ-Ｚａ-ｚ０-９]/g,s=>String.fromCharCode(s.charCodeAt(0)-0xFEE0)); // 全角英数→半角
-      n=n.replace(/[、。，．\s]/g,''); // 句読点・空白除去
-      n=n.replace(/[ゃャ]/g,'や').replace(/[ゅュ]/g,'ゆ').replace(/[ょョ]/g,'よ').replace(/[っッ]/g,'つ'); // 小書き→通常
-      n=n.replace(/ー/g,''); // 長音記号除去
-      return n.toLowerCase();
-    };
-    const countChars=(s)=>normalizeJP(s).length;
-
-    // ====== ローマ字：標準(表示用) + 代替(判定用) ======
-    const BASE_ROMA={ // 表示用はヘボン系
-      'あ':'a','い':'i','う':'u','え':'e','お':'o',
-      'か':'ka','き':'ki','く':'ku','け':'ke','こ':'ko',
-      'が':'ga','ぎ':'gi','ぐ':'gu','げ':'ge','ご':'go',
-      'さ':'sa','し':'shi','す':'su','せ':'se','そ':'so',
-      'ざ':'za','じ':'ji','ず':'zu','ぜ':'ze','ぞ':'zo',
-      'た':'ta','ち':'chi','つ':'tsu','て':'te','と':'to',
-      'だ':'da','ぢ':'ji','づ':'zu','で':'de','ど':'do',
-      'な':'na','に':'ni','ぬ':'nu','ね':'ne','の':'no',
-      'は':'ha','ひ':'hi','ふ':'fu','へ':'he','ほ':'ho',
-      'ば':'ba','び':'bi','ぶ':'bu','べ':'be','ぼ':'bo',
-      'ぱ':'pa','ぴ':'pi','ぷ':'pu','ぺ':'pe','ぽ':'po',
-      'ま':'ma','み':'mi','む':'mu','め':'me','も':'mo',
-      'や':'ya','ゆ':'yu','よ':'yo',
-      'ら':'ra','り':'ri','る':'ru','れ':'re','ろ':'ro',
-      'わ':'wa','ゐ':'wi','ゑ':'we','を':'wo','ん':'n'
-    };
-    const ALT_ROMA={ // 代替表記（追加分）
-      'し':['si'],
-      'ち':['ti'],
-      'つ':['tu'],
-      'じ':['zi'],
-      'ぢ':['di'],      // IMEでdi=ぢ
-      'づ':['du'],      // du=づ
-      'ふ':['hu'],
-      'を':['o'],
-      'ん':['nn']
-    };
-
-    function romajiVariantsForChar(ch){
-      const base=BASE_ROMA[ch];
-      const alts=ALT_ROMA[ch]||[];
-      if(!base && alts.length===0) return [ch]; // 未定義はそのまま
-      const set=new Set();
-      if(base) set.add(base);
-      alts.forEach(a=>set.add(a));
-      return Array.from(set);
-    }
-
-    function buildRomajiForText(hira){
-      const per=[...hira].map(romajiVariantsForChar);
-      const primary = per.map(v=>v[0]).join('');
-      // 全通り（短い語なので十分軽い）。上限で安全装置
-      const limit=50000;
-      const out=[];
-      (function dfs(i,acc){
-        if(out.length>=limit) return;
-        if(i===per.length){ out.push(acc); return; }
-        for(const s of per[i]) dfs(i+1,acc+s);
-      })(0,'');
-      // 重複除去
-      return { primary, all:Array.from(new Set(out)) };
-    }
-
-    // ====== タイピング状態 ======
-    let typingState={primaryRomaji:'',allowedRomaji:[],typedKeys:''};
-
-    function setupTypingGuide(targetText){
-      const jpEl=document.getElementById('typingGuideJP');
-      const subEl=document.getElementById('typingGuideSub');
-      const romaEl=document.getElementById('romajiGuide');
-      const norm=normalizeJP(targetText);
-
-      // 進捗リセット
-      jpEl.style.setProperty('--fill','0%');
-      jpEl.textContent=targetText;
-
-      // ひらがな1文字ずつ
-      subEl.innerHTML='';
-      [...norm].forEach((ch,i)=>{
-        const span=document.createElement('span');
-        span.className='char pending'; span.dataset.index=i; span.textContent=ch;
-        subEl.appendChild(span);
-      });
-
-      // ローマ字（表示用はprimary、判定はallowed）
-      const {primary,all}=buildRomajiForText(norm);
-      typingState={primaryRomaji:primary,allowedRomaji:all,typedKeys:''};
-
-      romaEl.innerHTML='';
-      [...primary].forEach((c,i)=>{
-        const s=document.createElement('span');
-        s.className='romaji-char'; s.dataset.index=i; s.textContent=c;
-        romaEl.appendChild(s);
-      });
-      if(primary.length>0) romaEl.children[0].classList.add('current');
-    }
-
-    function updateTypingGuideProgress(){
-      if(!gameState.selectedCard) return;
-      const jpEl=document.getElementById('typingGuideJP');
-      const subEl=document.getElementById('typingGuideSub');
-
-      const target=gameState.selectedCard.text;
-      const normTarget=normalizeJP(target);
-
-      const typedLen=typingState.typedKeys.length;
-      const baseLen=typingState.primaryRomaji.length||1;
-
-      const progress=Math.max(0,Math.min(1,typedLen/baseLen));
-      const hiraMatched=Math.floor(progress*normTarget.length);
-
-      jpEl.style.setProperty('--fill',`${progress*100}%`);
-      document.getElementById('progressFill').style.width=`${progress*100}%`;
-
-      const chars=subEl.querySelectorAll('.char');
-      chars.forEach((el,i)=>{
-        el.classList.remove('matched','current','pending');
-        if(i<hiraMatched) el.classList.add('matched');
-        else if(i===hiraMatched && typedLen<baseLen) el.classList.add('current');
-        else el.classList.add('pending');
-      });
-    }
-
-    function updateRomajiDisplay(){
-      const el=document.getElementById('romajiGuide');
-      const chars=el.querySelectorAll('.romaji-char');
-      const typedLen=Math.min(typingState.typedKeys.length, typingState.primaryRomaji.length);
-      chars.forEach((c,i)=>{
-        c.classList.remove('typed','current');
-        if(i < typedLen) c.classList.add('typed');
-        else if(i===typedLen) c.classList.add('current');
-      });
-    }
-
-    // ====== ゲーム状態とカード ======
-    let gameState={
-      mode:null,
-      players:[
-        {name:'プレイヤー1',hp:300,maxHp:300,avatar:'🔥',attribute:'fire'},
-        {name:'CPU',hp:300,maxHp:300,avatar:'🤖',attribute:'water'}
-      ],
-      currentPlayer:0,selectedCard:null,hands:[[],[]],deck:[],discard:[],
-      timer:15,timerInterval:null,gamePhase:'cardSelect',soundEnabled:true,isPaused:false,
-      stats:{totalChars:0,correctChars:0,totalTime:0,combo:0,maxCombo:0}
-    };
-
-    // 既存カード
-    const BASE_CARDS=[
-      {text:'ねこ',difficulty:1,category:'どうぶつ'},{text:'いぬ',difficulty:1,category:'どうぶつ'},{text:'すし',difficulty:1,category:'たべもの'},
-      {text:'そら',difficulty:1,category:'しぜん'},{text:'やま',difficulty:1,category:'しぜん'},{text:'かわ',difficulty:1,category:'しぜん'},
-      {text:'はな',difficulty:1,category:'しぜん'},{text:'みず',difficulty:1,category:'しぜん'},{text:'ゆき',difficulty:1,category:'しぜん'},
-      {text:'つき',difficulty:1,category:'しぜん'},{text:'かさ',difficulty:1,category:'もの'},{text:'うみ',difficulty:1,category:'しぜん'},
-      {text:'あめ',difficulty:1,category:'しぜん'},{text:'ほし',difficulty:1,category:'しぜん'},{text:'かに',difficulty:1,category:'どうぶつ'},
-      {text:'さる',difficulty:1,category:'どうぶつ'},{text:'もり',difficulty:1,category:'しぜん'},{text:'くも',difficulty:1,category:'しぜん'},
-      {text:'みち',difficulty:1,category:'もの'},{text:'かぜ',difficulty:1,category:'しぜん'},
-      {text:'たまご',difficulty:2,category:'たべもの'},{text:'くるま',difficulty:2,category:'のりもの'},{text:'きつね',difficulty:2,category:'どうぶつ'},
-      {text:'うさぎ',difficulty:2,category:'どうぶつ'},{text:'さかな',difficulty:2,category:'どうぶつ'},{text:'けむし',difficulty:2,category:'どうぶつ'},
-      {text:'きのこ',difficulty:2,category:'しぜん'},{text:'こども',difficulty:2,category:'ひと'},{text:'みかん',difficulty:2,category:'たべもの'},
-      {text:'えがお',difficulty:2,category:'きもち'},{text:'すずめ',difficulty:2,category:'どうぶつ'},{text:'りんご',difficulty:2,category:'たべもの'},
-      {text:'とけい',difficulty:2,category:'もの'},{text:'かばん',difficulty:2,category:'もの'},{text:'おふろ',difficulty:2,category:'もの'},
-      {text:'えほん',difficulty:2,category:'もの'},{text:'のはら',difficulty:2,category:'しぜん'},{text:'やさい',difficulty:2,category:'たべもの'},
-      {text:'でんき',difficulty:2,category:'もの'}
-    ];
-
-    // 追加カード（小文字・促音・長めの語も）
-    const EXTRA_CARDS=[
-      {text:'がっこう',difficulty:2,category:'ばしょ'},
-      {text:'でんしゃ',difficulty:2,category:'のりもの'},
-      {text:'ひこうき',difficulty:3,category:'のりもの'},
-      {text:'せんせい',difficulty:3,category:'ひと'},
-      {text:'ぎょうざ',difficulty:3,category:'たべもの'},
-      {text:'きゅうり',difficulty:2,category:'たべもの'},
-      {text:'しゃしん',difficulty:3,category:'もの'},
-      {text:'えんぴつ',difficulty:2,category:'もの'},
-      {text:'てがみ',difficulty:2,category:'もの'},
-      {text:'はっぱ',difficulty:2,category:'しぜん'},
-      {text:'こおり',difficulty:2,category:'しぜん'},
-      {text:'たからばこ',difficulty:3,category:'もの'},
-      {text:'たいよう',difficulty:2,category:'しぜん'},
-      {text:'つばさ',difficulty:2,category:'もの'},
-      {text:'ほうせき',difficulty:3,category:'もの'},
-      {text:'こうえん',difficulty:2,category:'ばしょ'},
-      {text:'せかいちず',difficulty:3,category:'もの'},
-      {text:'しょうがっこう',difficulty:4,category:'ばしょ'},
-      {text:'しんかんせん',difficulty:4,category:'のりもの'},
-      {text:'どうぶつえん',difficulty:4,category:'ばしょ'},
-      {text:'くじら',difficulty:2,category:'どうぶつ'},
-      {text:'ありくい',difficulty:3,category:'どうぶつ'},
-      {text:'こあら',difficulty:2,category:'どうぶつ'},
-      {text:'きつつき',difficulty:3,category:'どうぶつ'},
-      {text:'まほうつかい',difficulty:4,category:'ひと'},
-      {text:'おまつり',difficulty:2,category:'イベント'},
-      {text:'どらやき',difficulty:2,category:'たべもの'},
-      {text:'からあげ',difficulty:2,category:'たべもの'},
-      {text:'すいぞくかん',difficulty:4,category:'ばしょ'},
-      {text:'えいがかん',difficulty:3,category:'ばしょ'},
-      {text:'やきいも',difficulty:2,category:'たべもの'},
-      {text:'おにぎり',difficulty:2,category:'たべもの'},
-      {text:'かみなり',difficulty:2,category:'しぜん'},
-      {text:'たいふう',difficulty:3,category:'しぜん'},
-      {text:'せみのぬけがら',difficulty:4,category:'しぜん'},
-      {text:'にじいろ',difficulty:3,category:'しぜん'},
-      {text:'みらい',difficulty:2,category:'ことば'}
-    ];
-
-    const CARD_POOL=[...BASE_CARDS,...EXTRA_CARDS];
-
-    // ====== 画面遷移など（前回版と同様） ======
-    function initGame(){
-      gameState.deck=[...CARD_POOL].sort(()=>Math.random()-.5);
-      for(let i=0;i<2;i++){
-        gameState.hands[i]=[];
-        for(let j=0;j<5;j++) if(gameState.deck.length>0) gameState.hands[i].push(gameState.deck.pop());
-      }
-      updateUI(); drawCards(); startTurn();
-    }
-
-    function selectMode(mode){
-      document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('selected'));
-      document.getElementById(mode==='cpu'?'cpuModeBtn':'pvpModeBtn').classList.add('selected');
-      gameState.mode=mode;
-      document.getElementById('characterSelection').classList.remove('hidden');
-      if(mode==='pvp'){document.getElementById('player2Setup').classList.remove('hidden');gameState.players[1].name='プレイヤー2';gameState.players[1].avatar='💧';}
-      else{document.getElementById('player2Setup').classList.add('hidden');gameState.players[1].name='CPU';gameState.players[1].avatar='🤖';}
-      setTimeout(()=>{const ni=document.getElementById('player1NameInput'); ni.focus(); ni.select();},100);
-      document.getElementById('player1NameInput').addEventListener('focus',function(){this.select()});
-      if(mode==='pvp'){document.getElementById('player2NameInput').addEventListener('focus',function(){this.select()});}
-      selectCharacter('fire',1); if(mode==='pvp') selectCharacter('water',2);
-      checkSetupComplete();
-    }
-    function selectCharacter(attr,player){
-      document.querySelectorAll(`[data-player="${player}"]`).forEach(btn=>btn.classList.remove('selected'));
-      document.querySelector(`[data-attr="${attr}"][data-player="${player}"]`).classList.add('selected');
-      const avatars={fire:'🔥',water:'💧',thunder:'⚡',wind:'🌪️',earth:'🌱',light:'✨'};
-      gameState.players[player-1].attribute=attr;
-      gameState.players[player-1].avatar=avatars[attr];
-      const nameInput=document.getElementById(`player${player}NameInput`);
-      if(nameInput) gameState.players[player-1].name=nameInput.value||`プレイヤー${player}`;
-      if(player===1 && gameState.mode==='pvp'){setTimeout(()=>{const i2=document.getElementById('player2NameInput'); i2.focus(); i2.select();},100);}
-      checkSetupComplete();
-    }
-    function checkSetupComplete(){
-      const p1=!!document.querySelector('[data-player="1"].selected');
-      const p2=(gameState.mode==='cpu') || !!document.querySelector('[data-player="2"].selected');
-      document.getElementById('nextBtn').disabled=!(p1&&p2);
-    }
-    function showGameRules(){
-      gameState.players[0].name=document.getElementById('player1NameInput').value||'プレイヤー1';
-      if(gameState.mode==='pvp') gameState.players[1].name=document.getElementById('player2NameInput').value||'プレイヤー2';
-      else gameState.players[1].name='CPU';
-      document.getElementById('characterSelection').classList.add('hidden');
-      document.getElementById('gameRules').classList.remove('hidden');
-    }
-    function startGame(){
-      document.getElementById('startScreen').classList.add('hidden');
-      document.getElementById('gameContainer').classList.remove('hidden');
-      initGame();
-    }
-    function updateUI(){
-      for(let i=0;i<2;i++){
-        const p=gameState.players[i];
-        document.getElementById(`player${i+1}Name`).textContent=p.name;
-        document.getElementById(`player${i+1}Avatar`).textContent=p.avatar;
-        const per=(p.hp/p.maxHp)*100;
-        document.getElementById(`player${i+1}HpBar`).style.width=`${per}%`;
-        document.getElementById(`player${i+1}HpText`).textContent=`${Math.max(0,Math.round(p.hp))}/${p.maxHp}`;
-      }
-      document.getElementById('turnDisplay').textContent=`${gameState.players[gameState.currentPlayer].name}のターン`;
-      updatePhaseDisplay();
-    }
-    function updatePhaseDisplay(){
-      const el=document.getElementById('phaseDisplay');
-      el.textContent=({cardSelect:'カードを選択してください',typing:'タイピング中...',result:'結果表示'})[gameState.gamePhase]||'';
-    }
-    function drawCards(){
-      const container=document.getElementById('cardsContainer'); container.innerHTML='';
-      const hand=gameState.hands[gameState.currentPlayer];
-      if(gameState.deck.length>0 && hand.length<6) hand.push(gameState.deck.pop());
-      hand.forEach((card,idx)=>{
-        const div=document.createElement('div');
-        div.className='card'; div.onclick=()=>selectCard(idx);
-        const stars='★'.repeat(card.difficulty);
-        div.innerHTML=`<div class="card-text">${card.text}</div><div class="card-difficulty">${stars} ${card.category}</div>`;
-        container.appendChild(div);
-      });
-    }
-    function selectCard(index){
-      if(gameState.gamePhase!=='cardSelect') return;
-      document.querySelectorAll('.card').forEach(c=>c.classList.remove('selected'));
-      document.querySelectorAll('.card')[index].classList.add('selected');
-      gameState.selectedCard=gameState.hands[gameState.currentPlayer][index];
-      setupTypingGuide(gameState.selectedCard.text);
-      startTypingPhase();
-    }
-    function showCountdown(){
-      return new Promise(resolve=>{
-        const overlay=document.createElement('div'); overlay.className='countdown-overlay';
-        const num=document.createElement('div'); num.className='countdown-number'; overlay.appendChild(num);
-        document.body.appendChild(overlay);
-        let count=2;
-        (function tick(){ num.textContent=count; if(count>0){count--; setTimeout(tick,1000);}else{num.textContent='START!'; setTimeout(()=>{overlay.remove(); resolve();},500);} })();
-      });
-    }
-    async function startTypingPhase(){
-      gameState.gamePhase='typing'; gameState.timer=15;
-      await showCountdown();
-      const sk=document.getElementById('softKeyboard'); sk.value=''; sk.focus();
-      document.addEventListener('keydown',handleKeyPress);
-      startTimer();
-    }
-    function startTimer(){
-      clearInterval(gameState.timerInterval);
-      gameState.timerInterval=setInterval(()=>{
-        if(gameState.isPaused) return;
-        gameState.timer--;
-        const ring=document.getElementById('timerRing');
-        ring.textContent=gameState.timer;
-        const progress=(gameState.timer/15)*360;
-        ring.style.background=`conic-gradient(#feca57 ${progress}deg, rgba(255,255,255,.2) ${progress}deg)`;
-        if(gameState.timer<=0){ timeUp(); }
-      },1000);
-    }
-
-    // ====== ここが「複数ローマ字対応」の肝 ======
-    function isPrefixOfAny(prefix, list){
-      for(const s of list){ if(s.startsWith(prefix)) return true; }
-      return false;
-    }
-    function isExactlyAny(s, list){ return list.includes(s); }
-
-    function handleKeyPress(e){
-      if(gameState.gamePhase!=='typing' || gameState.isPaused) return;
-      const key=e.key.toLowerCase();
-
-      if(key==='enter'){ e.preventDefault(); if(isExactlyAny(typingState.typedKeys, typingState.allowedRomaji)) submitAnswer(); return; }
-      if(key==='escape'){ e.preventDefault(); giveUp(); return; }
-      if(!/^[a-z]$/.test(key)) return;
-
-      e.preventDefault();
-      const next=typingState.typedKeys + key;
-
-      if(isPrefixOfAny(next, typingState.allowedRomaji)){
-        typingState.typedKeys=next;
-        updateRomajiDisplay();
-        updateTypingGuideProgress();
-        if(isExactlyAny(typingState.typedKeys, typingState.allowedRomaji)){
-          setTimeout(()=>submitAnswer(),60);
+        // 改良された日本語処理関数
+        function toHiragana(s){
+            if(!s) return '';
+            let t = s.normalize('NFKC');
+            // カタカナ→ひらがな
+            t = t.replace(/[\u30A1-\u30FA\u30FD-\u30FF]/g, ch =>
+                String.fromCharCode(ch.charCodeAt(0) - 0x60)
+            );
+            // 記号・空白除去
+            t = t.replace(/[、。，．\s]/g,'');
+            return t;
         }
-      }else{
-        playSound('fail');
-      }
-    }
 
-    function submitAnswer(){
-      const target=gameState.selectedCard.text;
-      const len=countChars(target);
-      const timeUsed=Math.max(0,15-gameState.timer);
+        // ダメージ計算用：小文字を大文字化して概算長さに（ゃゅょ→や等／っ→つ）
+        function countForDamage(s){
+            const h = toHiragana(s)
+                .replace(/[ぁァ]/g,'あ').replace(/[ぃィ]/g,'い').replace(/[ぅゥ]/g,'う')
+                .replace(/[ぇェ]/g,'え').replace(/[ぉォ]/g,'お')
+                .replace(/ゃ/g,'や').replace(/ゅ/g,'ゆ').replace(/ょ/g,'よ')
+                .replace(/っ/g,'つ').replace(/ー/g,''); // 長音は無視
+            return h.length;
+        }
 
-      gameState.stats.totalChars+=len;
-      gameState.stats.totalTime+=timeUsed;
+        // 正規化後の文字数を使う（ダメージ/自傷/統計はこれで統一）
+        const countChars = (s) => countForDamage(s);
 
-      const success=isExactlyAny(typingState.typedKeys, typingState.allowedRomaji);
+        /* =========================================================
+           ローマ字：複数表記対応（促音/拗音/ん/代替表記）
+        ========================================================= */
+        const BASE = {
+            'あ':['a'],'い':['i'],'う':['u'],'え':['e'],'お':['o'],
+            'か':['ka'],'き':['ki'],'く':['ku'],'け':['ke'],'こ':['ko'],
+            'が':['ga'],'ぎ':['gi'],'ぐ':['gu'],'げ':['ge'],'ご':['go'],
+            'さ':['sa'],'し':['shi','si'],'す':['su'],'せ':['se'],'そ':['so'],
+            'ざ':['za'],'じ':['ji','zi'],'ず':['zu'],'ぜ':['ze'],'ぞ':['zo'],
+            'た':['ta'],'ち':['chi','ti'],'つ':['tsu','tu'],'て':['te'],'と':['to'],
+            'だ':['da'],'ぢ':['ji','di'],'づ':['zu','du'],'で':['de'],'ど':['do'],
+            'な':['na'],'に':['ni'],'ぬ':['nu'],'ね':['ne'],'の':['no'],
+            'は':['ha'],'ひ':['hi'],'ふ':['fu','hu'],'へ':['he'],'ほ':['ho'],
+            'ば':['ba'],'び':['bi'],'ぶ':['bu'],'べ':['be'],'ぼ':['bo'],
+            'ぱ':['pa'],'ぴ':['pi'],'ぷ':['pu'],'ぺ':['pe'],'ぽ':['po'],
+            'ま':['ma'],'み':['mi'],'む':['mu'],'め':['me'],'も':['mo'],
+            'や':['ya'],'ゆ':['yu'],'よ':['yo'],
+            'ら':['ra'],'り':['ri'],'る':['ru'],'れ':['re'],'ろ':['ro'],
+            'わ':['wa'],'ゐ':['wi'],'ゑ':['we'],'を':['wo','o'],
+            'ん':['n','nn'],
+            'ぁ':['xa','la','a'],'ぃ':['xi','li','i'],'ぅ':['xu','lu','u'],'ぇ':['xe','le','e'],'ぉ':['xo','lo','o'],
+            'っ':['*sokuon*'], // 特殊
+            'ー':['*choon*']   // 長音（ここでは無視 or 直前母音）
+        };
 
-      if(success){
-        const damage=Math.round(len*gameState.timer*10)/10;
-        dealDamage(1-gameState.currentPlayer,damage);
-        gameState.stats.correctChars+=len;
-        gameState.stats.combo++; gameState.stats.maxCombo=Math.max(gameState.stats.maxCombo,gameState.stats.combo);
-        playSound('success');
-      }else{
-        const self=len*10;
-        dealDamage(gameState.currentPlayer,self);
-        gameState.stats.combo=0; playSound('fail');
-      }
-      endTurn();
-    }
+        // 拗音
+        const YOON = {
+            'きゃ':['kya','kixya','kya'], 'きゅ':['kyu','kixyu'], 'きょ':['kyo','kixyo'],
+            'ぎゃ':['gya','gixya'], 'ぎゅ':['gyu','gixyu'], 'ぎょ':['gyo','gixyo'],
+            'しゃ':['sha','sya'], 'しゅ':['shu','syu'], 'しょ':['sho','syo'],
+            'じゃ':['ja','jya','zya'], 'じゅ':['ju','jyu','zyu'], 'じょ':['jo','jyo','zyo'],
+            'ちゃ':['cha','tya','cya'], 'ちゅ':['chu','tyu','cyu'], 'ちょ':['cho','tyo','cyo'],
+            'にゃ':['nya'], 'にゅ':['nyu'], 'にょ':['nyo'],
+            'ひゃ':['hya'], 'ひゅ':['hyu'], 'ひょ':['hyo'],
+            'びゃ':['bya'], 'びゅ':['byu'], 'びょ':['byo'],
+            'ぴゃ':['pya'], 'ぴゅ':['pyu'], 'ぴょ':['pyo'],
+            'みゃ':['mya'], 'みゅ':['myu'], 'みょ':['myo'],
+            'りゃ':['rya'], 'りゅ':['ryu'], 'りょ':['ryo'],
+            'ゔぁ':['va'],'ゔぃ':['vi'],'ゔぇ':['ve'],'ゔぉ':['vo'],'ゔゅ':['vyu']
+        };
 
-    function giveUp(){
-      const len=countChars(gameState.selectedCard.text);
-      const timeUsed=Math.max(0,15-gameState.timer);
-      gameState.stats.totalChars+=len; gameState.stats.totalTime+=timeUsed;
-      dealDamage(gameState.currentPlayer,len*10);
-      gameState.stats.combo=0; playSound('fail'); endTurn();
-    }
-    function timeUp(){
-      const len=countChars(gameState.selectedCard.text);
-      gameState.stats.totalChars+=len; gameState.stats.totalTime+=15;
-      dealDamage(gameState.currentPlayer,len*10);
-      gameState.stats.combo=0; playSound('fail'); endTurn();
-    }
-    function dealDamage(idx,damage){
-      gameState.players[idx].hp=Math.max(0,gameState.players[idx].hp - damage);
-      showDamageEffect(idx,damage);
-      updateUI();
-      if(gameState.players[idx].hp<=0) endGame(1-idx);
-    }
-    function showDamageEffect(idx,damage){
-      const avatar=document.getElementById(`player${idx+1}Avatar`);
-      const dmg=document.createElement('div'); dmg.className='damage-number'; dmg.textContent=`-${Math.round(damage)}`;
-      dmg.style.left='50%'; dmg.style.top='50%';
-      avatar.style.position='relative'; avatar.appendChild(dmg);
-      avatar.classList.add('shake');
-      setTimeout(()=>{avatar.classList.remove('shake'); if(dmg.parentNode) dmg.remove();},1000);
-    }
-    function endTurn(){
-      clearInterval(gameState.timerInterval);
-      document.removeEventListener('keydown',handleKeyPress);
+        // 文字列→トークン（拗音を1トークン化）
+        function tokenize(h){
+            const arr=[...h]; const out=[];
+            for(let i=0;i<arr.length;i++){
+                const ch=arr[i], nx=arr[i+1];
+                if(nx && ['ゃ','ゅ','ょ'].includes(nx) && YOON[ch+nx]){
+                    out.push(ch+nx); i++;
+                }else{
+                    out.push(ch);
+                }
+            }
+            return out;
+        }
 
-      const hand=gameState.hands[gameState.currentPlayer];
-      const idx=hand.indexOf(gameState.selectedCard);
-      if(idx>-1){ hand.splice(idx,1); gameState.discard.push(gameState.selectedCard); }
+        // 次トークンの先頭子音/母音を得る（んの扱い判定用）
+        function initialsOfToken(tok){
+            let opts = romajiOfToken(tok);
+            return new Set(opts.map(o=>o[0]||''));
+        }
 
-      document.getElementById('typingGuideJP').style.setProperty('--fill','0%');
-      document.getElementById('typingGuideSub').innerHTML='';
-      document.getElementById('romajiGuide').innerHTML='';
-      document.getElementById('progressFill').style.width='0%';
-      typingState={primaryRomaji:'',allowedRomaji:[],typedKeys:''};
+        // 単一トークンのローマ字候補を取得
+        function romajiOfToken(tok){
+            if(YOON[tok]) return YOON[tok].slice();
+            if(tok==='ー') return ['']; // 長音はここでは無視
+            if(BASE[tok]) return BASE[tok].slice();
+            return [tok]; // 未知はそのまま
+        }
 
-      gameState.gamePhase='result'; updatePhaseDisplay();
-      gameState.currentPlayer=1-gameState.currentPlayer;
-      gameState.gamePhase='cardSelect'; gameState.selectedCard=null;
+        // 全候補列挙（分岐は多いが現実的な長さならOK）
+        function buildRomajiOptions(h){
+            const tokens = tokenize(h);
+            const results=[];
+            function dfs(i, acc){
+                if(i>=tokens.length){ results.push(acc); return; }
+                const t=tokens[i];
 
-      setTimeout(()=>{ if(gameState.mode==='cpu' && gameState.currentPlayer===1) cpuTurn(); else startTurn(); },1200);
-    }
-    function startTurn(){
-      updateUI(); drawCards();
-      const ring=document.getElementById('timerRing');
-      ring.textContent='15';
-      ring.style.background='conic-gradient(#feca57 360deg, rgba(255,255,255,.2) 360deg)';
-    }
-    function cpuTurn(){
-      updateUI(); drawCards();
-      setTimeout(()=>{
-        const hand=gameState.hands[1];
-        let best=hand[0],score=-1;
-        hand.forEach(card=>{
-          const t=Math.random()*10+5;
-          const exp=card.text.length*t;
-          const risk=card.difficulty*20;
-          const s=exp-risk; if(s>score){score=s; best=card;}
-        });
-        gameState.selectedCard=best;
-        setTimeout(()=>{
-          const ok=Math.random()>(best.difficulty*0.2);
-          if(ok){
-            const t=Math.random()*8+2;
-            const dmg=Math.round(countChars(best.text)*t*10)/10;
-            dealDamage(0,dmg);
-            const len=countChars(best.text);
-            gameState.stats.correctChars+=len; gameState.stats.totalChars+=len; gameState.stats.totalTime+=(15-t);
-            playSound('success');
-          }else{
-            const len=countChars(best.text);
-            dealDamage(1,len*10);
-            gameState.stats.totalChars+=len; gameState.stats.totalTime+=15;
+                if(t==='っ'){ // 促音
+                    if(i+1<tokens.length){
+                        const nextOpts = romajiOfToken(tokens[i+1]);
+                        // 次の頭子音を重ねる（ch のときは tch / cch 両方許容）
+                        nextOpts.forEach(no=>{
+                            if(!no) return;
+                            const head = no.startsWith('ch') ? ['t','c'] : [no[0]];
+                            head.forEach(hc=>{
+                                if(/[a-z]/.test(hc)) dfs(i+1, acc + hc); // 促音を前置
+                            });
+                        });
+                        return; // 促音自体は文字を消費し、次へ
+                    }else{
+                        // 語末のっ は無視
+                        dfs(i+1, acc);
+                        return;
+                    }
+                }
+
+                if(t==='ん'){
+                    // 次の頭が母音/ y なら nn or n'
+                    const nextHead = (i+1<tokens.length)? Array.from(initialsOfToken(tokens[i+1])) : [];
+                    const risky = nextHead.some(c=>['a','i','u','e','o','y'].includes(c));
+                    const cand = risky ? ["nn","n'"] : ["n","nn"];
+                    cand.forEach(r=>dfs(i+1, acc+r));
+                    return;
+                }
+
+                // 通常
+                const opts = romajiOfToken(t);
+                opts.forEach(o=>dfs(i+1, acc+o));
+            }
+            dfs(0,'');
+            // 重複除去
+            return Array.from(new Set(results));
+        }
+
+        // ひらがな文字列をローマ字に変換（最短候補を使用）
+        function hiraganaToRomaji(hiragana) {
+            const options = buildRomajiOptions(hiragana);
+            // 最短のものを選択（通常は最も一般的）
+            return options.reduce((shortest, current) => 
+                current.length < shortest.length ? current : shortest, options[0] || '');
+        }
+
+        // ガイド初期化：カード選択直後に呼ぶ（複数候補対応）
+        function setupTypingGuide(targetText) {
+            const jpEl = document.getElementById('typingGuideJP');
+            const subEl = document.getElementById('typingGuideSub');
+            const romajiEl = document.getElementById('romajiGuide');
+            const norm = toHiragana(targetText);
+
+            // 上段は"原文そのまま"を表示（色は面で進捗）
+            jpEl.style.setProperty('--fill', '0%');
+            jpEl.textContent = targetText;
+
+            // 下段は判定用の"ひらがな"を1文字ずつスパン化して点灯
+            subEl.innerHTML = '';
+            [...norm].forEach((ch, i) => {
+                const span = document.createElement('span');
+                span.className = 'char pending';
+                span.dataset.index = i;
+                span.textContent = ch;
+                subEl.appendChild(span);
+            });
+
+            // 複数のローマ字候補を取得
+            const romajiOptions = buildRomajiOptions(norm);
+            typingState.targetOptions = romajiOptions;
+            typingState.currentInputs = romajiOptions.map(() => ({
+                position: 0,
+                typed: '',
+                completed: false
+            }));
+            typingState.typedKeys = '';
+
+            // 最短候補をガイドとして表示
+            const displayRomaji = romajiOptions.reduce((shortest, current) => 
+                current.length < shortest.length ? current : shortest, romajiOptions[0] || '');
+
+            romajiEl.innerHTML = '';
+            [...displayRomaji].forEach((char, i) => {
+                const span = document.createElement('span');
+                span.className = 'romaji-char';
+                span.dataset.index = i;
+                span.textContent = char;
+                romajiEl.appendChild(span);
+            });
+
+            // 最初の文字をハイライト
+            if (displayRomaji.length > 0) {
+                romajiEl.children[0].classList.add('current');
+            }
+        }
+
+        // 進捗更新：複数候補対応
+        function updateTypingGuideProgress() {
+            if (!gameState.selectedCard) return;
+            const jpEl  = document.getElementById('typingGuideJP');
+            const subEl = document.getElementById('typingGuideSub');
+
+            const target = gameState.selectedCard.text;
+            const normTarget = toHiragana(target);
+            
+            // 最も進んでいる候補の進捗を使用
+            let maxProgress = 0;
+            let maxPosition = 0;
+            
+            typingState.currentInputs.forEach((input, index) => {
+                const targetLength = typingState.targetOptions[index].length;
+                if (targetLength > 0) {
+                    const progress = input.position / targetLength;
+                    if (progress > maxProgress) {
+                        maxProgress = progress;
+                        maxPosition = input.position;
+                    }
+                }
+            });
+            
+            const hiraganaMatched = Math.floor(maxProgress * normTarget.length);
+            const fill = Math.max(0, Math.min(100, maxProgress * 100));
+            jpEl.style.setProperty('--fill', `${fill}%`);
+
+            // プログレスバーは非表示
+
+            // 下段を1文字ずつ点灯
+            const chars = subEl.querySelectorAll('.char');
+            chars.forEach((el, i) => {
+                el.classList.remove('matched','current','pending');
+                if (i < hiraganaMatched) el.classList.add('matched');
+                else if (i === hiraganaMatched && maxProgress < 1) el.classList.add('current');
+                else el.classList.add('pending');
+            });
+        }
+
+        // ゲーム状態
+        let gameState = {
+            mode: null, // 'cpu' or 'pvp'
+            maxHP: 200, // デフォルトHP
+            players: [
+                { name: 'プレイヤー1', hp: 200, maxHp: 200, avatar: '🔥', attribute: 'fire' },
+                { name: 'CPU', hp: 200, maxHp: 200, avatar: '🤖', attribute: 'water' }
+            ],
+            currentPlayer: 0,
+            selectedCard: null,
+            hands: [[], []],
+            deck: [],
+            discard: [],
+            timer: 15,
+            timerInterval: null,
+            gamePhase: 'cardSelect', // 'cardSelect', 'typing', 'result'
+            soundEnabled: true,
+            isPaused: false,
+            stats: {
+                totalChars: 0,
+                correctChars: 0,
+                totalTime: 0,
+                combo: 0,
+                maxCombo: 0
+            }
+        };
+
+        // カードプール（実用的なタイピング練習用）
+        const CARD_POOL = [
+            // 2文字の単語（初級）
+            { text: 'ねこ', difficulty: 1, category: 'どうぶつ' },
+            { text: 'いぬ', difficulty: 1, category: 'どうぶつ' },
+            { text: 'すし', difficulty: 1, category: 'たべもの' },
+            { text: 'そら', difficulty: 1, category: 'しぜん' },
+            { text: 'やま', difficulty: 1, category: 'しぜん' },
+            { text: 'かわ', difficulty: 1, category: 'しぜん' },
+            { text: 'はな', difficulty: 1, category: 'しぜん' },
+            { text: 'みず', difficulty: 1, category: 'しぜん' },
+            { text: 'ゆき', difficulty: 1, category: 'しぜん' },
+            { text: 'つき', difficulty: 1, category: 'しぜん' },
+            { text: 'かさ', difficulty: 1, category: 'もの' },
+            { text: 'うみ', difficulty: 1, category: 'しぜん' },
+            { text: 'あめ', difficulty: 1, category: 'しぜん' },
+            { text: 'ほし', difficulty: 1, category: 'しぜん' },
+            { text: 'かに', difficulty: 1, category: 'どうぶつ' },
+            { text: 'さる', difficulty: 1, category: 'どうぶつ' },
+            { text: 'もり', difficulty: 1, category: 'しぜん' },
+            { text: 'くも', difficulty: 1, category: 'しぜん' },
+            { text: 'みち', difficulty: 1, category: 'もの' },
+            { text: 'かぜ', difficulty: 1, category: 'しぜん' },
+            
+            // 3文字の単語（中級）
+            { text: 'たまご', difficulty: 2, category: 'たべもの' },
+            { text: 'くるま', difficulty: 2, category: 'のりもの' },
+            { text: 'きつね', difficulty: 2, category: 'どうぶつ' },
+            { text: 'うさぎ', difficulty: 2, category: 'どうぶつ' },
+            { text: 'さかな', difficulty: 2, category: 'どうぶつ' },
+            { text: 'けむし', difficulty: 2, category: 'どうぶつ' },
+            { text: 'きのこ', difficulty: 2, category: 'しぜん' },
+            { text: 'こども', difficulty: 2, category: 'ひと' },
+            { text: 'みかん', difficulty: 2, category: 'たべもの' },
+            { text: 'えがお', difficulty: 2, category: 'きもち' },
+            { text: 'すずめ', difficulty: 2, category: 'どうぶつ' },
+            { text: 'りんご', difficulty: 2, category: 'たべもの' },
+            { text: 'とけい', difficulty: 2, category: 'もの' },
+            { text: 'かばん', difficulty: 2, category: 'もの' },
+            { text: 'おふろ', difficulty: 2, category: 'もの' },
+            { text: 'えほん', difficulty: 2, category: 'もの' },
+            { text: 'のはら', difficulty: 2, category: 'しぜん' },
+            { text: 'やさい', difficulty: 2, category: 'たべもの' },
+            { text: 'でんき', difficulty: 2, category: 'もの' }
+        ];
+
+
+
+        // 全角文字を半角に変換
+        function normalizeInput(text) {
+            if (!text) return '';
+            
+            // 全角英数字を半角に
+            let normalized = text.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(s) {
+                return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+            });
+            
+            return normalized.toLowerCase();
+        }
+
+        // ゲーム初期化
+        function initGame() {
+            // 選択されたHPを適用
+            gameState.players.forEach(player => {
+                player.hp = gameState.maxHP;
+                player.maxHp = gameState.maxHP;
+            });
+            
+            // デッキをシャッフル
+            gameState.deck = [...CARD_POOL].sort(() => Math.random() - 0.5);
+            
+            // 初期手札を配る
+            for (let i = 0; i < 2; i++) {
+                gameState.hands[i] = [];
+                for (let j = 0; j < 5; j++) {
+                    if (gameState.deck.length > 0) {
+                        gameState.hands[i].push(gameState.deck.pop());
+                    }
+                }
+            }
+            
+            // UI更新
+            updateUI();
+            drawCards();
+            
+            // 最初のターン開始
+            startTurn();
+        }
+
+        // モード選択
+        function selectMode(mode) {
+            // 前の選択を解除
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // 新しい選択
+            document.getElementById(mode === 'cpu' ? 'cpuModeBtn' : 'pvpModeBtn').classList.add('selected');
+            
+            gameState.mode = mode;
+            document.getElementById('characterSelection').classList.remove('hidden');
+            
+            if (mode === 'pvp') {
+                document.getElementById('player2Setup').classList.remove('hidden');
+                gameState.players[1].name = 'プレイヤー2';
+                gameState.players[1].avatar = '💧';
+            } else {
+                document.getElementById('player2Setup').classList.add('hidden');
+            }
+            
+            // プレイヤー1の名前入力フィールドを選択状態にする
+            setTimeout(() => {
+                const nameInput = document.getElementById('player1NameInput');
+                nameInput.focus();
+                nameInput.select();
+            }, 100);
+            
+            // 名前入力フィールドのイベントリスナーを設定
+            document.getElementById('player1NameInput').addEventListener('focus', function() {
+                this.select();
+            });
+            
+            if (mode === 'pvp') {
+                document.getElementById('player2NameInput').addEventListener('focus', function() {
+                    this.select();
+                });
+            }
+
+            // デフォルト選択（迷ったらすぐ進める）
+            selectCharacter('fire', 1);
+            if (mode === 'pvp') selectCharacter('water', 2);
+            checkSetupComplete();
+        }
+
+        // HP選択
+        function selectHP(hp) {
+            // 前の選択を解除
+            document.querySelectorAll('.hp-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // 新しい選択
+            document.querySelector(`[data-hp="${hp}"]`).classList.add('selected');
+            
+            gameState.maxHP = hp;
+            gameState.players.forEach(player => {
+                player.hp = hp;
+                player.maxHp = hp;
+            });
+            
+            checkSetupComplete();
+        }
+
+        // キャラクター選択
+        function selectCharacter(attribute, player) {
+            // 該当プレイヤーの前の選択を解除
+            document.querySelectorAll(`[data-player="${player}"]`).forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // 新しい選択
+            document.querySelector(`[data-attr="${attribute}"][data-player="${player}"]`).classList.add('selected');
+            
+            const avatars = {
+                fire: '🔥',
+                water: '💧',
+                thunder: '⚡',
+                wind: '🌪️',
+                earth: '🌱',
+                light: '✨'
+            };
+            
+            gameState.players[player - 1].attribute = attribute;
+            gameState.players[player - 1].avatar = avatars[attribute];
+            
+            // 名前を更新
+            const nameInput = document.getElementById(`player${player}NameInput`);
+            if (nameInput) {
+                gameState.players[player - 1].name = nameInput.value || `プレイヤー${player}`;
+            }
+            
+            // 次のプレイヤーの名前入力にフォーカス（2人対戦の場合）
+            if (player === 1 && gameState.mode === 'pvp') {
+                setTimeout(() => {
+                    const player2Input = document.getElementById('player2NameInput');
+                    player2Input.focus();
+                    player2Input.select();
+                }, 100);
+            }
+            
+            checkSetupComplete();
+        }
+        
+        // セットアップ完了チェック
+        function checkSetupComplete() {
+            const player1Selected = document.querySelector('[data-player="1"].selected');
+            const player2Selected = gameState.mode === 'cpu' || document.querySelector('[data-player="2"].selected');
+            
+            document.getElementById('nextBtn').disabled = !(player1Selected && player2Selected);
+        }
+        
+        // ゲームルール表示
+        function showGameRules() {
+            // 名前を最終更新
+            gameState.players[0].name = document.getElementById('player1NameInput').value || 'プレイヤー1';
+            if (gameState.mode === 'pvp') {
+                gameState.players[1].name = document.getElementById('player2NameInput').value || 'プレイヤー2';
+            }
+            
+            document.getElementById('characterSelection').classList.add('hidden');
+            document.getElementById('gameRules').classList.remove('hidden');
+        }
+
+        // ゲーム開始
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            
+            // 2人対戦の場合はルーレットでターン決定
+            if (gameState.mode === 'pvp') {
+                showRouletteAnimation();
+            } else {
+                document.getElementById('gameContainer').classList.remove('hidden');
+                initGame();
+            }
+        }
+
+        // ルーレット演出表示
+        function showRouletteAnimation() {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'roulette-overlay';
+                
+                const container = document.createElement('div');
+                container.className = 'roulette-container';
+                
+                container.innerHTML = `
+                    <div class="roulette-title">🎯 先攻を決めよう！</div>
+                    <div class="roulette-wheel" id="rouletteWheel">
+                        <div class="roulette-pointer"></div>
+                        <div class="roulette-center">🎲</div>
+                        <div class="wheel-labels">
+                            <div class="wheel-label top">P1</div>
+                            <div class="wheel-label bottom">P2</div>
+                        </div>
+                    </div>
+                    <div class="player-section left">
+                        <div class="player-avatar-roulette">${gameState.players[0].avatar}</div>
+                        <div>
+                            <div>${gameState.players[0].name}</div>
+                            <div style="font-size: 14px; opacity: 0.8;">上半分</div>
+                        </div>
+                    </div>
+                    <div class="player-section right">
+                        <div class="player-avatar-roulette">${gameState.players[1].avatar}</div>
+                        <div>
+                            <div>${gameState.players[1].name}</div>
+                            <div style="font-size: 14px; opacity: 0.8;">下半分</div>
+                        </div>
+                    </div>
+                    <div class="roulette-result" id="rouletteResult"></div>
+                `;
+                
+                overlay.appendChild(container);
+                document.body.appendChild(overlay);
+                
+                // ルーレット開始
+                setTimeout(() => {
+                    spinRoulette(overlay, resolve);
+                }, 500);
+            });
+        }
+
+        // ルーレット回転処理
+        function spinRoulette(overlay, callback) {
+            const wheel = document.getElementById('rouletteWheel');
+            const resultEl = document.getElementById('rouletteResult');
+            
+            // ランダムな最終角度を決定（5回転 + ランダム）
+            const baseRotation = 1800; // 5回転
+            const randomRotation = Math.random() * 360;
+            const finalRotation = baseRotation + randomRotation;
+            
+            // 結果を決定（0-180度：プレイヤー1、180-360度：プレイヤー2）
+            const normalizedAngle = randomRotation;
+            const winner = normalizedAngle < 180 ? 0 : 1;
+            gameState.currentPlayer = winner;
+            
+            // CSS変数に最終角度を設定
+            wheel.style.setProperty('--final-rotation', `${finalRotation}deg`);
+            
+            // 回転アニメーション開始
+            wheel.classList.add('roulette-spinning');
+            
+            // 回転音（簡易）
+            playRouletteSound();
+            
+            // 結果表示
+            setTimeout(() => {
+                const winnerName = gameState.players[winner].name;
+                const winnerAvatar = gameState.players[winner].avatar;
+                resultEl.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 15px;">
+                        <div style="font-size: 32px;">${winnerAvatar}</div>
+                        <div>
+                            <div style="font-size: 20px; color: #feca57;">🎉 ${winnerName}の先攻！</div>
+                            <div style="font-size: 14px; opacity: 0.8; margin-top: 5px;">ゲームを開始します...</div>
+                        </div>
+                    </div>
+                `;
+                
+                // 勝利音
+                playSound('success');
+                
+                // ゲーム開始
+                setTimeout(() => {
+                    overlay.remove();
+                    document.getElementById('gameContainer').classList.remove('hidden');
+                    initGame();
+                    callback();
+                }, 2000);
+            }, 3200);
+        }
+
+        // ルーレット音（回転音）
+        function playRouletteSound() {
+            if (!gameState.soundEnabled) return;
+            
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // 回転音を3秒間再生
+            let frequency = 200;
+            const duration = 3000;
+            const startTime = audioContext.currentTime;
+            
+            function createTick(time, freq) {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(freq, time);
+                gainNode.gain.setValueAtTime(0.05, time);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+                
+                oscillator.start(time);
+                oscillator.stop(time + 0.1);
+            }
+            
+            // 徐々に間隔を広げながらティック音を生成
+            let tickInterval = 50; // 初期間隔（ms）
+            let currentTime = startTime;
+            
+            while (currentTime - startTime < duration / 1000) {
+                createTick(currentTime, frequency + Math.random() * 100);
+                
+                // 時間が経つにつれて間隔を広げる（減速効果）
+                const progress = (currentTime - startTime) / (duration / 1000);
+                tickInterval = 50 + (progress * 200); // 50ms から 250ms へ
+                
+                currentTime += tickInterval / 1000;
+            }
+        }
+
+        // UI更新
+        function updateUI() {
+            // プレイヤー情報更新
+            for (let i = 0; i < 2; i++) {
+                const player = gameState.players[i];
+                document.getElementById(`player${i + 1}Name`).textContent = player.name;
+                document.getElementById(`player${i + 1}Avatar`).textContent = player.avatar;
+                
+                const hpPercent = (player.hp / player.maxHp) * 100;
+                document.getElementById(`player${i + 1}HpBar`).style.width = `${hpPercent}%`;
+                document.getElementById(`player${i + 1}HpText`).textContent = `${player.hp}/${player.maxHp}`;
+            }
+            
+            // ターン表示
+            document.getElementById('turnDisplay').textContent = 
+                `${gameState.players[gameState.currentPlayer].name}のターン`;
+                
+            // フェーズ表示
+            updatePhaseDisplay();
+        }
+        
+        // フェーズ表示更新
+        function updatePhaseDisplay() {
+            const phaseDisplay = document.getElementById('phaseDisplay');
+            
+            switch (gameState.gamePhase) {
+                case 'cardSelect':
+                    phaseDisplay.textContent = 'カードを選択してください';
+                    break;
+                case 'typing':
+                    phaseDisplay.textContent = 'タイピング中...';
+                    break;
+                case 'result':
+                    phaseDisplay.textContent = '結果表示';
+                    break;
+                default:
+                    phaseDisplay.textContent = '';
+            }
+        }
+
+        // プレイヤーの手札表示（左右に配置）
+        function drawPlayerHand() {
+            // 既存の手札コンテナを削除
+            document.querySelectorAll('.player-hand').forEach(el => el.remove());
+            
+            // 左側（プレイヤー1の手札）
+            const leftHand = document.createElement('div');
+            leftHand.className = 'player-hand left';
+            leftHand.id = 'leftPlayerHand';
+            
+            // 右側（プレイヤー2の手札）
+            const rightHand = document.createElement('div');
+            rightHand.className = 'player-hand right';
+            rightHand.id = 'rightPlayerHand';
+            
+            document.querySelector('.card-area').appendChild(leftHand);
+            document.querySelector('.card-area').appendChild(rightHand);
+            
+            // 両方のプレイヤーの手札を表示
+            [0, 1].forEach(playerIndex => {
+                const hand = gameState.hands[playerIndex];
+                const container = playerIndex === 0 ? leftHand : rightHand;
+                
+                // 手札が6枚未満なら1枚引く
+                if (gameState.deck.length > 0 && hand.length < 6) {
+                    hand.push(gameState.deck.pop());
+                }
+                
+                hand.forEach((card, index) => {
+                    const handCard = document.createElement('div');
+                    handCard.className = 'hand-card';
+                    
+                    // 現在のプレイヤーの手札は少し明るく表示
+                    if (playerIndex === gameState.currentPlayer) {
+                        handCard.style.opacity = '1';
+                        handCard.style.border = '2px solid rgba(254, 202, 87, 0.5)';
+                    }
+                    
+                    handCard.innerHTML = `
+                        <div style="font-weight: 700; font-size: 12px;">${card.text}</div>
+                        <div style="font-size: 9px; opacity: 0.8;">${'★'.repeat(card.difficulty)}</div>
+                    `;
+                    container.appendChild(handCard);
+                });
+            });
+        }
+
+        // カード描画（メイン選択エリア）
+        function drawCards() {
+            const container = document.getElementById('cardsContainer');
+            container.innerHTML = '';
+            
+            const currentHand = gameState.hands[gameState.currentPlayer];
+            
+            // 手札が6枚未満なら1枚引く
+            if (gameState.deck.length > 0 && currentHand.length < 6) {
+                currentHand.push(gameState.deck.pop());
+            }
+            
+            // カードを3枚ずつ表示（最大6枚）
+            const displayCards = currentHand.slice(0, 6);
+            
+            displayCards.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card';
+                cardElement.onclick = () => selectCard(index);
+                
+                const stars = '★'.repeat(card.difficulty);
+                cardElement.innerHTML = `
+                    <div class="card-text">${card.text}</div>
+                    <div class="card-difficulty">${stars} ${card.category}</div>
+                `;
+                
+                container.appendChild(cardElement);
+            });
+            
+            // アニメーション
+            setTimeout(() => {
+                container.classList.add('active');
+            }, 100);
+        }
+
+        // カード選択
+        function selectCard(index) {
+            if (gameState.gamePhase !== 'cardSelect') return;
+            
+            // 前の選択を解除
+            document.querySelectorAll('.card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // 新しい選択
+            document.querySelectorAll('.card')[index].classList.add('selected');
+            gameState.selectedCard = gameState.hands[gameState.currentPlayer][index];
+            
+            // タイピングガイドを設定
+            setupTypingGuide(gameState.selectedCard.text);
+            
+            // 入力フェーズに移行
+            startTypingPhase();
+        }
+
+        // カウントダウン表示
+        function showCountdown() {
+            return new Promise((resolve) => {
+                const overlay = document.createElement('div');
+                overlay.className = 'countdown-overlay';
+                
+                const numberEl = document.createElement('div');
+                numberEl.className = 'countdown-number';
+                overlay.appendChild(numberEl);
+                
+                document.body.appendChild(overlay);
+                
+                // Ready → Go!!! の順番で表示
+                numberEl.textContent = 'Ready';
+                
+                setTimeout(() => {
+                    numberEl.textContent = 'Go!!!';
+                    setTimeout(() => {
+                        overlay.remove();
+                        resolve();
+                    }, 800);
+                }, 1200);
+            });
+        }
+
+        // タイピングフェーズ開始
+        async function startTypingPhase() {
+            gameState.gamePhase = 'typing';
+            gameState.timer = 15;
+            
+            // カウントダウン表示
+            await showCountdown();
+            
+            // キーボードイベントを有効化
+            document.addEventListener('keydown', handleKeyPress);
+            
+            // IME入力イベントを追加
+            document.addEventListener('compositionstart', () => {
+                isComposing = true;
+            });
+            
+            document.addEventListener('compositionend', () => {
+                isComposing = false;
+            });
+            
+            // タイマー開始
+            startTimer();
+        }
+
+        // タイマー開始
+        function startTimer() {
+            clearInterval(gameState.timerInterval);
+            gameState.timerInterval = setInterval(() => {
+                if (gameState.isPaused) return;
+
+                gameState.timer--;
+                
+                const timerRing = document.getElementById('timerRing');
+                timerRing.textContent = gameState.timer;
+
+                const progress = (gameState.timer / 15) * 360;
+                timerRing.style.background =
+                    `conic-gradient(#feca57 ${progress}deg, rgba(255,255,255,0.2) ${progress}deg)`;
+
+                if (gameState.timer <= 0) {
+                    timeUp();
+                }
+            }, 1000);
+        }
+
+        // 複数候補対応のタイピング状態
+        let typingState = {
+            targetOptions: [], // 複数のローマ字候補
+            currentInputs: [], // 各候補での現在の入力状況
+            typedKeys: ''
+        };
+
+        // キーボード入力処理（複数候補対応）
+        function handleKeyPress(event) {
+            if (gameState.gamePhase !== 'typing' || gameState.isPaused) return;
+            
+            // IME入力中は処理しない
+            if (isComposing) return;
+            
+            // 全角文字を半角に変換
+            const key = normalizeInput(event.key);
+            
+            // 特殊キーの処理
+            if (key === 'enter') {
+                event.preventDefault();
+                // いずれかの候補が完了していれば送信
+                if (typingState.currentInputs.some(input => input.completed)) {
+                    submitAnswer();
+                }
+                return;
+            }
+            
+            if (key === 'escape') {
+                event.preventDefault();
+                giveUp();
+                return;
+            }
+            
+            // アルファベットのみ受け付け（全角も対応）
+            if (!/^[a-z]$/.test(key)) return;
+            
+            event.preventDefault();
+            
+            // 全候補に対してキー入力をチェック
+            let anyMatch = false;
+            let completedCount = 0;
+            
+            typingState.currentInputs.forEach((input, index) => {
+                if (input.completed) {
+                    completedCount++;
+                    return; // 既に完了している候補はスキップ
+                }
+                
+                const targetRomaji = typingState.targetOptions[index];
+                const expectedKey = targetRomaji[input.position];
+                
+                if (key === expectedKey) {
+                    input.position++;
+                    input.typed += key;
+                    anyMatch = true;
+                    
+                    // この候補が完了したかチェック
+                    if (input.position >= targetRomaji.length) {
+                        input.completed = true;
+                        completedCount++;
+                        console.log(`候補${index}完了: ${targetRomaji}`);
+                    }
+                }
+            });
+            
+            if (anyMatch) {
+                // 正しいキー
+                typingState.typedKeys += key;
+                
+                updateRomajiDisplay();
+                updateTypingGuideProgress();
+                
+                // いずれかの候補が完了したら即座に送信
+                if (completedCount > 0) {
+                    console.log('入力完了検出 - 即座に送信');
+                    // 少し遅延を入れて確実に処理
+                    setTimeout(() => {
+                        submitAnswer();
+                    }, 50);
+                }
+            } else {
+                // 間違ったキー - 3秒ペナルティ
+                gameState.timer = Math.max(0, gameState.timer - 3);
+                
+                // タイマー表示を即座に更新
+                const timerRing = document.getElementById('timerRing');
+                timerRing.textContent = gameState.timer;
+                const progress = (gameState.timer / 15) * 360;
+                timerRing.style.background =
+                    `conic-gradient(#feca57 ${progress}deg, rgba(255,255,255,0.2) ${progress}deg)`;
+                
+                // ペナルティエフェクト表示
+                showPenaltyEffect();
+                
+                playSound('fail');
+                
+                // 時間切れチェック
+                if (gameState.timer <= 0) {
+                    timeUp();
+                }
+            }
+        }
+
+        // ローマ字表示更新（複数候補対応）
+        function updateRomajiDisplay() {
+            const romajiEl = document.getElementById('romajiGuide');
+            const chars = romajiEl.querySelectorAll('.romaji-char');
+            
+            // 最も進んでいる候補の位置を取得
+            let maxPosition = 0;
+            typingState.currentInputs.forEach(input => {
+                if (input.position > maxPosition) {
+                    maxPosition = input.position;
+                }
+            });
+            
+            chars.forEach((char, index) => {
+                char.classList.remove('typed', 'current');
+                
+                if (index < maxPosition) {
+                    char.classList.add('typed');
+                } else if (index === maxPosition) {
+                    char.classList.add('current');
+                }
+            });
+        }
+
+        // エフェクトレイヤー取得/作成
+        function getOrCreateFxLayer() {
+            let fxLayer = document.querySelector('.fx-layer');
+            if (!fxLayer) {
+                fxLayer = document.createElement('div');
+                fxLayer.className = 'fx-layer';
+                fxLayer.setAttribute('aria-hidden', 'true');
+                document.body.appendChild(fxLayer);
+            }
+            return fxLayer;
+        }
+
+        // 属性別設定テーブル
+        const ATTACK_CONFIGS = {
+            fire: {
+                colors: ['#ff6b6b', '#feca57', '#ff9f43'],
+                particles: 80,
+                speed: 1.0,
+                flashColor: 'rgba(255, 107, 107, 0.6)',
+                glowColor: '#ff6b6b'
+            },
+            water: {
+                colors: ['#4ecdc4', '#76e0ff', '#00d2d3'],
+                particles: 100,
+                speed: 1.2,
+                flashColor: 'rgba(76, 224, 255, 0.5)',
+                glowColor: '#4ecdc4'
+            },
+            thunder: {
+                colors: ['#ffe66d', '#fff', '#f1c40f'],
+                particles: 60,
+                speed: 2.0,
+                flashColor: 'rgba(255, 255, 255, 0.8)',
+                glowColor: '#ffe66d'
+            },
+            wind: {
+                colors: ['#95e1d3', '#a8e6cf', '#88d8c0'],
+                particles: 70,
+                speed: 1.5,
+                flashColor: 'rgba(149, 225, 211, 0.4)',
+                glowColor: '#95e1d3'
+            },
+            earth: {
+                colors: ['#a8e6cf', '#8bc34a', '#689f38'],
+                particles: 60,
+                speed: 0.8,
+                flashColor: 'rgba(168, 230, 207, 0.5)',
+                glowColor: '#a8e6cf'
+            },
+            light: {
+                colors: ['#ffd93d', '#ffffff', '#f39c12'],
+                particles: 90,
+                speed: 1.8,
+                flashColor: 'rgba(255, 255, 255, 0.9)',
+                glowColor: '#ffd93d'
+            }
+        };
+
+        // 攻撃アニメーション実行
+        async function playAttackAnimation({ attr, from, targetEl, impactMs = 600 }) {
+            const config = ATTACK_CONFIGS[attr];
+            const fxLayer = getOrCreateFxLayer();
+            
+            // 攻撃者と対象の位置を取得
+            const attackerEl = document.getElementById(`player${gameState.currentPlayer + 1}Avatar`);
+            const attackerRect = attackerEl.getBoundingClientRect();
+            const targetRect = targetEl.getBoundingClientRect();
+            
+            const startX = from === 'left' ? attackerRect.right : attackerRect.left;
+            const startY = attackerRect.top + attackerRect.height / 2;
+            const endX = targetRect.left + targetRect.width / 2;
+            const endY = targetRect.top + targetRect.height / 2;
+
+            // フェーズ1: 溜めエフェクト
+            await playChargeEffect(attackerEl, config);
+            
+            // フェーズ2: 飛び道具移動
+            await playProjectileEffect(fxLayer, attr, config, startX, startY, endX, endY, impactMs);
+            
+            // フェーズ3: ヒットエフェクト
+            await playImpactEffect(fxLayer, attr, config, endX, endY);
+            
+            return Promise.resolve();
+        }
+
+        // フェーズ1: 溜めエフェクト
+        function playChargeEffect(attackerEl, config) {
+            return new Promise((resolve) => {
+                // 溜め音
+                playSound('charge');
+                
+                // グロー効果
+                attackerEl.style.setProperty('--glow-color', config.glowColor);
+                attackerEl.style.animation = 'chargeGlow 300ms ease-out forwards';
+                
+                setTimeout(() => {
+                    attackerEl.style.animation = '';
+                    attackerEl.style.transform = '';
+                    attackerEl.style.boxShadow = '';
+                    resolve();
+                }, 300);
+            });
+        }
+
+        // フェーズ2: 飛び道具エフェクト（画面全体スケール）
+        function playProjectileEffect(fxLayer, attr, config, startX, startY, endX, endY, duration) {
+            return new Promise((resolve) => {
+                const projectile = createProjectile(attr, config, startX, startY);
+                fxLayer.appendChild(projectile);
+                
+                // 移動アニメーション（画面全体を使った大きな軌道）
+                const deltaX = endX - startX;
+                const deltaY = endY - startY;
+                
+                // 弧を描く軌道を計算（より大きなスケール）
+                const midX = (startX + endX) / 2;
+                const midY = Math.min(startY, endY) - Math.abs(deltaX) * 0.3; // より高い弧
+                
+                const keyframes = [
+                    { 
+                        transform: `translate3d(0, 0, 0) scale(1)`,
+                        opacity: 1
+                    },
+                    { 
+                        transform: `translate3d(${(midX - startX)}px, ${(midY - startY)}px, 0) scale(1.5)`,
+                        opacity: 1,
+                        offset: 0.5
+                    },
+                    { 
+                        transform: `translate3d(${deltaX}px, ${deltaY}px, 0) scale(2)`,
+                        opacity: 0.8
+                    }
+                ];
+                
+                projectile.animate(keyframes, {
+                    duration: duration * config.speed,
+                    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                    fill: 'forwards'
+                }).addEventListener('finish', () => {
+                    projectile.remove();
+                    resolve();
+                });
+            });
+        }
+
+        // 属性別飛び道具作成（大型化）
+        function createProjectile(attr, config, x, y) {
+            const projectile = document.createElement('div');
+            projectile.className = 'projectile';
+            projectile.style.left = x + 'px';
+            projectile.style.top = y + 'px';
+            
+            switch (attr) {
+                case 'fire':
+                    projectile.innerHTML = '🔥';
+                    projectile.style.fontSize = '80px';
+                    projectile.style.filter = `drop-shadow(0 0 40px ${config.colors[0]}) drop-shadow(0 0 80px ${config.colors[1]})`;
+                    projectile.style.animation = 'fireball 0.6s linear infinite';
+                    // 火の粒子トレイル追加
+                    for (let i = 0; i < 5; i++) {
+                        const trail = document.createElement('div');
+                        trail.innerHTML = '🔥';
+                        trail.style.position = 'absolute';
+                        trail.style.fontSize = '20px';
+                        trail.style.opacity = '0.6';
+                        trail.style.left = `-${i * 15}px`;
+                        trail.style.top = '0px';
+                        trail.style.animation = `fireball ${0.6 + i * 0.1}s linear infinite`;
+                        projectile.appendChild(trail);
+                    }
+                    break;
+                    
+                case 'water':
+                    projectile.style.width = '120px';
+                    projectile.style.height = '16px';
+                    projectile.style.background = `linear-gradient(90deg, transparent, ${config.colors[0]}, ${config.colors[1]}, transparent)`;
+                    projectile.style.borderRadius = '8px';
+                    projectile.style.boxShadow = `0 0 30px ${config.colors[0]}, 0 0 60px ${config.colors[1]}`;
+                    projectile.style.animation = 'waterBlade 0.5s ease-in-out infinite';
+                    // 水滴エフェクト追加
+                    for (let i = 0; i < 3; i++) {
+                        const drop = document.createElement('div');
+                        drop.innerHTML = '💧';
+                        drop.style.position = 'absolute';
+                        drop.style.fontSize = '24px';
+                        drop.style.left = `${i * 30}px`;
+                        drop.style.top = '-10px';
+                        drop.style.animation = `waterBlade ${0.5 + i * 0.1}s ease-in-out infinite`;
+                        projectile.appendChild(drop);
+                    }
+                    break;
+                    
+                case 'thunder':
+                    projectile.innerHTML = '⚡';
+                    projectile.style.fontSize = '100px';
+                    projectile.style.filter = `drop-shadow(0 0 50px ${config.colors[1]}) drop-shadow(0 0 100px white)`;
+                    projectile.style.animation = 'lightning 0.1s linear infinite';
+                    // 電撃エフェクト追加
+                    for (let i = 0; i < 4; i++) {
+                        const bolt = document.createElement('div');
+                        bolt.style.position = 'absolute';
+                        bolt.style.width = '4px';
+                        bolt.style.height = '60px';
+                        bolt.style.background = config.colors[1];
+                        bolt.style.left = `${Math.random() * 60 - 30}px`;
+                        bolt.style.top = `${Math.random() * 60 - 30}px`;
+                        bolt.style.transform = `rotate(${Math.random() * 360}deg)`;
+                        bolt.style.boxShadow = `0 0 20px ${config.colors[1]}`;
+                        bolt.style.animation = 'lightning 0.05s linear infinite';
+                        projectile.appendChild(bolt);
+                    }
+                    break;
+                    
+                case 'wind':
+                    projectile.innerHTML = '🌪️';
+                    projectile.style.fontSize = '90px';
+                    projectile.style.filter = `drop-shadow(0 0 30px ${config.colors[0]})`;
+                    projectile.style.animation = 'windBlade 0.4s ease-out infinite';
+                    // 風の渦エフェクト追加
+                    for (let i = 0; i < 6; i++) {
+                        const swirl = document.createElement('div');
+                        swirl.style.position = 'absolute';
+                        swirl.style.width = '20px';
+                        swirl.style.height = '20px';
+                        swirl.style.border = `2px solid ${config.colors[0]}`;
+                        swirl.style.borderRadius = '50%';
+                        swirl.style.left = `${Math.cos(i * Math.PI / 3) * 40}px`;
+                        swirl.style.top = `${Math.sin(i * Math.PI / 3) * 40}px`;
+                        swirl.style.animation = `windBlade ${0.4 + i * 0.05}s ease-out infinite`;
+                        projectile.appendChild(swirl);
+                    }
+                    break;
+                    
+                case 'earth':
+                    projectile.innerHTML = '🪨';
+                    projectile.style.fontSize = '70px';
+                    projectile.style.filter = `drop-shadow(0 0 20px ${config.colors[0]})`;
+                    projectile.style.animation = 'rockSpike 0.3s ease-out infinite';
+                    // 岩の破片エフェクト追加
+                    for (let i = 0; i < 4; i++) {
+                        const rock = document.createElement('div');
+                        rock.innerHTML = '🪨';
+                        rock.style.position = 'absolute';
+                        rock.style.fontSize = '16px';
+                        rock.style.left = `${(i % 2) * 40 - 20}px`;
+                        rock.style.top = `${Math.floor(i / 2) * 40 - 20}px`;
+                        rock.style.animation = `rockSpike ${0.3 + i * 0.1}s ease-out infinite`;
+                        projectile.appendChild(rock);
+                    }
+                    break;
+                    
+                case 'light':
+                    projectile.style.width = '160px';
+                    projectile.style.height = '8px';
+                    projectile.style.background = `linear-gradient(90deg, transparent, ${config.colors[1]}, ${config.colors[0]}, ${config.colors[1]}, transparent)`;
+                    projectile.style.boxShadow = `0 0 60px ${config.colors[0]}, 0 0 120px white`;
+                    projectile.style.animation = 'lightBeam 0.3s ease-in-out infinite';
+                    // 光の粒子エフェクト追加
+                    for (let i = 0; i < 8; i++) {
+                        const particle = document.createElement('div');
+                        particle.innerHTML = '✨';
+                        particle.style.position = 'absolute';
+                        particle.style.fontSize = '20px';
+                        particle.style.left = `${i * 20}px`;
+                        particle.style.top = `${Math.sin(i) * 20}px`;
+                        particle.style.animation = `lightBeam ${0.3 + i * 0.02}s ease-in-out infinite`;
+                        projectile.appendChild(particle);
+                    }
+                    break;
+            }
+            
+            return projectile;
+        }
+
+        // フェーズ3: ヒットエフェクト
+        function playImpactEffect(fxLayer, attr, config, x, y) {
+            return new Promise((resolve) => {
+                // ヒット音
+                playSound('success');
+                
+                // 画面シェイク
+                if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                    document.body.classList.add('shake-strong');
+                    setTimeout(() => {
+                        document.body.classList.remove('shake-strong');
+                    }, 400);
+                }
+                
+                // フラッシュエフェクト
+                const flash = document.createElement('div');
+                flash.className = 'impact-flash';
+                flash.style.background = config.flashColor;
+                flash.style.opacity = '0';
+                fxLayer.appendChild(flash);
+                
+                flash.animate([
+                    { opacity: 0 },
+                    { opacity: 1 },
+                    { opacity: 0 }
+                ], {
+                    duration: 200,
+                    easing: 'ease-out'
+                }).addEventListener('finish', () => {
+                    flash.remove();
+                });
+                
+                // パーティクル爆発
+                createParticleExplosion(fxLayer, attr, config, x, y);
+                
+                // 属性別特殊エフェクト
+                createSpecialImpactEffect(fxLayer, attr, config, x, y);
+                
+                setTimeout(resolve, 500);
+            });
+        }
+
+        // パーティクル爆発生成（画面全体スケール）
+        function createParticleExplosion(fxLayer, attr, config, x, y) {
+            const particleCount = Math.min(config.particles, 120); // スマホ配慮
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 16 + 8; // より大きなパーティクル
+                const angle = (i / particleCount) * Math.PI * 2;
+                const distance = Math.random() * 300 + 100; // より広範囲に散らばる
+                const dx = Math.cos(angle) * distance;
+                const dy = Math.sin(angle) * distance;
+                
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = (x - size/2) + 'px';
+                particle.style.top = (y - size/2) + 'px';
+                particle.style.background = config.colors[Math.floor(Math.random() * config.colors.length)];
+                particle.style.borderRadius = '50%';
+                particle.style.boxShadow = `0 0 ${size}px ${config.colors[0]}`;
+                particle.style.setProperty('--dx', dx + 'px');
+                particle.style.setProperty('--dy', dy + 'px');
+                
+                fxLayer.appendChild(particle);
+                
+                particle.animate([
+                    { 
+                        transform: 'scale(0) translate3d(0, 0, 0) rotate(0deg)',
+                        opacity: 1
+                    },
+                    { 
+                        transform: `scale(1.5) translate3d(${dx * 0.7}px, ${dy * 0.7}px, 0) rotate(180deg)`,
+                        opacity: 0.8,
+                        offset: 0.6
+                    },
+                    { 
+                        transform: `scale(0.5) translate3d(${dx}px, ${dy}px, 0) rotate(360deg)`,
+                        opacity: 0
+                    }
+                ], {
+                    duration: 1200 + Math.random() * 600,
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                }).addEventListener('finish', () => {
+                    particle.remove();
+                });
+            }
+        }
+
+        // 属性別特殊インパクトエフェクト（画面全体スケール）
+        function createSpecialImpactEffect(fxLayer, attr, config, x, y) {
+            switch (attr) {
+                case 'fire':
+                    // 巨大火花リング
+                    for (let i = 0; i < 5; i++) {
+                        const ring = document.createElement('div');
+                        ring.style.position = 'absolute';
+                        ring.style.left = (x - 100) + 'px';
+                        ring.style.top = (y - 100) + 'px';
+                        ring.style.width = '200px';
+                        ring.style.height = '200px';
+                        ring.style.border = `6px solid ${config.colors[0]}`;
+                        ring.style.borderRadius = '50%';
+                        ring.style.opacity = '0.8';
+                        ring.style.boxShadow = `0 0 40px ${config.colors[0]}, inset 0 0 40px ${config.colors[1]}`;
+                        fxLayer.appendChild(ring);
+                        
+                        ring.animate([
+                            { transform: 'scale(0) rotate(0deg)', opacity: 0.8 },
+                            { transform: 'scale(6) rotate(360deg)', opacity: 0 }
+                        ], {
+                            duration: 1000,
+                            delay: i * 150,
+                            easing: 'ease-out'
+                        }).addEventListener('finish', () => ring.remove());
+                    }
+                    
+                    // 火の柱エフェクト
+                    const firePillar = document.createElement('div');
+                    firePillar.style.position = 'absolute';
+                    firePillar.style.left = (x - 50) + 'px';
+                    firePillar.style.top = '0px';
+                    firePillar.style.width = '100px';
+                    firePillar.style.height = '100vh';
+                    firePillar.style.background = `linear-gradient(0deg, transparent, ${config.colors[0]}, ${config.colors[1]}, transparent)`;
+                    firePillar.style.opacity = '0.6';
+                    fxLayer.appendChild(firePillar);
+                    
+                    firePillar.animate([
+                        { opacity: 0, transform: 'scaleX(0)' },
+                        { opacity: 0.6, transform: 'scaleX(1)' },
+                        { opacity: 0, transform: 'scaleX(0)' }
+                    ], {
+                        duration: 800,
+                        easing: 'ease-out'
+                    }).addEventListener('finish', () => firePillar.remove());
+                    break;
+                    
+                case 'water':
+                    // 巨大水のリップル
+                    for (let i = 0; i < 4; i++) {
+                        const ripple = document.createElement('div');
+                        ripple.style.position = 'absolute';
+                        ripple.style.left = (x - 150) + 'px';
+                        ripple.style.top = (y - 150) + 'px';
+                        ripple.style.width = '300px';
+                        ripple.style.height = '300px';
+                        ripple.style.border = `8px solid ${config.colors[1]}`;
+                        ripple.style.borderRadius = '50%';
+                        ripple.style.opacity = '0.7';
+                        ripple.style.boxShadow = `0 0 60px ${config.colors[0]}`;
+                        fxLayer.appendChild(ripple);
+                        
+                        ripple.animate([
+                            { transform: 'scale(0)', opacity: 0.7 },
+                            { transform: 'scale(8)', opacity: 0 }
+                        ], {
+                            duration: 1200,
+                            delay: i * 250,
+                            easing: 'ease-out'
+                        }).addEventListener('finish', () => ripple.remove());
+                    }
+                    
+                    // 水の波エフェクト
+                    const wave = document.createElement('div');
+                    wave.style.position = 'absolute';
+                    wave.style.left = '0px';
+                    wave.style.top = (y - 25) + 'px';
+                    wave.style.width = '100vw';
+                    wave.style.height = '50px';
+                    wave.style.background = `linear-gradient(90deg, transparent, ${config.colors[0]}, ${config.colors[1]}, transparent)`;
+                    wave.style.opacity = '0.5';
+                    fxLayer.appendChild(wave);
+                    
+                    wave.animate([
+                        { opacity: 0, transform: 'scaleY(0)' },
+                        { opacity: 0.5, transform: 'scaleY(1)' },
+                        { opacity: 0, transform: 'scaleY(0)' }
+                    ], {
+                        duration: 600,
+                        easing: 'ease-out'
+                    }).addEventListener('finish', () => wave.remove());
+                    break;
+                    
+                case 'thunder':
+                    // 巨大電撃アーク
+                    for (let i = 0; i < 8; i++) {
+                        const arc = document.createElement('div');
+                        arc.style.position = 'absolute';
+                        arc.style.left = x + 'px';
+                        arc.style.top = y + 'px';
+                        arc.style.width = '8px';
+                        arc.style.height = (Math.random() * 200 + 100) + 'px';
+                        arc.style.background = config.colors[1];
+                        arc.style.transformOrigin = 'top';
+                        arc.style.transform = `rotate(${Math.random() * 360}deg)`;
+                        arc.style.boxShadow = `0 0 40px ${config.colors[1]}, 0 0 80px white`;
+                        fxLayer.appendChild(arc);
+                        
+                        arc.animate([
+                            { opacity: 1, transform: `rotate(${Math.random() * 360}deg) scaleY(1)` },
+                            { opacity: 0, transform: `rotate(${Math.random() * 360}deg) scaleY(0)` }
+                        ], {
+                            duration: 400,
+                            delay: Math.random() * 300,
+                            easing: 'ease-out'
+                        }).addEventListener('finish', () => arc.remove());
+                    }
+                    
+                    // 画面全体の電撃フラッシュ
+                    const lightning = document.createElement('div');
+                    lightning.style.position = 'absolute';
+                    lightning.style.left = '0px';
+                    lightning.style.top = '0px';
+                    lightning.style.width = '100vw';
+                    lightning.style.height = '100vh';
+                    lightning.style.background = `radial-gradient(circle at ${x}px ${y}px, ${config.colors[1]} 0%, transparent 50%)`;
+                    lightning.style.opacity = '0';
+                    fxLayer.appendChild(lightning);
+                    
+                    lightning.animate([
+                        { opacity: 0 },
+                        { opacity: 0.8 },
+                        { opacity: 0 },
+                        { opacity: 0.6 },
+                        { opacity: 0 }
+                    ], {
+                        duration: 500,
+                        easing: 'ease-out'
+                    }).addEventListener('finish', () => lightning.remove());
+                    break;
+                    
+                case 'wind':
+                    // 巨大竜巻エフェクト
+                    for (let i = 0; i < 3; i++) {
+                        const tornado = document.createElement('div');
+                        tornado.style.position = 'absolute';
+                        tornado.style.left = (x - 75) + 'px';
+                        tornado.style.top = '0px';
+                        tornado.style.width = '150px';
+                        tornado.style.height = '100vh';
+                        tornado.style.background = `conic-gradient(from ${i * 120}deg, transparent, ${config.colors[0]}, transparent)`;
+                        tornado.style.opacity = '0.4';
+                        tornado.style.borderRadius = '50%';
+                        fxLayer.appendChild(tornado);
+                        
+                        tornado.animate([
+                            { transform: 'rotate(0deg) scaleX(0)', opacity: 0 },
+                            { transform: 'rotate(720deg) scaleX(1)', opacity: 0.4 },
+                            { transform: 'rotate(1440deg) scaleX(0)', opacity: 0 }
+                        ], {
+                            duration: 1000,
+                            delay: i * 200,
+                            easing: 'ease-out'
+                        }).addEventListener('finish', () => tornado.remove());
+                    }
+                    break;
+                    
+                case 'earth':
+                    // 地面全体の亀裂エフェクト
+                    for (let i = 0; i < 6; i++) {
+                        const crack = document.createElement('div');
+                        crack.style.position = 'absolute';
+                        crack.style.left = '0px';
+                        crack.style.top = (y + Math.random() * 100 - 50) + 'px';
+                        crack.style.width = '100vw';
+                        crack.style.height = '4px';
+                        crack.style.background = config.colors[2] || config.colors[0];
+                        crack.style.opacity = '0.8';
+                        crack.style.transform = `rotate(${Math.random() * 10 - 5}deg)`;
+                        fxLayer.appendChild(crack);
+                        
+                        crack.animate([
+                            { transform: `scaleX(0) rotate(${Math.random() * 10 - 5}deg)`, opacity: 0 },
+                            { transform: `scaleX(1) rotate(${Math.random() * 10 - 5}deg)`, opacity: 0.8 },
+                            { transform: `scaleX(1) rotate(${Math.random() * 10 - 5}deg)`, opacity: 0 }
+                        ], {
+                            duration: 800,
+                            delay: i * 100,
+                            easing: 'ease-out'
+                        }).addEventListener('finish', () => crack.remove());
+                    }
+                    break;
+                    
+                case 'light':
+                    // 巨大星型バースト
+                    const star = document.createElement('div');
+                    star.innerHTML = '✨';
+                    star.style.position = 'absolute';
+                    star.style.left = (x - 100) + 'px';
+                    star.style.top = (y - 100) + 'px';
+                    star.style.fontSize = '200px';
+                    star.style.filter = `drop-shadow(0 0 100px ${config.colors[0]}) drop-shadow(0 0 200px white)`;
+                    fxLayer.appendChild(star);
+                    
+                    star.animate([
+                        { transform: 'scale(0) rotate(0deg)', opacity: 1 },
+                        { transform: 'scale(3) rotate(360deg)', opacity: 0 }
+                    ], {
+                        duration: 800,
+                        easing: 'ease-out'
+                    }).addEventListener('finish', () => star.remove());
+                    
+                    // 光の柱エフェクト
+                    const lightBeam = document.createElement('div');
+                    lightBeam.style.position = 'absolute';
+                    lightBeam.style.left = (x - 25) + 'px';
+                    lightBeam.style.top = '0px';
+                    lightBeam.style.width = '50px';
+                    lightBeam.style.height = '100vh';
+                    lightBeam.style.background = `linear-gradient(0deg, transparent, ${config.colors[1]}, ${config.colors[0]}, transparent)`;
+                    lightBeam.style.opacity = '0.8';
+                    lightBeam.style.boxShadow = `0 0 100px ${config.colors[0]}`;
+                    fxLayer.appendChild(lightBeam);
+                    
+                    lightBeam.animate([
+                        { opacity: 0, transform: 'scaleX(0)' },
+                        { opacity: 0.8, transform: 'scaleX(1)' },
+                        { opacity: 0, transform: 'scaleX(0)' }
+                    ], {
+                        duration: 600,
+                        easing: 'ease-out'
+                    }).addEventListener('finish', () => lightBeam.remove());
+                    break;
+            }
+        }
+
+        // 被弾エフェクト（不正解時）
+        function playHitEffect(playerIndex) {
+            const avatarEl = document.getElementById(`player${playerIndex + 1}Avatar`);
+            const fxLayer = getOrCreateFxLayer();
+            
+            // 煙エフェクト
+            const smoke = document.createElement('div');
+            smoke.innerHTML = '💨';
+            smoke.style.position = 'absolute';
+            smoke.style.fontSize = '30px';
+            smoke.style.opacity = '0.8';
+            
+            const rect = avatarEl.getBoundingClientRect();
+            smoke.style.left = rect.left + 'px';
+            smoke.style.top = rect.top + 'px';
+            
+            fxLayer.appendChild(smoke);
+            
+            smoke.animate([
+                { transform: 'scale(0.5) translateY(0)', opacity: 0.8 },
+                { transform: 'scale(1.5) translateY(-30px)', opacity: 0 }
+            ], {
+                duration: 600,
+                easing: 'ease-out'
+            }).addEventListener('finish', () => smoke.remove());
+            
+            // 赤フラッシュ
+            const flash = document.createElement('div');
+            flash.className = 'impact-flash';
+            flash.style.background = 'rgba(255, 107, 107, 0.4)';
+            fxLayer.appendChild(flash);
+            
+            flash.animate([
+                { opacity: 0 },
+                { opacity: 1 },
+                { opacity: 0 }
+            ], {
+                duration: 300,
+                easing: 'ease-out'
+            }).addEventListener('finish', () => flash.remove());
+        }
+
+        // 答え送信
+        async function submitAnswer() {
+            const target = gameState.selectedCard.text;
+            const targetLen = countChars(target);
+            const timeUsed = Math.max(0, 15 - gameState.timer);
+
+            // 統計：試行ごとに更新
+            gameState.stats.totalChars += targetLen;
+            gameState.stats.totalTime += timeUsed;
+
+            // いずれかの候補が完了していれば成功
+            const success = typingState.currentInputs.some(input => input.completed);
+            console.log('送信時の成功判定:', success);
+
+            if (success) {
+                // 正解 - 攻撃アニメーション実行
+                const damage = Math.round(targetLen * gameState.timer * 10) / 10;
+                
+                // 攻撃アニメーション
+                await playAttackAnimation({
+                    attr: gameState.players[gameState.currentPlayer].attribute,
+                    from: gameState.currentPlayer === 0 ? 'left' : 'right',
+                    targetEl: document.getElementById(`player${2 - gameState.currentPlayer}Avatar`),
+                    impactMs: 600
+                });
+                
+                // ダメージ処理
+                dealDamage(1 - gameState.currentPlayer, damage);
+                gameState.stats.correctChars += targetLen;
+                gameState.stats.combo++;
+                gameState.stats.maxCombo = Math.max(gameState.stats.maxCombo, gameState.stats.combo);
+            } else {
+                // 不正解 - 被弾エフェクト
+                playHitEffect(gameState.currentPlayer);
+                const selfDamage = targetLen * 10;
+                dealDamage(gameState.currentPlayer, selfDamage);
+                gameState.stats.combo = 0;
+                playSound('fail');
+            }
+            
+            endTurn();
+        }
+
+        // ギブアップ
+        function giveUp() {
+            const targetLen = countChars(gameState.selectedCard.text);
+            const timeUsed = Math.max(0, 15 - gameState.timer);
+            gameState.stats.totalChars += targetLen;
+            gameState.stats.totalTime += timeUsed;
+
+            // 被弾エフェクト
+            playHitEffect(gameState.currentPlayer);
+            const selfDamage = targetLen * 10;
+            dealDamage(gameState.currentPlayer, selfDamage);
+            gameState.stats.combo = 0;
             playSound('fail');
-          }
-          endTurn();
-        },1200);
-      },800);
-    }
-    function endGame(winner){
-      gameState.gamePhase='result';
-      const name=gameState.players[winner].name;
-      const acc=gameState.stats.totalChars>0 ? Math.round((gameState.stats.correctChars/gameState.stats.totalChars)*100) : 0;
-      const avg=gameState.stats.totalChars>0 ? Math.round((gameState.stats.totalTime/gameState.stats.totalChars)*10)/10 : 0;
-      showModal(`🎉 ${name}の勝利！`,`
-        <p>おめでとうございます！</p>
-        <p><strong>戦績</strong></p>
-        <p>最大コンボ: ${gameState.stats.maxCombo}</p>
-        <p>正確性: ${acc}%</p>
-        <p>平均入力時間: ${avg}秒/文字</p>
-        <button class="btn btn-primary" onclick="backToMenu()">メニューに戻る</button>
-        <button class="btn btn-secondary" onclick="restartGame()">もう一度</button>
-      `);
-    }
-    function playSound(type){
-      if(!gameState.soundEnabled) return;
-      const ctx=new (window.AudioContext||window.webkitAudioContext)();
-      const osc=ctx.createOscillator(); const g=ctx.createGain();
-      osc.connect(g); g.connect(ctx.destination);
-      if(type==='success'){osc.frequency.setValueAtTime(523.25,ctx.currentTime);osc.frequency.setValueAtTime(659.25,ctx.currentTime+.1);}
-      else{osc.frequency.setValueAtTime(220,ctx.currentTime);}
-      g.gain.setValueAtTime(.1,ctx.currentTime); g.gain.exponentialRampToValueAtTime(.01,ctx.currentTime+.3);
-      osc.start(ctx.currentTime); osc.stop(ctx.currentTime+.3);
-    }
-    function showModal(title,content){ document.getElementById('modalContent').innerHTML=`<h2>${title}</h2>${content}`; document.getElementById('modal').style.display='flex'; }
-    function hideModal(){ document.getElementById('modal').style.display='none'; }
-    function showHelp(){
-      showModal('📖 ゲームの遊び方',`
-        <p><strong>基本ルール</strong></p>
-        <p>• HP300でスタート / 相手のHPを0で勝利</p>
-        <p>• カード選択→カウント後にローマ字入力（完了で自動判定）</p>
-        <p>• 成功：文字数×残り時間 / 失敗：文字数×10の自傷</p>
-        <p><strong>操作</strong></p>
-        <p>• Enter：完了確定 / Esc：ギブアップ</p>
-        <p class="romaji-note">別表記OK：tsu/tu, shi/si, chi/ti, ji/zi, di/ji, du/zu, fu/hu, wo/o, n/nn</p>
-        <button class="btn btn-primary" onclick="hideModal()">閉じる</button>
-      `);
-    }
-    function toggleSound(){ gameState.soundEnabled=!gameState.soundEnabled; document.getElementById('soundBtn').textContent=gameState.soundEnabled?'🔊':'🔇'; }
-    function pauseGame(){
-      if(gameState.gamePhase!=='typing') return;
-      if(!gameState.isPaused){
-        gameState.isPaused=true; document.getElementById('pauseBtn').textContent='▶️';
-        showModal('⏸️ 一時停止',`<p>ゲームを一時停止しました</p><button class="btn btn-primary" onclick="resumeGame()">再開</button>`);
-      }else{ resumeGame(); }
-    }
-    function resumeGame(){ gameState.isPaused=false; document.getElementById('pauseBtn').textContent='⏸️'; hideModal(); }
-    function backToMenu(){
-      gameState={
-        mode:null,
-        players:[{name:'プレイヤー1',hp:300,maxHp:300,avatar:'🔥',attribute:'fire'},{name:'CPU',hp:300,maxHp:300,avatar:'🤖',attribute:'water'}],
-        currentPlayer:0,selectedCard:null,hands:[[],[]],deck:[],discard:[],
-        timer:15,timerInterval:null,gamePhase:'cardSelect',soundEnabled:true,isPaused:false,
-        stats:{totalChars:0,correctChars:0,totalTime:0,combo:0,maxCombo:0}
-      };
-      clearInterval(gameState.timerInterval); hideModal();
-      document.getElementById('gameContainer').classList.add('hidden');
-      document.getElementById('startScreen').classList.remove('hidden');
-      document.getElementById('characterSelection').classList.add('hidden');
-      document.getElementById('gameRules').classList.add('hidden');
-      document.getElementById('player2Setup').classList.add('hidden');
-      document.querySelectorAll('.mode-btn,.character-btn').forEach(b=>b.classList.remove('selected'));
-      document.getElementById('player1NameInput').value='プレイヤー1';
-      document.getElementById('player2NameInput').value='プレイヤー2';
-      document.getElementById('nextBtn').disabled=true;
-    }
-    function restartGame(){
-      hideModal();
-      gameState.players.forEach(p=>p.hp=p.maxHp);
-      gameState.stats={totalChars:0,correctChars:0,totalTime:0,combo:0,maxCombo:0};
-      gameState.currentPlayer=0; gameState.gamePhase='cardSelect';
-      initGame();
-    }
-    document.addEventListener('DOMContentLoaded',()=>{ document.getElementById('modal').addEventListener('click',e=>{ if(e.target===e.currentTarget) hideModal(); }); });
-  </script>
-</body>
+            endTurn();
+        }
+
+        // 時間切れ
+        function timeUp() {
+            const targetLen = countChars(gameState.selectedCard.text);
+            gameState.stats.totalChars += targetLen;
+            gameState.stats.totalTime += 15;
+
+            // 被弾エフェクト
+            playHitEffect(gameState.currentPlayer);
+            const selfDamage = targetLen * 10;
+            dealDamage(gameState.currentPlayer, selfDamage);
+            gameState.stats.combo = 0;
+            playSound('fail');
+            endTurn();
+        }
+
+        // ダメージ処理
+        function dealDamage(playerIndex, damage) {
+            gameState.players[playerIndex].hp = Math.max(0, gameState.players[playerIndex].hp - damage);
+            
+            // ダメージエフェクト
+            showDamageEffect(playerIndex, damage);
+            
+            // HP更新
+            updateUI();
+            
+            // 勝敗判定
+            if (gameState.players[playerIndex].hp <= 0) {
+                endGame(1 - playerIndex);
+            }
+        }
+
+        // ダメージエフェクト表示
+        function showDamageEffect(playerIndex, damage) {
+            const avatar = document.getElementById(`player${playerIndex + 1}Avatar`);
+            const damageElement = document.createElement('div');
+            damageElement.className = 'damage-number';
+            damageElement.textContent = `-${damage}`;
+            damageElement.style.left = '50%';
+            damageElement.style.top = '50%';
+            
+            avatar.style.position = 'relative';
+            avatar.appendChild(damageElement);
+            
+            // シェイクエフェクト
+            avatar.classList.add('shake');
+            setTimeout(() => {
+                avatar.classList.remove('shake');
+                if (damageElement.parentNode) {
+                    damageElement.remove();
+                }
+            }, 1000);
+        }
+
+        // ペナルティエフェクト表示
+        function showPenaltyEffect() {
+            const timerRing = document.getElementById('timerRing');
+            const penaltyElement = document.createElement('div');
+            penaltyElement.className = 'damage-number';
+            penaltyElement.textContent = '-3秒';
+            penaltyElement.style.left = '50%';
+            penaltyElement.style.top = '20%';
+            penaltyElement.style.color = '#ff6b6b';
+            penaltyElement.style.fontSize = '20px';
+            
+            timerRing.style.position = 'relative';
+            timerRing.appendChild(penaltyElement);
+            
+            // タイマーリングを赤く点滅
+            timerRing.style.boxShadow = '0 0 20px rgba(255, 107, 107, 0.8)';
+            setTimeout(() => {
+                timerRing.style.boxShadow = '';
+                if (penaltyElement.parentNode) {
+                    penaltyElement.remove();
+                }
+            }, 1000);
+        }
+
+        // ターン終了
+        function endTurn() {
+            clearInterval(gameState.timerInterval);
+            
+            // キーボードイベントを無効化
+            document.removeEventListener('keydown', handleKeyPress);
+            
+            // 使用したカードを捨て札に
+            const handIndex = gameState.hands[gameState.currentPlayer].indexOf(gameState.selectedCard);
+            gameState.hands[gameState.currentPlayer].splice(handIndex, 1);
+            gameState.discard.push(gameState.selectedCard);
+            
+            // プログレスバーは非表示のためリセット不要
+            
+            // タイピングガイドをクリア
+            document.getElementById('typingGuideJP').style.setProperty('--fill', '0%');
+            document.getElementById('typingGuideSub').innerHTML = '';
+            document.getElementById('romajiGuide').innerHTML = '';
+            
+            // タイピング状態をリセット
+            typingState = {
+                targetOptions: [],
+                currentInputs: [],
+                typedKeys: ''
+            };
+            
+            // 結果フェーズに移行
+            gameState.gamePhase = 'result';
+            updatePhaseDisplay();
+            
+            // 次のプレイヤーに交代
+            gameState.currentPlayer = 1 - gameState.currentPlayer;
+            gameState.gamePhase = 'cardSelect';
+            gameState.selectedCard = null;
+            
+            // CPUターンまたは次のターン開始（少し遅延を入れる）
+            setTimeout(() => {
+                if (gameState.mode === 'cpu' && gameState.currentPlayer === 1) {
+                    cpuTurn();
+                } else {
+                    startTurn();
+                }
+            }, 2000); // ダメージ演出を見せるため2秒に延長
+        }
+
+        // ターン開始
+        function startTurn() {
+            showTurnPopup();
+            updateUI();
+            drawCards();
+            drawPlayerHand();
+            
+            // タイマーリセット
+            document.getElementById('timerRing').textContent = '15';
+            document.getElementById('timerRing').style.background = 
+                'conic-gradient(#feca57 360deg, rgba(255, 255, 255, 0.2) 360deg)';
+        }
+
+        // ターン切り替えポップアップ表示
+        function showTurnPopup() {
+            const popup = document.createElement('div');
+            popup.className = 'turn-popup';
+            popup.innerHTML = `<h2>${gameState.players[gameState.currentPlayer].name}のターン</h2>`;
+            document.body.appendChild(popup);
+            
+            setTimeout(() => {
+                if (popup.parentNode) {
+                    popup.remove();
+                }
+            }, 2000);
+        }
+
+        // CPUターン
+        async function cpuTurn() {
+            updateUI();
+            drawCards(); // ★追加：CPUもちゃんと1枚引く
+            drawPlayerHand(); // 手札表示も更新
+            
+            setTimeout(async () => {
+                // CPUカード選択（簡易AI）
+                const hand = gameState.hands[1];
+                let bestCard = hand[0];
+                let bestScore = -1;
+                
+                hand.forEach(card => {
+                    // 期待ダメージ計算（簡易）
+                    const expectedTime = Math.random() * 10 + 5; // 5-15秒
+                    const expectedDamage = card.text.length * expectedTime;
+                    const failRisk = card.difficulty * 20; // 難易度による失敗リスク
+                    const score = expectedDamage - failRisk;
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestCard = card;
+                    }
+                });
+                
+                gameState.selectedCard = bestCard;
+                
+                // CPU入力シミュレーション
+                setTimeout(async () => {
+                    const success = Math.random() > (bestCard.difficulty * 0.2); // 難易度による成功率
+                    
+                    if (success) {
+                        const cpuTime = Math.random() * 8 + 2; // 2-10秒
+                        const charCount = countChars(bestCard.text);
+                        const damage = Math.round(charCount * cpuTime * 10) / 10;
+                        
+                        // CPU攻撃アニメーション
+                        await playAttackAnimation({
+                            attr: gameState.players[1].attribute,
+                            from: 'right',
+                            targetEl: document.getElementById('player1Avatar'),
+                            impactMs: 600
+                        });
+                        
+                        dealDamage(0, damage);
+                        
+                        gameState.stats.correctChars += charCount;
+                        gameState.stats.totalChars += charCount;
+                        gameState.stats.totalTime += (15 - cpuTime);
+                    } else {
+                        const charCount = countChars(bestCard.text);
+                        const selfDamage = charCount * 10;
+                        
+                        // CPU被弾エフェクト
+                        playHitEffect(1);
+                        dealDamage(1, selfDamage);
+                        
+                        gameState.stats.totalChars += charCount;
+                        gameState.stats.totalTime += 15;
+                        
+                        playSound('fail');
+                    }
+                    
+                    endTurn();
+                }, 2000);
+            }, 1000);
+        }
+
+        // ゲーム終了
+        function endGame(winner) {
+            gameState.gamePhase = 'result';
+            
+            const winnerName = gameState.players[winner].name;
+            const accuracy = gameState.stats.totalChars > 0 ? 
+                Math.round((gameState.stats.correctChars / gameState.stats.totalChars) * 100) : 0;
+            const avgTime = gameState.stats.totalChars > 0 ? 
+                Math.round((gameState.stats.totalTime / gameState.stats.totalChars) * 10) / 10 : 0;
+            
+            showModal(`🎉 ${winnerName}の勝利！`, `
+                <p>おめでとうございます！</p>
+                <p><strong>戦績</strong></p>
+                <p>最大コンボ: ${gameState.stats.maxCombo}</p>
+                <p>正確性: ${accuracy}%</p>
+                <p>平均入力時間: ${avgTime}秒/文字</p>
+                <button class="btn btn-primary" onclick="backToMenu()">メニューに戻る</button>
+                <button class="btn btn-secondary" onclick="restartGame()">もう一度</button>
+            `);
+        }
+
+        // 音声再生
+        function playSound(type) {
+            if (!gameState.soundEnabled) return;
+            
+            // 簡易音声（実際の実装では適切な音声ファイルを使用）
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            if (type === 'success') {
+                oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+                oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+            } else if (type === 'charge') {
+                // 溜め音：低音から高音へ
+                oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.3);
+            } else {
+                oscillator.frequency.setValueAtTime(220, audioContext.currentTime); // A3
+            }
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        // モーダル表示
+        function showModal(title, content) {
+            document.getElementById('modalContent').innerHTML = `
+                <h2>${title}</h2>
+                ${content}
+            `;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        // モーダル非表示
+        function hideModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        // ヘルプ表示
+        function showHelp() {
+            showModal('📖 ゲームの遊び方', `
+                <p><strong>基本ルール</strong></p>
+                <p>• 設定したHPでスタート</p>
+                <p>• 手札から1枚選んでタイピング</p>
+                <p>• 15秒以内にローマ字で入力</p>
+                <p>• 成功：文字数×残り時間でダメージ</p>
+                <p>• 失敗：文字数×10の自傷ダメージ</p>
+                <p>• 打ち間違え：3秒ペナルティ</p>
+                <p><strong>操作方法</strong></p>
+                <p>• カードをタップして選択</p>
+                <p>• ローマ字で入力（全角でもOK）</p>
+                <p>• ESCキーでギブアップ</p>
+                <button class="btn btn-primary" onclick="hideModal()">閉じる</button>
+            `);
+        }
+
+        // 音量切り替え
+        function toggleSound() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            document.getElementById('soundBtn').textContent = gameState.soundEnabled ? '🔊' : '🔇';
+        }
+
+        // ゲーム一時停止
+        function pauseGame() {
+            if (gameState.gamePhase !== 'typing') return;
+
+            if (!gameState.isPaused) {
+                gameState.isPaused = true;
+                document.getElementById('pauseBtn').textContent = '▶️';
+                showModal('⏸️ 一時停止', `
+                    <p>ゲームを一時停止しました</p>
+                    <button class="btn btn-primary" onclick="resumeGame()">再開</button>
+                `);
+            } else {
+                resumeGame();
+            }
+        }
+
+        // ゲーム再開
+        function resumeGame() {
+            gameState.isPaused = false;
+            document.getElementById('pauseBtn').textContent = '⏸️';
+            hideModal();
+        }
+
+        // メニューに戻る
+        function backToMenu() {
+            // ゲーム状態リセット
+            gameState = {
+                mode: null,
+                maxHP: 200,
+                players: [
+                    { name: 'プレイヤー1', hp: 200, maxHp: 200, avatar: '🔥', attribute: 'fire' },
+                    { name: 'CPU', hp: 200, maxHp: 200, avatar: '🤖', attribute: 'water' }
+                ],
+                currentPlayer: 0,
+                selectedCard: null,
+                hands: [[], []],
+                deck: [],
+                discard: [],
+                timer: 15,
+                timerInterval: null,
+                gamePhase: 'cardSelect',
+                soundEnabled: true,
+                isPaused: false,
+                stats: {
+                    totalChars: 0,
+                    correctChars: 0,
+                    totalTime: 0,
+                    combo: 0,
+                    maxCombo: 0
+                }
+            };
+            
+            clearInterval(gameState.timerInterval);
+            hideModal();
+            document.getElementById('gameContainer').classList.add('hidden');
+            document.getElementById('startScreen').classList.remove('hidden');
+            document.getElementById('characterSelection').classList.add('hidden');
+            document.getElementById('gameRules').classList.add('hidden');
+            document.getElementById('player2Setup').classList.add('hidden');
+            
+            // 選択状態をリセット
+            document.querySelectorAll('.mode-btn, .character-btn, .hp-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // デフォルトHP選択
+            document.querySelector('[data-hp="200"]').classList.add('selected');
+            
+            // 名前入力をリセット
+            document.getElementById('player1NameInput').value = 'プレイヤー1';
+            document.getElementById('player2NameInput').value = 'プレイヤー2';
+            document.getElementById('nextBtn').disabled = true;
+        }
+
+        // ゲーム再開始
+        function restartGame() {
+            hideModal();
+            
+            // HP回復
+            gameState.players.forEach(player => {
+                player.hp = player.maxHp;
+            });
+            
+            // 統計リセット
+            gameState.stats = {
+                totalChars: 0,
+                correctChars: 0,
+                totalTime: 0,
+                combo: 0,
+                maxCombo: 0
+            };
+            
+            gameState.currentPlayer = 0;
+            gameState.gamePhase = 'cardSelect';
+            
+            initGame();
+        }
+
+        // イベントリスナー
+        document.addEventListener('DOMContentLoaded', function() {
+            // モーダルクリックで閉じる
+            document.getElementById('modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideModal();
+                }
+            });
+
+            // 名前入力フィールドのイベントリスナー
+            document.getElementById('player1NameInput').addEventListener('input', function() {
+                gameState.players[0].name = this.value || 'プレイヤー1';
+                checkSetupComplete();
+            });
+
+            document.getElementById('player2NameInput').addEventListener('input', function() {
+                gameState.players[1].name = this.value || 'プレイヤー2';
+                checkSetupComplete();
+            });
+        });
+
+        // 初期化
+        console.log('🎮 タイピングバトル - 学習ゲーム');
+        console.log('📝 カード追加方法: CARD_POOL配列に新しいオブジェクトを追加');
+        console.log('🎨 属性カスタマイズ: CSS変数 --attr-color を変更');
+        console.log('🔊 音声カスタマイズ: playSound関数を編集');
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9779edf007c0e005',t:'MTc1NjYxNjA2MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
