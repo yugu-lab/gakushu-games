@@ -1219,8 +1219,15 @@
             align-items: center;
             justify-content: center;
             z-index: 2000;
-        }
+         overflow-y: auto;                  /* ←追加：縦スクロールを許可 */
+  -webkit-overflow-scrolling: touch; /* ←追加：iOSで慣性スクロール */
+}
 
+/* スクロールで見出しがきれいに止まるように */
+#characterSelection,
+#gameRules {
+  scroll-margin-top: 16px;
+}
         .start-content {
             text-align: center;
             color: white;
@@ -2216,6 +2223,21 @@ button:focus-visible,
                 .replace(/[\u2010-\u2015\u2212\uFF0D\uFE63]/g, "-")
                 .toLowerCase();
         }
+// ★ 名前欄「タップ/クリック/フォーカスで全選択」初期化（重複登録防止付き）
+function setupNameInputs() {
+  ['player1NameInput', 'player2NameInput'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || el.dataset._selInit === '1') return; // ← 二重登録防止
+
+    const selectAll = () => el.select();
+    el.addEventListener('focus', selectAll);
+    el.addEventListener('click', selectAll);
+    el.addEventListener('mouseup', e => e.preventDefault()); // クリックで選択解除を抑止
+    el.addEventListener('touchstart', () => setTimeout(selectAll, 0), { passive: true }); // iOS対策
+
+    el.dataset._selInit = '1';
+  });
+}
 
         // Fisher-Yates シャッフル（公平性向上）
         function shuffle(array) {
