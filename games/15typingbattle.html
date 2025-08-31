@@ -1947,6 +1947,8 @@
             const ring = document.getElementById('timerRing');
             const clamped = Math.max(0, msLeft);
             const sec = Math.ceil(clamped / 1000);
+            gameState.timer = sec; // ← 残り秒を常に状態へ反映
+            
             const prog = Math.max(0, Math.min(1, clamped / timerTotalMs));
             const deg = prog * 360;
             ring.textContent = sec;
@@ -2955,7 +2957,15 @@
                 giveUp();
                 return;
             }
-            
+            // Enterで確定（どれかの候補が完了しているとき）
+if (key === 'enter') {
+  event.preventDefault();
+  if (typingState.currentInputs.some(inp => inp.completed)) {
+    submitAnswer();   // ← stopTimerはsubmitAnswer内でやるのでここでは呼ばない
+  }
+  return;
+}
+
             // アルファベット・ハイフン・アポストロフィを許可（全角も対応）
             if (!/^[a-z\-']$/.test(key)) return;
             
@@ -4194,7 +4204,7 @@ function createSpecialImpactEffect(fxLayer, attr, config, x, y) {
             
             // 統計更新（CPU用）
             const targetLen = countChars(pick.text);
-            const timeUsed = (TURN_MS / 1000) - gameState.timer;
+            const timeUsed = 12 - gameState.timer;
             
             gameState.playerStats[1].totalChars += targetLen;
             gameState.playerStats[1].totalTime += timeUsed;
