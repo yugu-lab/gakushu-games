@@ -1597,7 +1597,14 @@
         }
         window.addEventListener('resize', setVh);
         setVh();
+// --- モードボタンの安全バインド（インラインonclickに頼らない） ---
+window.addEventListener('DOMContentLoaded', () => {
+  const cpuBtn = document.getElementById('cpuModeBtn');
+  const pvpBtn = document.getElementById('pvpModeBtn');
 
+  if (cpuBtn) cpuBtn.addEventListener('click', () => selectMode('cpu'));
+  if (pvpBtn) pvpBtn.addEventListener('click', () => selectMode('pvp'));
+});
         // 変換中フラグ（IME）
         let isComposing = false;
 
