@@ -1226,11 +1226,12 @@
 /* スクロールで見出しがきれいに止まるように */
 #characterSelection,
 #gameRules {
-  scroll-margin-top: 16px;
+scroll-margin-top: calc(var(--safe-top) + 16px);
 }
         .start-content {
             text-align: center;
             color: white;
+            padding: calc(var(--safe-top) + 16px) 16px calc(var(--safe-bottom) + 24px);
         }
 
         .start-content h1 {
