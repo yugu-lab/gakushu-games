@@ -3598,7 +3598,7 @@ const YOON = {
         // 属性別特殊インパクトエフェクト（画面全体スケール）
        // ★ここから置換
 function createSpecialImpactEffect(fxLayer, attr, config, x, y) {
-  // 汎用：同心円のリップルを数回出す（CSSの @keyframes ripple を利用）
+  // 汎用：同心円のリップルを数回出す
   const makeRipple = (radius, thickness = 6, opacity = 0.8, dur = 700) => {
     const ring = document.createElement('div');
     ring.style.position = 'absolute';
@@ -3619,7 +3619,7 @@ function createSpecialImpactEffect(fxLayer, attr, config, x, y) {
     ).addEventListener('finish', () => ring.remove());
   };
 
-  // 属性ごとの差分（色だけ活かす）
+  // 属性ごとの差分
   switch (attr) {
     case 'fire':
       makeRipple(40, 8, 0.9, 800);
@@ -3633,15 +3633,24 @@ function createSpecialImpactEffect(fxLayer, attr, config, x, y) {
       makeRipple(32, 6, 1.0, 600);
       break;
     case 'wind':
+      makeRipple(40, 6, 0.8, 800);
+      makeRipple(58, 4, 0.6, 900);
+      break;
     case 'earth':
+      makeRipple(46, 6, 0.8, 850);
+      makeRipple(66, 5, 0.6, 1000);
+      break;
     case 'light':
+      makeRipple(42, 6, 0.9, 750);
+      makeRipple(62, 4, 0.7, 850);
+      break;
     default:
       makeRipple(40, 6, 0.8, 800);
       makeRipple(58, 4, 0.6, 900);
       break;
   }
 }
-// ★ここまで置換
+
 
                     
                     // 火の柱エフェクト
