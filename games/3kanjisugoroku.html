@@ -923,6 +923,23 @@
         let rouletteDecided = null;
         
         // 学年別漢字問題データ
+        // 追加：問題重複防止の履歴（学年ごとに既出インデックスを記録）
+let questionHistory = { 4: new Set(), 5: new Set(), 6: new Set() };
+
+function pickQuestion(grade){
+  const pool = questionsByGrade[grade];
+  if (!pool || pool.length === 0) return null;
+  // 全問出し切ったらリセット
+  if (questionHistory[grade].size >= pool.length) questionHistory[grade].clear();
+  let idx, attempts = 0;
+  do {
+    idx = Math.floor(Math.random() * pool.length);
+    attempts++;
+  } while (questionHistory[grade].has(idx) && attempts < pool.length);
+  questionHistory[grade].add(idx);
+  return pool[idx];
+}
+
         const questionsByGrade = {
             4: [
                 { question: "この漢字の読み方は？「協力」", answer: "きょうりょく" },
@@ -1160,7 +1177,108 @@
                 { question: "この漢字の読み方は？「留学」", answer: "りゅうがく" },
                 { question: "この漢字の読み方は？「気圧」", answer: "きあつ" },
                 { question: "この漢字の読み方は？「移動」", answer: "いどう" },
-                { question: "この漢字の読み方は？「事故」", answer: "じこ" }
+                { question: "この漢字の読み方は？「事故」", answer: "じこ" },
+                 { question: "この漢字の読み方は？「大統領」", answer: "だいとうりょう" },
+  { question: "この漢字の読み方は？「国際的」", answer: "こくさいてき" },
+  { question: "この漢字の読み方は？「金属製」", answer: "きんぞくせい" },
+  { question: "この漢字の読み方は？「年賀状」", answer: "ねんがじょう" },
+  { question: "この漢字の読み方は？「正義感」", answer: "せいぎかん" },
+  { question: "この漢字の読み方は？「手術後」", answer: "しゅじゅつご" },
+  { question: "この漢字の読み方は？「出版社」", answer: "しゅっぱんしゃ" },
+  { question: "この漢字の読み方は？「休刊日」", answer: "きゅうかんび" },
+  { question: "この漢字の読み方は？「大特価」", answer: "だいとっか" },
+  { question: "この漢字の読み方は？「新製品」", answer: "しんせいひん" },
+  { question: "この漢字の読み方は？「新幹線」", answer: "しんかんせん" },
+  { question: "この漢字の読み方は？「新機能」", answer: "しんきのう" },
+  { question: "この漢字の読み方は？「高血圧」", answer: "こうけつあつ" },
+  { question: "この漢字の読み方は？「高品質」", answer: "こうひんしつ" },
+  { question: "この漢字の読み方は？「回数券」", answer: "かいすうけん" },
+  { question: "この漢字の読み方は？「消毒液」", answer: "しょうどくえき" },
+  { question: "この漢字の読み方は？「商品券」", answer: "しょうひんけん" },
+  { question: "この漢字の読み方は？「調理師」", answer: "ちょうりし" },
+  { question: "この漢字の読み方は？「整理券」", answer: "せいりけん" },
+  { question: "この漢字の読み方は？「週刊誌」", answer: "しゅうかんし" },
+  { question: "この漢字の読み方は？「形容詞」", answer: "けいようし" },
+  { question: "この漢字の読み方は？「活断層」", answer: "かつだんそう" },
+  { question: "この漢字の読み方は？「美術品」", answer: "びじゅつひん" },
+  { question: "この漢字の読み方は？「所在地」", answer: "しょざいち" },
+  { question: "この漢字の読み方は？「業務用」", answer: "ぎょうむよう" },
+  { question: "この漢字の読み方は？「農耕用」", answer: "のうこうよう" },
+  { question: "この漢字の読み方は？「持久力」", answer: "じきゅうりょく" },
+  { question: "この漢字の読み方は？「鉄鉱石」", answer: "てっこうせき" },
+  { question: "この漢字の読み方は？「真犯人」", answer: "しんはんにん" },
+  { question: "この漢字の読み方は？「消防署」", answer: "しょうぼうしょ" },
+  { question: "この漢字の読み方は？「感謝状」", answer: "かんしゃじょう" },
+  { question: "この漢字の読み方は？「消防団」", answer: "しょうぼうだん" },
+  { question: "この漢字の読み方は？「委任状」", answer: "いにんじょう" },
+  { question: "この漢字の読み方は？「全財産」", answer: "ぜんざいさん" },
+  { question: "この漢字の読み方は？「事務員」", answer: "じむいん" },
+  { question: "この漢字の読み方は？「指導者」", answer: "しどうしゃ" },
+  { question: "この漢字の読み方は？「自家製」", answer: "じかせい" },
+  { question: "この漢字の読み方は？「自衛隊」", answer: "じえいたい" },
+  { question: "この漢字の読み方は？「消費税」", answer: "しょうひぜい" },
+  { question: "この漢字の読み方は？「美容院」", answer: "びよういん" },
+  { question: "この漢字の読み方は？「付属品」", answer: "ふぞくひん" },
+  { question: "この漢字の読み方は？「富山県」", answer: "とやまけん" },
+  { question: "この漢字の読み方は？「不燃物」", answer: "ふねんぶつ" },
+  { question: "この漢字の読み方は？「芸術品」", answer: "げいじゅつひん" },
+  { question: "この漢字の読み方は？「祝賀会」", answer: "しゅくがかい" },
+  { question: "この漢字の読み方は？「英語版」", answer: "えいごばん" },
+  { question: "この漢字の読み方は？「案内状」", answer: "あんないじょう" },
+  { question: "この漢字の読み方は？「平均値」", answer: "へいきんち" },
+  { question: "この漢字の読み方は？「銀河系」", answer: "ぎんがけい" },
+  { question: "この漢字の読み方は？「輸出品」", answer: "ゆしゅつひん" },
+  { question: "この漢字の読み方は？「導火線」", answer: "どうかせん" },
+  { question: "この漢字の読み方は？「張本人」", answer: "ちょうほんにん" },
+  { question: "この漢字の読み方は？「雑木林」", answer: "ぞうきばやし" },
+  { question: "この漢字の読み方は？「不可能」", answer: "ふかのう" },
+  { question: "この漢字の読み方は？「老眼鏡」", answer: "ろうがんきょう" },
+  { question: "この漢字の読み方は？「群馬県」", answer: "ぐんまけん" },
+  { question: "この漢字の読み方は？「似顔絵」", answer: "にがおえ" },
+  { question: "この漢字の読み方は？「祖父母」", answer: "そふぼ" },
+  { question: "この漢字の読み方は？「桜前線」", answer: "さくらぜんせん" },
+  { question: "この漢字の読み方は？「防風林」", answer: "ぼうふうりん" },
+  { question: "この漢字の読み方は？「基本的」", answer: "きほんてき" },
+  { question: "この漢字の読み方は？「個人差」", answer: "こじんさ" },
+  { question: "この漢字の読み方は？「飼育係」", answer: "しいくがかり" },
+  { question: "この漢字の読み方は？「境界線」", answer: "きょうかいせん" },
+  { question: "この漢字の読み方は？「留守番」", answer: "るすばん" },
+  { question: "この漢字の読み方は？「職員室」", answer: "しょくいんしつ" },
+  { question: "この漢字の読み方は？「授業中」", answer: "じゅぎょうちゅう" },
+  { question: "この漢字の読み方は？「慣用句」", answer: "かんようく" },
+  { question: "この漢字の読み方は？「税理士」", answer: "ぜいりし" },
+  { question: "この漢字の読み方は？「支持率」", answer: "しじりつ" },
+  { question: "この漢字の読み方は？「招待券」", answer: "しょうたいけん" },
+  { question: "この漢字の読み方は？「招待状」", answer: "しょうたいじょう" },
+  { question: "この漢字の読み方は？「授業料」", answer: "じゅぎょうりょう" },
+  { question: "この漢字の読み方は？「保育士」", answer: "ほいくし" },
+  { question: "この漢字の読み方は？「罪悪感」", answer: "ざいあくかん" },
+  { question: "この漢字の読み方は？「徳島県」", answer: "とくしまけん" },
+  { question: "この漢字の読み方は？「停留所」", answer: "ていりゅうじょ" },
+  { question: "この漢字の読み方は？「婦人服」", answer: "ふじんふく" },
+  { question: "この漢字の読み方は？「非公開」", answer: "ひこうかい" },
+  { question: "この漢字の読み方は？「再放送」", answer: "さいほうそう" },
+  { question: "この漢字の読み方は？「永久歯」", answer: "えいきゅうし" },
+  { question: "この漢字の読み方は？「可能性」", answer: "かのうせい" },
+  { question: "この漢字の読み方は？「責任者」", answer: "せきにんしゃ" },
+  { question: "この漢字の読み方は？「許可書」", answer: "きょかしょ" },
+  { question: "この漢字の読み方は？「講演会」", answer: "こうえんかい" },
+  { question: "この漢字の読み方は？「防衛力」", answer: "ぼうえいりょく" },
+  { question: "この漢字の読み方は？「往復券」", answer: "おうふくけん" },
+  { question: "この漢字の読み方は？「弁護士」", answer: "べんごし" },
+  { question: "この漢字の読み方は？「増刊号」", answer: "ぞうかんごう" },
+  { question: "この漢字の読み方は？「容疑者」", answer: "ようぎしゃ" },
+  { question: "この漢字の読み方は？「税務署」", answer: "ぜいむしょ" },
+  { question: "この漢字の読み方は？「貿易額」", answer: "ぼうえきがく" },
+  { question: "この漢字の読み方は？「非常識」", answer: "ひじょうしき" },
+  { question: "この漢字の読み方は？「授賞式」", answer: "じゅしょうしき" },
+  { question: "この漢字の読み方は？「政治家」", answer: "せいじか" },
+  { question: "この漢字の読み方は？「寄付金」", answer: "きふきん" },
+  { question: "この漢字の読み方は？「犯罪者」", answer: "はんざいしゃ" },
+  { question: "この漢字の読み方は？「綿織物」", answer: "めんおりもの" },
+  { question: "この漢字の読み方は？「可燃物」", answer: "かねんぶつ" },
+  { question: "この漢字の読み方は？「綿製品」", answer: "めんせいひん" },
+  { question: "この漢字の読み方は？「許可証」", answer: "きょかしょう" }
             ],
             6: [
                 { question: "この漢字の読み方は？「砂鉄」", answer: "さてつ" },
@@ -1262,8 +1380,94 @@
                 { question: "この漢字の読み方は？「石段」", answer: "いしだん" },
                 { question: "この漢字の読み方は？「役割」", answer: "やくわり" },
                 { question: "この漢字の読み方は？「牛乳」", answer: "ぎゅうにゅう" },
-                { question: "この漢字の読み方は？「綿棒」", answer: "めんぼう" }
-            ]
+                { question: "この漢字の読み方は？「綿棒」", answer: "めんぼう" },
+                { question: "この漢字の読み方は？「親不孝」", answer: "おやふこう" },
+  { question: "この漢字の読み方は？「家系図」", answer: "かけいず" },
+  { question: "この漢字の読み方は？「一覧表」", answer: "いちらんひょう" },
+  { question: "この漢字の読み方は？「生存者」", answer: "せいぞんしゃ" },
+  { question: "この漢字の読み方は？「下処理」", answer: "したしょり" },
+  { question: "この漢字の読み方は？「金閣寺」", answer: "きんかくじ" },
+  { question: "この漢字の読み方は？「水蒸気」", answer: "すいじょうき" },
+  { question: "この漢字の読み方は？「人形劇」", answer: "にんぎょうげき" },
+  { question: "この漢字の読み方は？「火山灰」", answer: "かざんばい" },
+  { question: "この漢字の読み方は？「作詞家」", answer: "さくしか" },
+  { question: "この漢字の読み方は？「親孝行」", answer: "おやこうこう" },
+  { question: "この漢字の読み方は？「合衆国」", answer: "がっしゅうこく" },
+  { question: "この漢字の読み方は？「原寸大」", answer: "げんすんだい" },
+  { question: "この漢字の読み方は？「週刊誌」", answer: "しゅうかんし" },
+  { question: "この漢字の読み方は？「形容詞」", answer: "けいようし" },
+  { question: "この漢字の読み方は？「銀河系」", answer: "ぎんがけい" },
+  { question: "この漢字の読み方は？「消防署」", answer: "しょうぼうしょ" },
+  { question: "この漢字の読み方は？「路地裏」", answer: "ろじうら" },
+  { question: "この漢字の読み方は？「具体策」", answer: "ぐたいさく" },
+  { question: "この漢字の読み方は？「登校班」", answer: "とうこうはん" },
+  { question: "この漢字の読み方は？「角砂糖」", answer: "かくざとう" },
+  { question: "この漢字の読み方は？「同盟国」", answer: "どうめいこく" },
+  { question: "この漢字の読み方は？「温泉街」", answer: "おんせんがい" },
+  { question: "この漢字の読み方は？「指揮者」", answer: "しきしゃ" },
+  { question: "この漢字の読み方は？「急展開」", answer: "きゅうてんかい" },
+  { question: "この漢字の読み方は？「住宅地」", answer: "じゅうたくち" },
+  { question: "この漢字の読み方は？「遊覧船」", answer: "ゆうらんせん" },
+  { question: "この漢字の読み方は？「放射線」", answer: "ほうしゃせん" },
+  { question: "この漢字の読み方は？「両陛下」", answer: "りょうへいか" },
+  { question: "この漢字の読み方は？「果樹園」", answer: "かじゅえん" },
+  { question: "この漢字の読み方は？「観覧車」", answer: "かんらんしゃ" },
+  { question: "この漢字の読み方は？「街路樹」", answer: "がいろじゅ" },
+  { question: "この漢字の読み方は？「注射針」", answer: "ちゅうしゃばり" },
+  { question: "この漢字の読み方は？「温泉卵」", answer: "おんせんたまご" },
+  { question: "この漢字の読み方は？「深呼吸」", answer: "しんこきゅう" },
+  { question: "この漢字の読み方は？「神秘的」", answer: "しんぴてき" },
+  { question: "この漢字の読み方は？「活断層」", answer: "かつだんそう" },
+  { question: "この漢字の読み方は？「同窓会」", answer: "どうそうかい" },
+  { question: "この漢字の読み方は？「平均値」", answer: "へいきんち" },
+  { question: "この漢字の読み方は？「意欲的」", answer: "いよくてき" },
+  { question: "この漢字の読み方は？「聖火台」", answer: "せいかだい" },
+  { question: "この漢字の読み方は？「探知機」", answer: "たんちき" },
+  { question: "この漢字の読み方は？「著名人」", answer: "ちょめいじん" },
+  { question: "この漢字の読み方は？「城下町」", answer: "じょうかまち" },
+  { question: "この漢字の読み方は？「誕生日」", answer: "たんじょうび" },
+  { question: "この漢字の読み方は？「容疑者」", answer: "ようぎしゃ" },
+  { question: "この漢字の読み方は？「税務署」", answer: "ぜいむしょ" },
+  { question: "この漢字の読み方は？「冷蔵庫」", answer: "れいぞうこ" },
+  { question: "この漢字の読み方は？「博覧会」", answer: "はくらんかい" },
+  { question: "この漢字の読み方は？「革新的」", answer: "かくしんてき" },
+  { question: "この漢字の読み方は？「肺活量」", answer: "はいかつりょう" },
+  { question: "この漢字の読み方は？「聖歌隊」", answer: "せいかたい" },
+  { question: "この漢字の読み方は？「宗教家」", answer: "しゅうきょうか" },
+  { question: "この漢字の読み方は？「貴金属」", answer: "ききんぞく" },
+  { question: "この漢字の読み方は？「派出所」", answer: "はしゅつじょ" },
+  { question: "この漢字の読み方は？「展望台」", answer: "てんぼうだい" },
+  { question: "この漢字の読み方は？「鋼鉄所」", answer: "こうてつじょ" },
+  { question: "この漢字の読み方は？「亡命者」", answer: "ぼうめいしゃ" },
+  { question: "この漢字の読み方は？「従業員」", answer: "じゅうぎょういん" },
+  { question: "この漢字の読み方は？「洗面所」", answer: "せんめんじょ" },
+  { question: "この漢字の読み方は？「著作権」", answer: "ちょさくけん" },
+  { question: "この漢字の読み方は？「割引券」", answer: "わりびきけん" },
+  { question: "この漢字の読み方は？「難易度」", answer: "なんいど" },
+  { question: "この漢字の読み方は？「絹織物」", answer: "きぬおりもの" },
+  { question: "この漢字の読み方は？「片仮名」", answer: "かたかな" },
+  { question: "この漢字の読み方は？「就職先」", answer: "しゅうしょくさき" },
+  { question: "この漢字の読み方は？「警察官」", answer: "けいさつかん" },
+  { question: "この漢字の読み方は？「郵便局」", answer: "ゆうびんきょく" },
+  { question: "この漢字の読み方は？「障害物」", answer: "しょうがいぶつ" },
+  { question: "この漢字の読み方は？「棒磁石」", answer: "ぼうじしゃく" },
+  { question: "この漢字の読み方は？「就職難」", answer: "しゅうしょくなん" },
+  { question: "この漢字の読み方は？「看護師」", answer: "かんごし" },
+  { question: "この漢字の読み方は？「裁判官」", answer: "さいばんかん" },
+  { question: "この漢字の読み方は？「探査機」", answer: "たんさき" },
+  { question: "この漢字の読み方は？「批判的」", answer: "ひはんてき" },
+  { question: "この漢字の読み方は？「乳製品」", answer: "にゅうせいひん" },
+  { question: "この漢字の読み方は？「拡大図」", answer: "かくだいず" },
+  { question: "この漢字の読み方は？「腹話術」", answer: "ふくわじゅつ" },
+  { question: "この漢字の読み方は？「郵便物」", answer: "ゆうびんぶつ" },
+  { question: "この漢字の読み方は？「存在感」", answer: "そんざいかん" },
+  { question: "この漢字の読み方は？「展覧会」", answer: "てんらんかい" },
+  { question: "この漢字の読み方は？「警視庁」", answer: "けいしちょう" },
+  { question: "この漢字の読み方は？「乳幼児」", answer: "にゅうようじ" },
+  { question: "この漢字の読み方は？「尊敬語」", answer: "そんけいご" },
+  { question: "この漢字の読み方は？「討論会」", answer: "とうろんかい" },
+  { question: "この漢字の読み方は？「忠誠心」", answer: "ちゅうせいしん" }
+           ],
         };
         
         // カードの種類と出現割合
@@ -1744,8 +1948,14 @@
             const questionText = document.getElementById('questionText');
             const answerInput = document.getElementById('answerInput');
             
-            const questions = questionsByGrade[selectedGrade];
-            currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+            currentQuestion = pickQuestion(selectedGrade);
+if (!currentQuestion) {
+  // あり得ない想定だが保険
+  alert('問題が見つかりませんでした');
+  closeModal('questionModal');
+  switchToNextPlayer();
+  return;
+}
             
             questionText.textContent = currentQuestion.question;
             answerInput.value = '';
@@ -2241,8 +2451,13 @@
             pendingAnswerFor = 2;
             
             // 問題を生成（AIも同じ問題データを使用）
-            const questions = questionsByGrade[selectedGrade];
-            currentQuestion = questions[Math.floor(Math.random() * questions.length)];
+            currentQuestion = pickQuestion(selectedGrade);
+if (!currentQuestion) {
+  // 念のための保険
+  console.warn('AI: 問題が見つからずスキップ');
+  switchToNextPlayer();
+  return;
+}
             
             // AIは95%の確率で正解
             const isCorrect = Math.random() < 0.95;
@@ -2333,7 +2548,9 @@
             turnId = 0;
             // タイマー関連もリセット
             timeLeft = 15;
-
+　　　　　　// ★追加: 問題履歴を初期化
+questionHistory = { 4: new Set(), 5: new Set(), 6: new Set() };
+            
             document.getElementById('winnerModal').style.display = 'none';
             
             // サイコロエリアを初期状態に戻す
@@ -2725,6 +2942,9 @@
             turnId = 0;
             // タイマー関連もリセット
             timeLeft = 15;
+
+            // ★追加: 問題履歴を初期化
+questionHistory = { 4: new Set(), 5: new Set(), 6: new Set() };
             
             // 全てのモーダルを閉じる
             document.getElementById('quitModal').style.display = 'none';
