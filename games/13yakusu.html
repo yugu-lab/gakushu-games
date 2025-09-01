@@ -18,7 +18,7 @@
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <!-- メインタイトル -->
-        <div class="text-center mb-8">
+        <div id="mainTitle" class="text-center mb-8">
             <h1 class="text-4xl font-bold text-indigo-800 mb-2">約数選択ゲーム</h1>
             <p class="text-gray-600">数の約数を素早く見つけよう！</p>
         </div>
@@ -76,6 +76,31 @@
             </div>
 
             <div id="modeSpecificRules"></div>
+
+            <!-- 名前入力欄（2人モードの場合のみ表示） -->
+            <div id="nameInputSection" class="mb-6 hidden">
+                <h3 class="text-lg font-medium text-gray-700 mb-3">プレイヤー名設定</h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">プレイヤー1の名前</label>
+                        <input type="text" id="rulesPlayer1Name" value="プレイヤー1" onclick="this.select()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">プレイヤー2の名前</label>
+                        <input type="text" id="rulesPlayer2Name" value="プレイヤー2" onclick="this.select()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">先取ポイント数</label>
+                    <select id="rulesTargetScore" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="3">3点先取</option>
+                        <option value="5">5点先取</option>
+                        <option value="7">7点先取</option>
+                        <option value="10">10点先取</option>
+                    </select>
+                </div>
+            </div>
 
             <div class="flex gap-4 justify-center">
                 <button onclick="backToMenu()" class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-6 rounded-lg transition-colors">
@@ -150,19 +175,19 @@
         </div>
 
         <!-- ゲーム画面 -->
-        <div id="gameScreen" class="bg-white rounded-xl shadow-lg p-8 hidden">
-            <!-- ゲーム情報 -->
-            <div id="gameInfo" class="mb-6"></div>
+        <div id="gameScreen" class="bg-white rounded-xl shadow-lg p-1 hidden">
+            <!-- ゲーム情報（1人モードのみ表示） -->
+            <div id="gameInfo" class="mb-4"></div>
             
             <!-- 1人モード用問題表示 -->
-            <div id="singleModeProblem" class="text-center mb-8 hidden">
+            <div id="singleModeProblem" class="text-center mb-6 hidden">
                 <div class="text-lg text-gray-600 mb-2">この数の約数を全て選択してください</div>
                 <div id="currentNumberSingle" class="text-6xl font-bold text-indigo-600 mb-4">12</div>
                 <div id="gameStatusSingle" class="text-sm text-gray-500"></div>
             </div>
 
             <!-- 選択ボタン -->
-            <div class="mb-6">
+            <div class="mb-2">
                 <!-- 1人モード用ボタン -->
                 <div id="singleModeButtons" class="hidden">
                     <div class="text-center mb-4">
@@ -175,54 +200,63 @@
                 <!-- 2人モード用レイアウト -->
                 <div id="multiModeButtons" class="hidden">
                     <!-- プレイヤー2エリア（上側・逆向き） -->
-                    <div class="p-4 bg-green-50 rounded-lg mb-4 transform rotate-180">
-                        <div class="text-center mb-4">
-                            <h3 class="text-lg font-semibold text-green-800" id="player2NameDisplay">プレイヤー2</h3>
-                            <div class="text-sm text-green-600">選択した約数: <span id="player2Selected" class="font-medium">なし</span></div>
+                    <div class="p-1 bg-green-50 rounded mb-1 transform rotate-180">
+                        <div class="text-center mb-1">
+                            <h3 class="text-xs font-semibold text-green-800" id="player2NameDisplay">プレイヤー2</h3>
+                            <div class="text-xs text-green-600"><span id="player2Selected" class="font-medium">なし</span></div>
                         </div>
-                        <div id="player2Buttons" class="grid grid-cols-10 gap-2 max-w-4xl mx-auto"></div>
-                        <div class="text-center mt-4">
-                            <button id="player2SubmitBtn" onclick="submitMultiAnswer(2)" class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                        <div id="player2Buttons" class="grid grid-cols-10 gap-0.5 max-w-3xl mx-auto mb-1"></div>
+                        <div class="text-center">
+                            <button id="player2SubmitBtn" onclick="submitMultiAnswer(2)" class="bg-green-500 hover:bg-green-600 text-white font-medium py-1 px-3 rounded text-xs transition-colors">
                                 送信
                             </button>
                         </div>
                     </div>
 
                     <!-- 問題表示（中央） -->
-                    <div class="py-6 bg-gray-50 rounded-lg mb-4">
-                        <div class="text-center text-lg text-gray-600 mb-2">この数の約数を全て選択してください</div>
-                        <div class="flex justify-between items-center px-8">
+                    <div class="py-1 bg-gray-50 rounded mb-1">
+                        <div class="flex justify-between items-center px-2">
                             <!-- プレイヤー2の情報（左側・逆向き） -->
-                            <div class="flex flex-col items-center transform rotate-180 w-32">
-                                <div class="text-lg font-bold text-green-800" id="player2ScoreArea"></div>
-                                <div id="player2Status" class="text-sm mt-2 font-medium"></div>
+                            <div class="flex flex-col items-center transform rotate-180 w-16">
+                                <div class="text-xs font-bold text-green-800" id="player2ScoreArea"></div>
+                                <div id="player2Status" class="text-xs mt-1 font-medium"></div>
                             </div>
                             
                             <!-- 問題数字（中央） -->
-                            <div class="flex justify-center items-center space-x-8">
-                                <div id="currentNumberP2" class="text-4xl font-bold text-green-600 transform rotate-180">12</div>
-                                <div id="currentNumberP1" class="text-4xl font-bold text-blue-600">12</div>
+                            <div class="flex justify-center items-center flex-1">
+                                <div class="bg-white rounded-xl px-20 py-6 shadow-lg border-4 border-indigo-200 w-full max-w-2xl">
+                                    <div class="text-center">
+                                        <div class="text-sm text-gray-500 mb-4 transform rotate-180">問題</div>
+                                        <div class="flex items-center justify-center space-x-24">
+                                            <div id="currentNumberP2" class="text-6xl font-bold text-indigo-600 transform rotate-180">12</div>
+                                            <div class="w-px h-20 bg-gray-300"></div>
+                                            <div id="currentNumberP1" class="text-6xl font-bold text-indigo-600">12</div>
+                                        </div>
+                                        <div class="text-sm text-gray-500 mt-4">この数の約数を選択</div>
+                                        <div class="text-sm text-gray-500 mt-1 transform rotate-180">この数の約数を選択</div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- プレイヤー1の情報（右側・通常向き） -->
-                            <div class="flex flex-col items-center w-32">
-                                <div class="text-lg font-bold text-blue-800" id="player1ScoreArea"></div>
-                                <div id="player1Status" class="text-sm mt-2 font-medium"></div>
+                            <div class="flex flex-col items-center w-16">
+                                <div class="text-xs font-bold text-blue-800" id="player1ScoreArea"></div>
+                                <div id="player1Status" class="text-xs mt-1 font-medium"></div>
                             </div>
                         </div>
-                        <div id="gameStatus" class="text-sm text-gray-500 mt-4 text-center">両プレイヤーが回答してください</div>
-                        <div id="currentTurnIndicator" class="text-lg font-bold mt-2 text-center"></div>
+                        <div id="gameStatus" class="text-xs text-gray-500 mt-1 text-center">早押しで回答してください！</div>
+                        <div id="currentTurnIndicator" class="text-xs font-bold text-center"></div>
                     </div>
 
                     <!-- プレイヤー1エリア（下側・通常向き） -->
-                    <div class="p-4 bg-blue-50 rounded-lg">
-                        <div class="text-center mb-4">
-                            <h3 class="text-lg font-semibold text-blue-800" id="player1NameDisplay">プレイヤー1</h3>
-                            <div class="text-sm text-blue-600">選択した約数: <span id="player1Selected" class="font-medium">なし</span></div>
+                    <div class="p-1 bg-blue-50 rounded">
+                        <div class="text-center mb-1">
+                            <h3 class="text-xs font-semibold text-blue-800" id="player1NameDisplay">プレイヤー1</h3>
+                            <div class="text-xs text-blue-600"><span id="player1Selected" class="font-medium">なし</span></div>
                         </div>
-                        <div id="player1Buttons" class="grid grid-cols-10 gap-2 max-w-4xl mx-auto"></div>
-                        <div class="text-center mt-4">
-                            <button id="player1SubmitBtn" onclick="submitMultiAnswer(1)" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                        <div id="player1Buttons" class="grid grid-cols-10 gap-0.5 max-w-3xl mx-auto mb-1"></div>
+                        <div class="text-center">
+                            <button id="player1SubmitBtn" onclick="submitMultiAnswer(1)" class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-1 px-3 rounded text-xs transition-colors">
                                 送信
                             </button>
                         </div>
@@ -241,7 +275,7 @@
             </div>
 
             <!-- 結果表示 -->
-            <div id="resultDisplay" class="mt-6 text-center hidden"></div>
+            <div id="resultDisplay" class="mt-2 text-center hidden"></div>
         </div>
 
         <!-- 結果画面 -->
@@ -328,6 +362,7 @@
                         </div>
                     </div>
                 `;
+                document.getElementById('nameInputSection').classList.add('hidden');
                 document.getElementById('startGameBtn').onclick = startSingleGame;
             } else {
                 modeRules.innerHTML = `
@@ -343,7 +378,8 @@
                         </div>
                     </div>
                 `;
-                document.getElementById('startGameBtn').onclick = showMultiSetup;
+                document.getElementById('nameInputSection').classList.remove('hidden');
+                document.getElementById('startGameBtn').onclick = startMultiGameFromRules;
             }
             
             showScreen('rulesScreen');
@@ -360,6 +396,8 @@
         function backToMenu() {
             showScreen('mainMenu');
             resetGame();
+            // タイトルを再表示
+            document.getElementById('mainTitle').style.display = 'block';
         }
 
         function resetGame() {
@@ -420,7 +458,7 @@
                 for (let i = 1; i <= 20; i++) {
                     const button = document.createElement('button');
                     button.textContent = i;
-                    button.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-3 rounded transition-colors';
+                    button.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-2 rounded transition-colors text-sm';
                     button.onclick = () => togglePlayerNumber(1, i, button);
                     button.id = `p1-btn-${i}`;
                     player1Container.appendChild(button);
@@ -433,7 +471,7 @@
                 for (let i = 1; i <= 20; i++) {
                     const button = document.createElement('button');
                     button.textContent = i;
-                    button.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-3 rounded transition-colors';
+                    button.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-2 rounded transition-colors text-sm';
                     button.onclick = () => togglePlayerNumber(2, i, button);
                     button.id = `p2-btn-${i}`;
                     player2Container.appendChild(button);
@@ -465,11 +503,11 @@
             if (index === -1) {
                 selectedArray.push(num);
                 button.className = player === 1 ? 
-                    'bg-blue-500 text-white font-medium py-2 px-3 rounded transition-colors' :
-                    'bg-green-500 text-white font-medium py-2 px-3 rounded transition-colors';
+                    'bg-blue-500 text-white font-medium py-2 px-2 rounded transition-colors text-sm' :
+                    'bg-green-500 text-white font-medium py-2 px-2 rounded transition-colors text-sm';
             } else {
                 selectedArray.splice(index, 1);
-                button.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-3 rounded transition-colors';
+                button.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-2 rounded transition-colors text-sm';
             }
             
             updatePlayerSelectedDisplay(player);
@@ -526,6 +564,7 @@
             document.getElementById('multiModeButtons').classList.add('hidden');
             
             // ゲーム情報表示
+            document.getElementById('gameInfo').style.display = 'block';
             document.getElementById('gameInfo').innerHTML = `
                 <div class="flex justify-between items-center bg-blue-50 p-4 rounded-lg">
                     <div class="text-blue-800">
@@ -543,6 +582,34 @@
             startNewQuestion();
             startTimer();
             singleLocked = false;
+        }
+
+        function startMultiGameFromRules() {
+            gameMode = 'multi';
+            player1Name = document.getElementById('rulesPlayer1Name').value || 'プレイヤー1';
+            player2Name = document.getElementById('rulesPlayer2Name').value || 'プレイヤー2';
+            targetScore = parseInt(document.getElementById('rulesTargetScore').value);
+            
+            showScreen('gameScreen');
+            resetGame();
+            
+            // 2人モード用UI表示
+            document.getElementById('singleModeProblem').classList.add('hidden');
+            document.getElementById('singleModeButtons').classList.add('hidden');
+            document.getElementById('singleModeControls').classList.add('hidden');
+            document.getElementById('multiModeButtons').classList.remove('hidden');
+            
+            // プレイヤー名を表示に反映
+            document.getElementById('player1NameDisplay').textContent = player1Name;
+            document.getElementById('player2NameDisplay').textContent = player2Name;
+            
+            // ゲーム情報を非表示（2人モードでは不要）
+            document.getElementById('gameInfo').style.display = 'none';
+            
+            // タイトルを非表示（2人モードでは不要）
+            document.getElementById('mainTitle').style.display = 'none';
+            
+            startNewMultiQuestion();
         }
 
         function startMultiGame() {
@@ -564,14 +631,11 @@
             document.getElementById('player1NameDisplay').textContent = player1Name;
             document.getElementById('player2NameDisplay').textContent = player2Name;
             
-            // ゲーム情報表示
-            document.getElementById('gameInfo').innerHTML = `
-                <div class="bg-purple-50 p-4 rounded-lg">
-                    <div class="text-center text-purple-800">
-                        <span class="font-medium text-xl">${targetScore}点先取</span>
-                    </div>
-                </div>
-            `;
+            // ゲーム情報を非表示（2人モードでは不要）
+            document.getElementById('gameInfo').style.display = 'none';
+            
+            // タイトルを非表示（2人モードでは不要）
+            document.getElementById('mainTitle').style.display = 'none';
             
             startNewMultiQuestion();
         }
@@ -729,11 +793,22 @@
                 const resultDiv = document.getElementById('resultDisplay');
                 resultDiv.classList.remove('hidden');
                 resultDiv.innerHTML = `
-                    <div class="bg-green-100 border-2 border-green-400 p-4 rounded-lg">
-                        <div class="text-center">
-                            <div class="text-xl font-bold text-green-800 mb-2">🎉 ${playerName} 正解！</div>
-                            <div class="text-lg text-green-700">正解: ${correctDivisors.join(', ')}</div>
-                            <div class="text-lg font-bold text-purple-600 mt-2">${playerName}が1ポイント獲得！</div>
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex flex-col z-50">
+                        <!-- プレイヤー2用（上半分・逆向き） -->
+                        <div class="flex-1 bg-green-100 border-b-2 border-green-400 flex items-center justify-center transform rotate-180">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-800 mb-2">🎉 ${playerName} 正解！</div>
+                                <div class="text-lg text-green-700">正解: ${correctDivisors.join(', ')}</div>
+                                <div class="text-xl font-bold text-purple-600 mt-2">${playerName}が1ポイント獲得！</div>
+                            </div>
+                        </div>
+                        <!-- プレイヤー1用（下半分・通常向き） -->
+                        <div class="flex-1 bg-green-100 border-t-2 border-green-400 flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-800 mb-2">🎉 ${playerName} 正解！</div>
+                                <div class="text-lg text-green-700">正解: ${correctDivisors.join(', ')}</div>
+                                <div class="text-xl font-bold text-purple-600 mt-2">${playerName}が1ポイント獲得！</div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -768,11 +843,22 @@
                 const resultDiv = document.getElementById('resultDisplay');
                 resultDiv.classList.remove('hidden');
                 resultDiv.innerHTML = `
-                    <div class="bg-red-100 border-2 border-red-400 p-4 rounded-lg">
-                        <div class="text-center">
-                            <div class="text-lg font-bold text-red-800">${playerName} 不正解</div>
-                            <div class="text-sm text-red-700">回答: ${selectedArray.sort((a, b) => a - b).join(', ') || 'なし'}</div>
-                            <div class="text-lg font-bold text-blue-600 mt-2">${otherPlayerName}に解答権が移りました</div>
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex flex-col z-50">
+                        <!-- プレイヤー2用（上半分・逆向き） -->
+                        <div class="flex-1 bg-red-100 border-b-2 border-red-400 flex items-center justify-center transform rotate-180">
+                            <div class="text-center">
+                                <div class="text-xl font-bold text-red-800">${playerName} 不正解</div>
+                                <div class="text-lg text-red-700">回答: ${selectedArray.sort((a, b) => a - b).join(', ') || 'なし'}</div>
+                                <div class="text-lg font-bold text-blue-600 mt-2">${otherPlayerName}のターン</div>
+                            </div>
+                        </div>
+                        <!-- プレイヤー1用（下半分・通常向き） -->
+                        <div class="flex-1 bg-red-100 border-t-2 border-red-400 flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="text-xl font-bold text-red-800">${playerName} 不正解</div>
+                                <div class="text-lg text-red-700">回答: ${selectedArray.sort((a, b) => a - b).join(', ') || 'なし'}</div>
+                                <div class="text-lg font-bold text-blue-600 mt-2">${otherPlayerName}のターン</div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -867,5 +953,5 @@
         createNumberButtons();
         updateSelectedDisplay();
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'975e8a8064ab9aae',t:'MTc1NjMyODg3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9785d59391098384',t:'MTc1Njc0MDg5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
