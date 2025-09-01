@@ -767,7 +767,7 @@
     <!-- 問題モーダル -->
     <div class="question-modal" id="questionModal">
         <div class="question-content">
-            <div class="timer-display" id="timerDisplay">15</div>
+            <div class="timer-display" id="timerDisplay">20</div>
             <h3>漢字問題</h3>
             <div class="question-text" id="questionText"></div>
             <input type="text" class="answer-input" id="answerInput" placeholder="ひらがなで答えを入力してください" onkeypress="if(event.key==='Enter') submitAnswer()">
@@ -915,7 +915,7 @@
         let turnId = 0;
         // 15秒タイマー関連
         let answerTimer = null;
-        let timeLeft = 15;
+        let timeLeft = 20;
         
         // ルーレット関連変数
         let rouletteInterval = null;
@@ -1890,9 +1890,9 @@ function pickQuestion(grade){
             }, 100);
         }
         
-        // 15秒タイマーを開始
+        // 20秒タイマーを開始
         function startAnswerTimer() {
-            timeLeft = 15;
+            timeLeft = 20;
             const timerDisplay = document.getElementById('timerDisplay');
             timerDisplay.textContent = timeLeft;
             timerDisplay.className = 'timer-display';
@@ -2547,7 +2547,7 @@ if (!currentQuestion) {
             // ターンIDもリセット
             turnId = 0;
             // タイマー関連もリセット
-            timeLeft = 15;
+            timeLeft = 20;
 　　　　　　// ★追加: 問題履歴を初期化
 questionHistory = { 4: new Set(), 5: new Set(), 6: new Set() };
             
