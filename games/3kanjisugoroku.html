@@ -3031,4 +3031,58 @@ questionHistory = { 4: new Set(), 5: new Set(), 6: new Set() };
         
         // ゲーム初期化は proceedAfterRoulette() で実行されるため、ここでは不要
     </script>
+    <script>
+function openModal(id, focusSel){
+  const el=document.getElementById(id); if(!el) return;
+  el.style.display='flex';
+  if(focusSel){ setTimeout(()=>{ const t=document.querySelector(focusSel); t&&t.focus(); },0); }
+}
+function closeModal(id){ const el=document.getElementById(id); if(el) el.style.display='none'; }
+function closeAllPopups(){
+  ['questionModal','cardModal','cardPopup','shieldPopup','answerPopup','cardUsePopup','winnerModal','quitModal','firstPlayerModal']
+    .forEach(closeModal);
+}
+// 設定の保存/復元（ローカルストレージ）
+function saveSettings(){
+  try{
+    localStorage.setItem('kanji-sugoroku', JSON.stringify({
+      p1: players[1].name, p2: players[2].name,
+      grade: selectedGrade, isAIGame, playerCount
+    }));
+  }catch(e){}
+}
+(function loadSettings(){
+  try{
+    const s=JSON.parse(localStorage.getItem('kanji-sugoroku')||'null'); if(!s) return;
+    document.getElementById('player1Name').value = s.p1||'プレイヤー1';
+    const p2=document.getElementById('player2Name'); if(p2) p2.value = s.p2||'プレイヤー2';
+    document.getElementById('gradeSelect').value = String(s.grade||4);
+    document.getElementById('playerCountSelect').value = String(s.isAIGame?1:(s.playerCount||2));
+    togglePlayer2Input();
+  }catch(e){}
+})();
+// 終了確認まわり
+function showQuitConfirm(){ openModal('quitModal'); }
+function closeQuitConfirm(){ closeModal('quitModal'); }
+function quitGame(){
+  closeQuitConfirm();
+  resetGame();
+  document.getElementById('gameContainer').style.display='none';
+  document.getElementById('setupScreen').style.display='flex';
+}
+// カードモーダルを閉じる（保険）— 既に定義がなければ作る
+if (typeof closeCardMenu !== 'function') {
+  function closeCardMenu() { closeModal('cardModal'); }
+}
+
+// カード機能が未実装でも落ちないようにする保険
+if (typeof useCard !== 'function') {
+  function useCard(playerNum, idx){
+    closeCardMenu();
+    toast('この版ではカード使用は未実装です');
+    unlockInputsForCurrentPlayer();
+  }
+    
+</script>
+</body>
 </html>
