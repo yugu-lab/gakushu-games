@@ -1,1 +1,1063 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>最大公約数バトル！</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+        
+        :root {
+            --safe-top: env(safe-area-inset-top);
+            --safe-right: env(safe-area-inset-right);
+            --safe-bottom: env(safe-area-inset-bottom);
+            --safe-left: env(safe-area-inset-left);
+        }
+        
+        html, body { 
+            height: 100%; 
+            font-family: 'Nunito', sans-serif;
+        }
+        
+        body {
+            padding: max(10px, var(--safe-top)) max(10px, var(--safe-right))
+                     max(10px, var(--safe-bottom)) max(10px, var(--safe-left));
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        
+        .card {
+            transition: all 0.3s ease;
+            transform-style: preserve-3d;
+        }
+        
+        .card:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        .card.selected {
+            transform: translateY(-12px) scale(1.1);
+            box-shadow: 0 25px 50px rgba(59, 130, 246, 0.4);
+        }
+        
+        .popup {
+            animation: popupBounce 0.6s ease-out;
+        }
+        
+        @keyframes popupBounce {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            50% { transform: scale(1.2) rotate(-10deg); opacity: 0.8; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        
+        .damage-animation {
+            animation: damageShake 0.5s ease-in-out;
+        }
+        
+        @keyframes damageShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .hp-bar {
+            transition: width 0.8s ease-out;
+        }
+        
+        .number-button {
+            transition: all 0.2s ease;
+        }
+        
+        .number-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+        
+        .number-button:active {
+            transform: scale(0.95);
+        }
+        
+        .celebration {
+            animation: celebrate 1s ease-out;
+        }
+        
+        @keyframes celebrate {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.2) rotate(5deg); }
+            50% { transform: scale(1.1) rotate(-5deg); }
+            75% { transform: scale(1.15) rotate(3deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        
+        .wrong-answer {
+            animation: wrongShake 0.6s ease-in-out;
+        }
+        
+        @keyframes wrongShake {
+            0%, 100% { transform: translateX(0) scale(1); }
+            20% { transform: translateX(-15px) scale(1.05); }
+            40% { transform: translateX(15px) scale(0.95); }
+            60% { transform: translateX(-10px) scale(1.05); }
+            80% { transform: translateX(10px) scale(0.95); }
+        }
+        
+        .sparkle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: gold;
+            border-radius: 50%;
+            animation: sparkleAnim 1s ease-out forwards;
+        }
+        
+        @keyframes sparkleAnim {
+            0% { transform: scale(0) rotate(0deg); opacity: 1; }
+            50% { transform: scale(1) rotate(180deg); opacity: 0.8; }
+            100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        }
+        
+        .big-damage {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            z-index: 1000 !important;
+            font-size: 4rem !important;
+            color: #dc2626 !important;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            animation: bigDamageText 2s ease-out;
+            pointer-events: none;
+            text-align: center;
+            line-height: 1.2;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem 3rem;
+            border-radius: 2rem;
+            border: 4px solid #dc2626;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        @keyframes bigDamageText {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(-180deg); opacity: 0; }
+            30% { transform: translate(-50%, -50%) scale(1.5) rotate(10deg); opacity: 1; }
+            60% { transform: translate(-50%, -50%) scale(1.2) rotate(-5deg); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+        }
+        
+        .input-display-base {
+            font-size: 4rem !important;
+            font-weight: 900 !important;
+            color: #7c3aed !important;
+            text-shadow: 4px 4px 8px rgba(0,0,0,0.4);
+        }
+        
+        .input-pulse {
+            animation: inputPulse 0.3s ease-out;
+        }
+        
+        @keyframes inputPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        
+        .fullscreen-celebration {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 999 !important;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 215, 0, 0.1);
+            animation: fullscreenCelebrate 2s ease-out;
+        }
+        
+        @keyframes fullscreenCelebrate {
+            0% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0; transform: scale(1); }
+        }
+        
+        .mega-sparkle {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(45deg, gold, orange);
+            border-radius: 50%;
+            animation: megaSparkleAnim 2s ease-out forwards;
+        }
+        
+        @keyframes megaSparkleAnim {
+            0% { transform: scale(0) rotate(0deg); opacity: 1; }
+            50% { transform: scale(2) rotate(180deg); opacity: 0.8; }
+            100% { transform: scale(0) rotate(360deg); opacity: 0; }
+        }
+        
+        /* スクリーンリーダー専用（視覚的に隠す） */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        /* 動きが苦手な子向け／省電力 */
+        @media (prefers-reduced-motion: reduce){
+            * { animation: none !important; transition: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 min-h-[100dvh]">
+    <!-- 縦向き時の誘導オーバーレイ -->
+    <div id="rotateOverlay" class="fixed inset-0 bg-black/70 text-white hidden items-center justify-center text-center p-8 z-[1000]">
+        <div>
+            <div class="text-4xl font-extrabold mb-4">📱 画面を横向きにしてね</div>
+            <div class="text-lg opacity-80">iPadを横に回転すると遊びやすいよ</div>
+        </div>
+    </div>
+
+    <!-- ゲームモード選択画面 -->
+    <div id="modeSelect" class="flex items-center justify-center h-[100dvh] max-h-[100dvh] overflow-hidden p-4">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 text-center w-full max-w-2xl">
+            <h1 class="text-5xl font-bold text-purple-600 mb-6 leading-tight">🎯 最大公約数バトル！</h1>
+            <p class="text-xl text-gray-600 mb-8 leading-relaxed">カードを出して最大公約数を計算しよう！</p>
+            <div class="space-y-6">
+                <button onclick="selectMode('cpu')" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-6 px-8 rounded-2xl text-2xl font-bold hover:from-blue-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-lg">
+                    🤖 CPU対戦
+                </button>
+                <button onclick="selectMode('pvp')" class="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-6 px-8 rounded-2xl text-2xl font-bold hover:from-green-600 hover:to-teal-700 transform hover:scale-105 transition-all duration-200 shadow-lg">
+                    👥 2人対戦
+                </button>
+                <div class="mt-6 text-left">
+                    <label class="block text-sm font-semibold mb-2">難易度</label>
+                    <select id="difficulty" class="w-full border-2 border-purple-300 rounded-xl p-3">
+                        <option value="easy">やさしい</option>
+                        <option value="normal" selected>ふつう</option>
+                        <option value="hard">むずかしい</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 名前入力画面 -->
+    <div id="nameInput" class="hidden flex items-center justify-center h-[100dvh] max-h-[100dvh] overflow-hidden p-4">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 text-center w-full max-w-2xl">
+            <h2 class="text-4xl font-bold text-purple-600 mb-8 leading-tight">プレイヤー名を入力してね！</h2>
+            <div id="nameInputFields" class="space-y-6">
+                <!-- JavaScript で動的に生成 -->
+            </div>
+            <button onclick="startGameWithNames()" class="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white py-6 px-8 rounded-2xl text-2xl font-bold hover:from-purple-600 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 shadow-lg mt-8">
+                ゲーム開始！
+            </button>
+        </div>
+    </div>
+
+    <!-- 読み上げ用（スクリーンリーダー対応） -->
+    <div id="live" class="sr-only" aria-live="polite" aria-atomic="true" role="status"></div>
+
+    <!-- ゲーム画面 -->
+    <div id="gameScreen" class="hidden min-h-[100dvh] p-4">
+        <!-- ターンポップアップ -->
+        <div id="turnPopup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="popup bg-white rounded-3xl p-8 text-center shadow-2xl">
+                <div id="turnText" class="text-4xl font-bold text-purple-600 mb-3"></div>
+                <div class="text-xl text-gray-600">準備はいいかな？</div>
+            </div>
+        </div>
+
+        <!-- iPad横画面最適化レイアウト -->
+        <div class="grid grid-cols-3 gap-3 h-[100dvh] max-h-[100dvh] overflow-hidden">
+            <!-- プレイヤー1（左側） -->
+            <div id="player1-panel" class="bg-white rounded-xl p-3 shadow-lg flex flex-col h-full">
+                <div class="mb-2 flex-shrink-0">
+                    <h2 id="player1-name" class="text-lg font-bold text-blue-600 mb-1">🎮 プレイヤー1</h2>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-semibold">HP:</span>
+                        <div class="w-20 bg-gray-200 rounded-full h-3">
+                            <div id="player1-hp-bar" class="hp-bar bg-green-500 h-3 rounded-full" style="width: 100%"></div>
+                        </div>
+                        <span id="player1-hp" class="text-sm font-bold">30/30</span>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col min-h-0">
+                    <div class="text-xs text-gray-500 mb-1 text-center">手札</div>
+                    <div id="player1-cards" class="flex flex-col items-center space-y-1 overflow-y-auto">
+                        <!-- カードはJavaScriptで生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中央エリア（場のカード・ゲーム情報・計算エリア） -->
+            <div class="flex flex-col justify-center space-y-2 h-full overflow-y-auto">
+                <!-- 場のカード -->
+                <div class="text-center flex-shrink-0">
+                    <div class="bg-white rounded-xl p-3 shadow-lg inline-block">
+                        <div class="text-sm font-semibold text-gray-600 mb-1">場のカード</div>
+                        <div id="field-card" class="w-20 h-24 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center text-2xl font-bold text-white shadow-xl mx-auto border-[3px] border-yellow-300 transform hover:scale-105 transition-all duration-200">
+                            30
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ゲーム情報 -->
+                <div class="text-center flex-shrink-0">
+                    <div class="bg-white rounded-xl p-2 shadow-lg inline-block">
+                        <div id="game-status" class="text-sm font-semibold text-purple-600">カードを選んでね！</div>
+                        <div id="selected-card-info" class="text-gray-600 mt-1 hidden text-xs">
+                            選択中: <span id="selected-number" class="font-bold"></span>
+                        </div>
+                        <div id="timer-display" class="text-lg font-bold text-red-500 mt-1 hidden">
+                            ⏰ <span id="timer-seconds">20</span>秒
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 計算エリア -->
+                <div id="calculation-area" class="text-center hidden flex-1 min-h-0">
+                    <div class="bg-white rounded-xl p-3 shadow-lg inline-block max-w-full">
+                        <div class="text-sm font-semibold mb-2">最大公約数を入力してね！</div>
+                        <div class="mb-2">
+                            <div id="calc-question" class="text-sm font-bold text-purple-600 mb-1"></div>
+                            <div id="user-input-display" class="text-4xl font-black text-purple-600 min-h-[60px] flex items-center justify-center bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg border-[3px] border-purple-300 mb-2">
+                                ?
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-5 gap-1 max-w-xs mx-auto">
+                            <button aria-label="数字 1" onclick="inputNumber(1)" class="number-button bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold py-2 rounded-lg shadow-lg border-2 border-blue-400 min-w-[48px] min-h-[48px]">1</button>
+                            <button aria-label="数字 2" onclick="inputNumber(2)" class="number-button bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold py-2 rounded-lg shadow-lg border-2 border-blue-400 min-w-[48px] min-h-[48px]">2</button>
+                            <button aria-label="数字 3" onclick="inputNumber(3)" class="number-button bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold py-2 rounded-lg shadow-lg border-2 border-blue-400 min-w-[48px] min-h-[48px]">3</button>
+                            <button aria-label="数字 4" onclick="inputNumber(4)" class="number-button bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold py-2 rounded-lg shadow-lg border-2 border-blue-400 min-w-[48px] min-h-[48px]">4</button>
+                            <button aria-label="数字 5" onclick="inputNumber(5)" class="number-button bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold py-2 rounded-lg shadow-lg border-2 border-blue-400 min-w-[48px] min-h-[48px]">5</button>
+                            <button aria-label="数字 6" onclick="inputNumber(6)" class="number-button bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold py-2 rounded-lg shadow-lg border-2 border-blue-400 min-w-[48px] min-h-[48px]">6</button>
+                            <button aria-label="数字 7" onclick="inputNumber(7)" class="number-button bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold py-2 rounded-lg shadow-lg border-2 border-blue-400 min-w-[48px] min-h-[48px]">7</button>
+                            <button aria-label="数字 8" onclick="inputNumber(8)" class="number-button bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold py-2 rounded-lg shadow-lg border-2 border-blue-400 min-w-[48px] min-h-[48px]">8</button>
+                            <button aria-label="数字 9" onclick="inputNumber(9)" class="number-button bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold py-2 rounded-lg shadow-lg border-2 border-blue-400 min-w-[48px] min-h-[48px]">9</button>
+                            <button aria-label="数字 0" onclick="inputNumber(0)" class="number-button bg-gradient-to-br from-blue-500 to-blue-600 text-white text-sm font-bold py-2 rounded-lg shadow-lg border-2 border-blue-400 min-w-[48px] min-h-[48px]">0</button>
+                            <button aria-label="入力をクリア" onclick="clearInput()" class="number-button bg-gradient-to-br from-red-500 to-red-600 text-white text-xs font-bold py-2 rounded-lg shadow-lg col-span-2 border-2 border-red-400 min-w-[48px] min-h-[48px]">クリア</button>
+                            <button aria-label="OK 決定" onclick="submitAnswer()" class="number-button bg-gradient-to-br from-green-500 to-green-600 text-white text-xs font-bold py-2 rounded-lg shadow-lg col-span-3 border-2 border-green-400 min-w-[48px] min-h-[48px]">OK</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- プレイヤー2（右側） -->
+            <div id="player2-panel" class="bg-white rounded-xl p-3 shadow-lg flex flex-col h-full">
+                <div class="mb-2 flex-shrink-0">
+                    <h2 id="player2-name" class="text-lg font-bold text-red-600 mb-1">🤖 CPU</h2>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-semibold">HP:</span>
+                        <div class="w-20 bg-gray-200 rounded-full h-3">
+                            <div id="player2-hp-bar" class="hp-bar bg-red-500 h-3 rounded-full" style="width: 100%"></div>
+                        </div>
+                        <span id="player2-hp" class="text-sm font-bold">30/30</span>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col min-h-0">
+                    <div class="text-xs text-gray-500 mb-1 text-center">手札</div>
+                    <div id="player2-cards" class="flex flex-col items-center space-y-1 overflow-y-auto">
+                        <!-- CPU/プレイヤー2の手札（裏面表示） -->
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg shadow-lg border-2 border-blue-400 flex items-center justify-center text-white text-sm">🎴</div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg shadow-lg border-2 border-blue-400 flex items-center justify-center text-white text-sm">🎴</div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg shadow-lg border-2 border-blue-400 flex items-center justify-center text-white text-sm">🎴</div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg shadow-lg border-2 border-blue-400 flex items-center justify-center text-white text-sm">🎴</div>
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg shadow-lg border-2 border-blue-400 flex items-center justify-center text-white text-sm">🎴</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            mode: null, // 'cpu' or 'pvp'
+            currentPlayer: 1, // 1 or 2
+            player1: { hp: 30, maxHp: 30, cards: [], name: '' },
+            player2: { hp: 30, maxHp: 30, cards: [], name: '' },
+            fieldCard: 30,
+            selectedCard: null,
+            inputValue: '',
+            isCalculating: false,
+            timer: null,
+            timeLeft: 0,
+            difficulty: 'normal' // 'easy'|'normal'|'hard'
+        };
+
+        // 最大公約数を計算
+        function gcd(a, b) {
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        // 必ず解ける場かチェック（gcd>1が1枚以上）
+        function ensureSolvable(field, hand) {
+            return hand.some(c => gcd(c, field) > 1);
+        }
+
+        // 読み上げ機能（アクセシビリティ対応）
+        function announce(msg) {
+            const live = document.getElementById('live');
+            live.textContent = ''; // 再読上げ用
+            setTimeout(() => live.textContent = msg, 10);
+        }
+
+        // 素数ではない数を生成（20-50）
+        function generateFieldCard() {
+            const nonPrimes = [];
+            for (let i = 20; i <= 50; i++) {
+                if (!isPrime(i)) {
+                    nonPrimes.push(i);
+                }
+            }
+            return nonPrimes[Math.floor(Math.random() * nonPrimes.length)];
+        }
+
+        // 素数判定
+        function isPrime(n) {
+            if (n < 2) return false;
+            for (let i = 2; i <= Math.sqrt(n); i++) {
+                if (n % i === 0) return false;
+            }
+            return true;
+        }
+
+        // カードを生成（5-20）
+        function generateCard() {
+            return Math.floor(Math.random() * 16) + 5;
+        }
+
+        // 手札を補充
+        function refillHand(player) {
+            while (player.cards.length < 5) {
+                player.cards.push(generateCard());
+            }
+        }
+
+        // タイマー開始
+        function startTimer(seconds, onTimeout) {
+            clearTimer();
+            gameState.timeLeft = seconds;
+            document.getElementById('timer-seconds').textContent = seconds;
+            document.getElementById('timer-display').classList.remove('hidden');
+            
+            gameState.timer = setInterval(() => {
+                gameState.timeLeft--;
+                document.getElementById('timer-seconds').textContent = gameState.timeLeft;
+                
+                // 残り5秒以下で色を変更
+                const timerElement = document.getElementById('timer-display');
+                if (gameState.timeLeft <= 5) {
+                    timerElement.classList.add('animate-pulse');
+                    timerElement.style.color = '#dc2626'; // red-600
+                } else {
+                    timerElement.classList.remove('animate-pulse');
+                    timerElement.style.color = '#ef4444'; // red-500
+                }
+                
+                if (gameState.timeLeft <= 0) {
+                    clearTimer();
+                    onTimeout();
+                }
+            }, 1000);
+        }
+
+        // タイマー停止
+        function clearTimer() {
+            if (gameState.timer) {
+                clearInterval(gameState.timer);
+                gameState.timer = null;
+            }
+            document.getElementById('timer-display').classList.add('hidden');
+        }
+
+        // 画面全体キラキラエフェクト
+        function createMegaSparkles() {
+            const container = document.createElement('div');
+            container.className = 'fullscreen-celebration';
+            document.body.appendChild(container);
+            
+            for (let i = 0; i < 20; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'mega-sparkle';
+                sparkle.style.left = Math.random() * window.innerWidth + 'px';
+                sparkle.style.top = Math.random() * window.innerHeight + 'px';
+                sparkle.style.animationDelay = Math.random() * 0.5 + 's';
+                container.appendChild(sparkle);
+            }
+            
+            setTimeout(() => {
+                if (container.parentNode) {
+                    container.parentNode.removeChild(container);
+                }
+            }, 2000);
+        }
+
+        // 小さなキラキラエフェクト
+        function createSparkles(element) {
+            const rect = element.getBoundingClientRect();
+            for (let i = 0; i < 8; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle';
+                sparkle.style.left = Math.random() * rect.width + 'px';
+                sparkle.style.top = Math.random() * rect.height + 'px';
+                element.style.position = 'relative';
+                element.appendChild(sparkle);
+                
+                setTimeout(() => {
+                    if (sparkle.parentNode) {
+                        sparkle.parentNode.removeChild(sparkle);
+                    }
+                }, 1000);
+            }
+        }
+
+        // 大ダメージエフェクト
+        function showBigDamage(damage, isCorrect) {
+            if (isCorrect && damage > 0) {
+                // 画面全体に巨大ダメージ表示
+                const damageElement = document.createElement('div');
+                damageElement.className = 'big-damage';
+                damageElement.innerHTML = `
+                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">💥</div>
+                    <div style="font-size: 2.5rem; font-weight: bold; margin-bottom: 0.3rem;">${damage}ダメージ！</div>
+                    <div style="font-size: 1.5rem; color: #059669;">正解です！</div>
+                `;
+                document.body.appendChild(damageElement);
+                
+                // 画面全体キラキラエフェクト
+                createMegaSparkles();
+                
+                setTimeout(() => {
+                    if (damageElement.parentNode) {
+                        damageElement.parentNode.removeChild(damageElement);
+                    }
+                }, 2000);
+            } else if (!isCorrect) {
+                // 不正解時の画面全体振動
+                document.body.classList.add('wrong-answer');
+                
+                // 不正解ポップアップ
+                const wrongElement = document.createElement('div');
+                wrongElement.className = 'big-damage';
+                wrongElement.style.color = '#dc2626';
+                wrongElement.style.borderColor = '#dc2626';
+                wrongElement.innerHTML = `
+                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">❌</div>
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.3rem;">不正解...</div>
+                    <div style="font-size: 1.3rem; color: #6b7280;">ダメージなし</div>
+                `;
+                document.body.appendChild(wrongElement);
+                
+                setTimeout(() => {
+                    document.body.classList.remove('wrong-answer');
+                    if (wrongElement.parentNode) {
+                        wrongElement.parentNode.removeChild(wrongElement);
+                    }
+                }, 1500);
+            }
+        }
+
+        // モード選択
+        function selectMode(mode) {
+            gameState.mode = mode;
+            document.getElementById('modeSelect').classList.add('hidden');
+            document.getElementById('nameInput').classList.remove('hidden');
+            
+            const nameInputFields = document.getElementById('nameInputFields');
+            nameInputFields.innerHTML = '';
+            
+            if (mode === 'cpu') {
+                nameInputFields.innerHTML = `
+                    <div class="mb-4">
+                        <label class="block text-lg font-semibold text-gray-700 mb-2">あなたの名前</label>
+                        <input type="text" id="player1Name" class="w-full px-4 py-3 border-2 border-purple-300 rounded-xl text-lg focus:border-purple-500 focus:outline-none" placeholder="名前を入力してね" maxlength="10" value="プレイヤー1" onfocus="this.select()" onclick="this.select()">
+                    </div>
+                `;
+                // 入力欄を全選択状態にする
+                setTimeout(() => {
+                    const input = document.getElementById('player1Name');
+                    input.focus();
+                    input.select();
+                }, 100);
+            } else {
+                nameInputFields.innerHTML = `
+                    <div class="mb-4">
+                        <label class="block text-lg font-semibold text-gray-700 mb-2">プレイヤー1の名前</label>
+                        <input type="text" id="player1Name" class="w-full px-4 py-3 border-2 border-purple-300 rounded-xl text-lg focus:border-purple-500 focus:outline-none" placeholder="プレイヤー1の名前" maxlength="10" value="プレイヤー1" onfocus="this.select()" onclick="this.select()">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-lg font-semibold text-gray-700 mb-2">プレイヤー2の名前</label>
+                        <input type="text" id="player2Name" class="w-full px-4 py-3 border-2 border-purple-300 rounded-xl text-lg focus:border-purple-500 focus:outline-none" placeholder="プレイヤー2の名前" maxlength="10" value="プレイヤー2" onfocus="this.select()" onclick="this.select()">
+                    </div>
+                `;
+                // 最初の入力欄を全選択状態にする
+                setTimeout(() => {
+                    const input = document.getElementById('player1Name');
+                    input.focus();
+                    input.select();
+                }, 100);
+            }
+        }
+
+        // 名前入力後のゲーム開始
+        function startGameWithNames() {
+            const player1Name = document.getElementById('player1Name').value.trim();
+            const player2Name = document.getElementById('player2Name')?.value.trim();
+            
+            if (!player1Name) {
+                alert('プレイヤー1の名前を入力してください！');
+                return;
+            }
+            
+            if (gameState.mode === 'pvp' && !player2Name) {
+                alert('プレイヤー2の名前を入力してください！');
+                return;
+            }
+            
+            gameState.player1.name = player1Name;
+            gameState.player2.name = gameState.mode === 'cpu' ? 'CPU' : player2Name;
+            gameState.difficulty = document.getElementById('difficulty')?.value || 'normal';
+            
+            startGame();
+        }
+
+        // ゲーム開始
+        function startGame() {
+            gameState.currentPlayer = 1;
+            gameState.player1.hp = 30;
+            gameState.player1.maxHp = 30;
+            gameState.player1.cards = [];
+            gameState.player2.hp = 30;
+            gameState.player2.maxHp = 30;
+            gameState.player2.cards = [];
+            gameState.selectedCard = null;
+            gameState.inputValue = '';
+            gameState.isCalculating = false;
+
+            refillHand(gameState.player1);
+            refillHand(gameState.player2);
+
+            // 初手：プレイヤー1が必ず解けるように場のカードを設定
+            let f;
+            do { 
+                f = generateFieldCard(); 
+            } while(!ensureSolvable(f, gameState.player1.cards));
+            gameState.fieldCard = f;
+
+            document.getElementById('nameInput').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+
+            // プレイヤー名を表示
+            document.getElementById('player1-name').textContent = `🎮 ${gameState.player1.name}`;
+            if (gameState.mode === 'cpu') {
+                document.getElementById('player2-name').textContent = '🤖 CPU';
+            } else {
+                document.getElementById('player2-name').textContent = `👤 ${gameState.player2.name}`;
+            }
+
+            updateDisplay();
+            showTurnPopup();
+        }
+
+        // ターンポップアップ表示
+        function showTurnPopup() {
+            const popup = document.getElementById('turnPopup');
+            const turnText = document.getElementById('turnText');
+            
+            const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+            turnText.textContent = `🎯 ${currentPlayerData.name}のターン！`;
+            
+            popup.classList.remove('hidden');
+            
+            setTimeout(() => {
+                popup.classList.add('hidden');
+                if (gameState.currentPlayer === 2 && gameState.mode === 'cpu') {
+                    setTimeout(cpuTurn, 1000);
+                } else {
+                    // プレイヤーのターンの場合、カード選択タイマーを開始
+                    startTimer(pickSecondsByDifficulty(), () => {
+                        // 時間切れの場合、ランダムにカードを選択
+                        const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+                        if (currentPlayerData.cards.length > 0) {
+                            const randomIndex = Math.floor(Math.random() * currentPlayerData.cards.length);
+                            selectCard(randomIndex);
+                        }
+                    });
+                }
+            }, 2000);
+        }
+
+        // 画面更新
+        function updateDisplay() {
+            // 場のカード
+            document.getElementById('field-card').textContent = gameState.fieldCard;
+            
+            // HP表示
+            document.getElementById('player1-hp').textContent = `${gameState.player1.hp}/${gameState.player1.maxHp}`;
+            document.getElementById('player2-hp').textContent = `${gameState.player2.hp}/${gameState.player2.maxHp}`;
+            
+            document.getElementById('player1-hp-bar').style.width = `${(gameState.player1.hp / gameState.player1.maxHp) * 100}%`;
+            document.getElementById('player2-hp-bar').style.width = `${(gameState.player2.hp / gameState.player2.maxHp) * 100}%`;
+            
+            // 手札表示
+            updatePlayerCards();
+            
+            // ゲーム状態
+            if (!gameState.isCalculating) {
+                document.getElementById('game-status').textContent = 'カードを選んでね！';
+            }
+        }
+
+        // プレイヤーカード表示更新
+        function updatePlayerCards() {
+            // プレイヤー1のカード表示
+            const player1Container = document.getElementById('player1-cards');
+            player1Container.innerHTML = '';
+            
+            if (gameState.currentPlayer === 1) {
+                // 現在のプレイヤーの手札を表示（クリック可能）
+                gameState.player1.cards.forEach((card, index) => {
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'card w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-lg flex items-center justify-center text-lg font-bold text-white shadow-lg cursor-pointer border-2 border-green-300';
+                    cardElement.textContent = card;
+                    cardElement.onclick = () => selectCard(index);
+                    player1Container.appendChild(cardElement);
+                });
+            } else {
+                // 相手のターンの時は裏面表示
+                for (let i = 0; i < gameState.player1.cards.length; i++) {
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg shadow-lg border-2 border-blue-400 flex items-center justify-center text-white text-sm';
+                    cardElement.innerHTML = '🎴';
+                    player1Container.appendChild(cardElement);
+                }
+            }
+
+            // プレイヤー2のカード表示
+            const player2Container = document.getElementById('player2-cards');
+            player2Container.innerHTML = '';
+            
+            if (gameState.currentPlayer === 2 && gameState.mode === 'pvp') {
+                // 2人対戦でプレイヤー2のターンの時は手札を表示
+                gameState.player2.cards.forEach((card, index) => {
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'card w-16 h-16 bg-gradient-to-br from-red-400 to-purple-500 rounded-lg flex items-center justify-center text-lg font-bold text-white shadow-lg cursor-pointer border-2 border-red-300';
+                    cardElement.textContent = card;
+                    cardElement.onclick = () => selectCard(index);
+                    player2Container.appendChild(cardElement);
+                });
+            } else {
+                // CPUまたは相手のターンの時は裏面表示
+                for (let i = 0; i < gameState.player2.cards.length; i++) {
+                    const cardElement = document.createElement('div');
+                    cardElement.className = 'w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg shadow-lg border-2 border-blue-400 flex items-center justify-center text-white text-sm';
+                    cardElement.innerHTML = '🎴';
+                    player2Container.appendChild(cardElement);
+                }
+            }
+        }
+
+        // カード選択
+        function selectCard(index) {
+            if (gameState.isCalculating) return;
+            
+            const currentPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+            gameState.selectedCard = currentPlayerData.cards[index];
+            
+            // カードを手札から削除
+            currentPlayerData.cards.splice(index, 1);
+            
+            // 計算フェーズに移行
+            gameState.isCalculating = true;
+            gameState.inputValue = '';
+            document.getElementById('game-status').textContent = '最大公約数を計算してね！';
+            document.getElementById('selected-card-info').classList.remove('hidden');
+            document.getElementById('selected-number').textContent = gameState.selectedCard;
+            document.getElementById('calculation-area').classList.remove('hidden');
+            document.getElementById('calc-question').textContent = `${gameState.selectedCard} と ${gameState.fieldCard} の最大公約数は？`;
+            document.getElementById('user-input-display').textContent = '?';
+            
+            // 計算タイマーを開始（15秒）
+            startTimer(15, () => {
+                // 時間切れの場合、専用の表示
+                document.getElementById('game-status').textContent = '⏰ 時間切れ！ダメージなし';
+                
+                // 時間切れポップアップ
+                const timeoutElement = document.createElement('div');
+                timeoutElement.className = 'big-damage';
+                timeoutElement.style.color = '#f59e0b';
+                timeoutElement.style.borderColor = '#f59e0b';
+                timeoutElement.innerHTML = `
+                    <div style="font-size: 3rem; margin-bottom: 0.5rem;">⏰</div>
+                    <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.3rem;">時間切れ！</div>
+                    <div style="font-size: 1.3rem; color: #6b7280;">ダメージなし</div>
+                `;
+                document.body.appendChild(timeoutElement);
+                
+                setTimeout(() => {
+                    if (timeoutElement.parentNode) {
+                        timeoutElement.parentNode.removeChild(timeoutElement);
+                    }
+                    nextTurn();
+                }, 2000);
+            });
+            
+            updatePlayerCards();
+        }
+
+        // 数字入力
+        function inputNumber(num) {
+            if (gameState.inputValue.length < 2) {
+                gameState.inputValue += num.toString();
+                const displayElement = document.getElementById('user-input-display');
+                displayElement.textContent = gameState.inputValue;
+                displayElement.classList.add('input-pulse');
+                
+                // アニメーション後にクラスを削除
+                setTimeout(() => {
+                    displayElement.classList.remove('input-pulse');
+                }, 300);
+            }
+        }
+
+        // 入力クリア
+        function clearInput() {
+            gameState.inputValue = '';
+            document.getElementById('user-input-display').textContent = '?';
+        }
+
+        // 答え送信
+        function submitAnswer() {
+            if (gameState.inputValue === '' || hasAnswered) return;
+            hasAnswered = true;
+            
+            // タイマーを停止
+            clearTimer();
+            
+            const correctAnswer = gcd(gameState.selectedCard, gameState.fieldCard);
+            const userAnswer = parseInt(gameState.inputValue);
+            
+            if (userAnswer === correctAnswer) {
+                // 正解
+                const opponentData = gameState.currentPlayer === 1 ? gameState.player2 : gameState.player1;
+                opponentData.hp = Math.max(0, opponentData.hp - correctAnswer);
+                updateDisplay(); // HP表示を即座に更新
+                
+                document.getElementById('game-status').textContent = `🎉 正解！ ${correctAnswer}ダメージ！`;
+                announce(`正解。${correctAnswer}ダメージ`);
+                showBigDamage(correctAnswer, true);
+                
+                // ダメージアニメーション
+                const targetPanel = gameState.currentPlayer === 1
+                    ? document.getElementById('player2-panel')
+                    : document.getElementById('player1-panel');
+                targetPanel.classList.add('damage-animation');
+                setTimeout(() => targetPanel.classList.remove('damage-animation'), 500);
+                
+            } else {
+                document.getElementById('game-status').textContent = `❌ 不正解... 正解は ${correctAnswer} でした`;
+                announce(`不正解。正解は${correctAnswer}でした`);
+                showBigDamage(0, false);
+            }
+            
+            // ゲーム終了チェック
+            if (gameState.player1.hp <= 0 || gameState.player2.hp <= 0) {
+                setTimeout(endGame, 3000);
+                return;
+            }
+            
+            // 次のターンへ
+            setTimeout(() => {
+                nextTurn();
+                hasAnswered = false;
+            }, 3000);
+        }
+
+        // CPU戦略的カード選択
+        function cpuChooseCard() {
+            const cards = gameState.player2.cards.slice();
+            const scores = cards.map(c => ({c, g: gcd(c, gameState.fieldCard)}));
+            
+            if (gameState.difficulty === 'easy') {
+                // たまに弱い手 or ミス
+                if (Math.random() < 0.25) return cards[Math.floor(Math.random() * cards.length)];
+                return scores.sort((a,b) => a.g - b.g)[0].c; // わざと弱手
+            }
+            if (gameState.difficulty === 'hard') {
+                return scores.sort((a,b) => b.g - a.g)[0].c; // 常に最善
+            }
+            // normal: 6割は最善、4割はランダム
+            return (Math.random() < 0.6)
+                ? scores.sort((a,b) => b.g - a.g)[0].c
+                : cards[Math.floor(Math.random() * cards.length)];
+        }
+
+        // CPUのターン
+        function cpuTurn() {
+            // CPUがカードを選択
+            const cpuCard = cpuChooseCard();
+            const cardIndex = gameState.player2.cards.indexOf(cpuCard);
+            gameState.player2.cards.splice(cardIndex, 1);
+            
+            // CPUが正解を計算
+            const correctAnswer = gcd(cpuCard, gameState.fieldCard);
+            
+            // ダメージを与える
+            gameState.player1.hp = Math.max(0, gameState.player1.hp - correctAnswer);
+            updateDisplay(); // HP表示を即座に更新
+            
+            document.getElementById('game-status').textContent = `🤖 CPUが ${cpuCard} を出して ${correctAnswer}ダメージ！`;
+            announce(`CPUが${cpuCard}を出して${correctAnswer}ダメージ`);
+            
+            // CPUダメージ表示
+            const cpuDamageElement = document.createElement('div');
+            cpuDamageElement.className = 'big-damage';
+            cpuDamageElement.style.color = '#dc2626';
+            cpuDamageElement.style.borderColor = '#dc2626';
+            cpuDamageElement.innerHTML = `
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">🤖</div>
+                <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.3rem;">CPUの攻撃！</div>
+                <div style="font-size: 2.5rem; font-weight: bold; margin-bottom: 0.3rem; color: #dc2626;">${correctAnswer}ダメージ！</div>
+                <div style="font-size: 1.3rem; color: #6b7280;">カード: ${cpuCard}</div>
+            `;
+            document.body.appendChild(cpuDamageElement);
+            
+            // キラキラエフェクト
+            createMegaSparkles();
+            
+            setTimeout(() => {
+                if (cpuDamageElement.parentNode) {
+                    cpuDamageElement.parentNode.removeChild(cpuDamageElement);
+                }
+            }, 2000);
+            
+            // ダメージアニメーション
+            const p1Panel = document.getElementById('player1-panel');
+            p1Panel.classList.add('damage-animation');
+            setTimeout(() => p1Panel.classList.remove('damage-animation'), 500);
+            
+            // ゲーム終了チェック
+            if (gameState.player1.hp <= 0) {
+                setTimeout(endGame, 3000);
+                return;
+            }
+            
+            // 次のターンへ
+            setTimeout(() => {
+                nextTurn();
+                hasAnswered = false;
+            }, 3000);
+        }
+
+        // 次のターン
+        function nextTurn() {
+            // タイマーを停止
+            clearTimer();
+            
+            // 手札を補充
+            refillHand(gameState.player1);
+            refillHand(gameState.player2);
+            
+            // ターン交代
+            gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+            
+            // 場のカードを再抽選して解ける場を保証
+            let f;
+            const nextPlayerData = gameState.currentPlayer === 1 ? gameState.player1 : gameState.player2;
+            do { 
+                f = generateFieldCard(); 
+            } while(!ensureSolvable(f, nextPlayerData.cards));
+            gameState.fieldCard = f;
+            
+            // 状態リセット
+            gameState.selectedCard = null;
+            gameState.inputValue = '';
+            gameState.isCalculating = false;
+            
+            // UI更新
+            document.getElementById('calculation-area').classList.add('hidden');
+            document.getElementById('selected-card-info').classList.add('hidden');
+            
+            updateDisplay();
+            showTurnPopup();
+        }
+
+        // ゲーム終了
+        function endGame() {
+            let winner;
+            if (gameState.player1.hp <= 0) {
+                winner = gameState.player2.name;
+            } else {
+                winner = gameState.player1.name;
+            }
+            
+            document.getElementById('game-status').textContent = `🎉 ${winner}の勝利！`;
+            announce(`${winner}の勝利`);
+            
+            setTimeout(() => {
+                if (confirm('もう一度プレイしますか？')) {
+                    document.getElementById('gameScreen').classList.add('hidden');
+                    document.getElementById('modeSelect').classList.remove('hidden');
+                }
+            }, 3000);
+        }
+
+        // キーボード操作対応
+        document.addEventListener('keydown', (e) => {
+            if (!gameState.isCalculating) return;
+            if (e.key >= '0' && e.key <= '9') {
+                inputNumber(parseInt(e.key));
+            }
+            if (e.key === 'Backspace') {
+                gameState.inputValue = gameState.inputValue.slice(0, -1);
+                document.getElementById('user-input-display').textContent = gameState.inputValue || '?';
+            }
+            if (e.key === 'Enter') {
+                submitAnswer();
+            }
+        });
+
+        // 画面回転検知
+        function checkOrientation() {
+            const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+            document.getElementById('rotateOverlay').classList.toggle('hidden', !isPortrait);
+            document.getElementById('rotateOverlay').classList.toggle('flex', isPortrait);
+        }
+        
+        window.addEventListener('resize', checkOrientation);
+        window.addEventListener('orientationchange', checkOrientation);
+        document.addEventListener('DOMContentLoaded', checkOrientation);
+
+        // 連打防止フラグ
+        let hasAnswered = false;
+
+        // 難易度に応じたタイマー時間
+        function pickSecondsByDifficulty(){
+            switch (gameState.difficulty){
+                case 'easy': return 20;
+                case 'hard': return 10;
+                default: return 15;
+            }
+        }
+
+        // 初期化
+        updateDisplay();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9785f516f0928384',t:'MTc1Njc0MjE4My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
 
