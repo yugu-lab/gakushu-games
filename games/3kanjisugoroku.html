@@ -130,13 +130,17 @@
         .player-info {
             background: linear-gradient(135deg, #34495e, #2c3e50);
             color: #ecf0f1;
-            padding: 10px;
+            padding: 15px;
             border-radius: 15px;
             text-align: center;
             font-size: 0.75rem;
             border: 2px solid #7f8c8d;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
         }
         
         .player-info.active {
@@ -209,6 +213,36 @@
             border: 1px solid #2980b9;
         }
         
+        .card-btn {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px 0;
+            box-shadow: 0 5px 15px rgba(155, 89, 182, 0.3);
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            border: 1px solid #8e44ad;
+            min-width: 120px;
+            min-height: 50px;
+        }
+        
+        .card-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 25px rgba(155, 89, 182, 0.5);
+            background: linear-gradient(135deg, #8e44ad, #7d3c98);
+        }
+        
+        .card-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
         .btn:hover {
             transform: translateY(-3px) scale(1.05);
             box-shadow: 0 15px 25px rgba(52, 152, 219, 0.5);
@@ -241,6 +275,7 @@
             text-align: center;
             max-width: 500px;
             width: 90%;
+            position: relative;
         }
         
         .question-text {
@@ -283,6 +318,45 @@
         .submit-answer:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(39, 174, 96, 0.4);
+        }
+        
+        .timer-display {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 3px 10px rgba(231, 76, 60, 0.3);
+            animation: timerPulse 1s ease-in-out infinite alternate;
+        }
+        
+        .timer-display.warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            animation: timerWarning 0.5s ease-in-out infinite alternate;
+        }
+        
+        .timer-display.danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            animation: timerDanger 0.3s ease-in-out infinite alternate;
+        }
+        
+        @keyframes timerPulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.05); }
+        }
+        
+        @keyframes timerWarning {
+            0% { transform: scale(1); box-shadow: 0 3px 10px rgba(243, 156, 18, 0.3); }
+            100% { transform: scale(1.1); box-shadow: 0 5px 15px rgba(243, 156, 18, 0.6); }
+        }
+        
+        @keyframes timerDanger {
+            0% { transform: scale(1); box-shadow: 0 3px 10px rgba(231, 76, 60, 0.3); }
+            100% { transform: scale(1.15); box-shadow: 0 8px 20px rgba(231, 76, 60, 0.8); }
         }
         
         .cards-section {
@@ -366,12 +440,22 @@
         }
         
         .card-item {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
+            background: linear-gradient(135deg, #a8b5f0, #b8a8d4);
+            color: #2c3e50;
             padding: 15px;
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
+        }
+        
+        .card-item.turn-end {
+            background: linear-gradient(135deg, #f5a3a3, #f0b3b3);
+            color: #2c3e50;
+        }
+        
+        .card-item.turn-continue {
+            background: linear-gradient(135deg, #a3d5a3, #b3e0b3);
+            color: #2c3e50;
         }
         
         .card-item:hover {
@@ -465,6 +549,26 @@
                 animation: none !important; 
                 transition: none !important; 
             }
+        }
+        
+        /* 追加：シンプルなトースト */
+        .toast {
+            position: fixed; 
+            left: 50%; 
+            bottom: 24px;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,.85); 
+            color: #fff;
+            padding: 10px 14px; 
+            border-radius: 10px;
+            font-weight: bold; 
+            z-index: 4000;
+            box-shadow: 0 8px 20px rgba(0,0,0,.3);
+            animation: toastIn .2s ease-out;
+        }
+        @keyframes toastIn { 
+            from { opacity:0; transform:translate(-50%,10px); } 
+            to { opacity:1; transform:translate(-50%,0); } 
         }
         
         .setup-screen, .instructions-screen {
@@ -635,15 +739,9 @@
         
         <div class="game-info">
             <div class="player-info active" id="player1Info">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <h4 style="margin: 0; font-size: 0.9rem;" id="player1NameDisplay">👦 プレイヤー1</h4>
-                            <button class="btn" id="useCardBtn1" onclick="showCardMenu(1)" style="display: none; font-size: 0.6rem; padding: 4px 8px;">カード使用</button>
-                        </div>
-                        <div class="player-cards" id="player1CardsList"></div>
-                    </div>
-                </div>
+                <h4 style="margin: 0; font-size: 0.9rem;" id="player1NameDisplay">👦 プレイヤー1</h4>
+                <button class="card-btn" id="useCardBtn1" onclick="showCardMenu(1)" style="display: none;">🃏 カード</button>
+                <div class="player-cards" id="player1CardsList"></div>
             </div>
             
             <div class="dice-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
@@ -655,13 +753,9 @@
             </div>
             
             <div class="player-info" id="player2Info">
-                <div style="flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <h4 style="margin: 0; font-size: 0.9rem;" id="player2NameDisplay">👧 プレイヤー2</h4>
-                        <button class="btn" id="useCardBtn2" onclick="showCardMenu(2)" style="display: none; font-size: 0.6rem; padding: 4px 8px;">カード使用</button>
-                    </div>
-                    <div class="player-cards" id="player2CardsList"></div>
-                </div>
+                <h4 style="margin: 0; font-size: 0.9rem;" id="player2NameDisplay">👧 プレイヤー2</h4>
+                <button class="card-btn" id="useCardBtn2" onclick="showCardMenu(2)" style="display: none;">🃏 カード</button>
+                <div class="player-cards" id="player2CardsList"></div>
             </div>
         </div>
         
@@ -673,6 +767,7 @@
     <!-- 問題モーダル -->
     <div class="question-modal" id="questionModal">
         <div class="question-content">
+            <div class="timer-display" id="timerDisplay">15</div>
             <h3>漢字問題</h3>
             <div class="question-text" id="questionText"></div>
             <input type="text" class="answer-input" id="answerInput" placeholder="ひらがなで答えを入力してください" onkeypress="if(event.key==='Enter') submitAnswer()">
@@ -763,27 +858,31 @@
     </div>
 
     <script>
-// 送信時の比較だけに使う“強め”の正規化（今までの toHiragana と同等）
-function normalizeForCompare(input){
-  let s = input.normalize('NFKC').toLowerCase().trim();
-  s = s.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60)); // カタカナ→ひらがな
-  s = s.replace(/([あいうえお])ー/g, '$1$1');             // 任意: 長音展開
-  s = s.replace(/[\s、。．・･]/g,'');                      // 任意: 空白・句読点除去
-  // 任意: 小書き統一
-  // const map = {'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お','ゃ':'や','ゅ':'ゆ','ょ':'よ','っ':'つ','ゎ':'わ'};
-  // s = s.replace(/[ぁぃぅぇぉゃゅょっゎ]/g, m => map[m] || m);
-  return s;
-}
-// 既存コードの互換用（checkAnswer などは normalize を呼んでいる）
-const normalize = normalizeForCompare;
-
-// 入力中の見た目だけ軽く整える版（リアルタイム用）
-// → カタカナ→ひらがなのみ。小書き/長音/空白は触らない
-function kanaLiveSanitize(input){
-  let s = input.normalize('NFKC');
-  return s.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
-}
-
+        // トースト表示関数（ノンブロッキング）
+        function toast(msg, ms = 1400) {
+            const el = document.createElement('div');
+            el.className = 'toast';
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => { el.remove(); }, ms);
+        }
+        
+        // 入力正規化関数（子どもの入力ゆらぎ対応）
+        function toHiragana(input){
+            // 全角化・小書き統一・カタカナ→ひらがな・長音処理・空白除去
+            let s = input.normalize('NFKC').toLowerCase().trim();
+            // カタカナ→ひらがな
+            s = s.replace(/[\u30A1-\u30F6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+            // 長音「ー」を直前母音に展開（おおざっぱだが実用的）
+            s = s.replace(/([あいうえお])ー/g, '$1$1');
+            // 小書き統一（ゃゅょ→やゆよ等）※必要に応じて調整
+            const map = {'ぁ':'あ','ぃ':'い','ぅ':'う','ぇ':'え','ぉ':'お','ゃ':'や','ゅ':'ゆ','ょ':'よ','っ':'つ','ゎ':'わ'};
+            s = s.replace(/[ぁぃぅぇぉゃゅょっゎ]/g, m => map[m] || m);
+            // 空白・句読点の除去
+            s = s.replace(/[\s、。．・･]/g,'');
+            return s;
+        }
+        const normalize = toHiragana;
 
         // ゲーム状態
         let currentPlayer = 1;
@@ -814,6 +913,9 @@ function kanaLiveSanitize(input){
         let lastAnswerCorrect = null;
         // ターン識別子（各ターンの一意ID）
         let turnId = 0;
+        // 15秒タイマー関連
+        let answerTimer = null;
+        let timeLeft = 15;
         
         // ルーレット関連変数
         let rouletteInterval = null;
@@ -922,7 +1024,41 @@ function kanaLiveSanitize(input){
                 { question: "この漢字の読み方は？「生産」", answer: "せいさん" },
                 { question: "この漢字の読み方は？「塩害」", answer: "えんがい" },
                 { question: "この漢字の読み方は？「飛行」", answer: "ひこう" },
-                { question: "この漢字の読み方は？「大陸」", answer: "たいりく" }
+                { question: "この漢字の読み方は？「大陸」", answer: "たいりく" },
+                { question: "この漢字の読み方は？「小麦粉」", answer: "こむぎこ" },
+                { question: "この漢字の読み方は？「日光浴」", answer: "にっこうよく" },
+                { question: "この漢字の読み方は？「一時的」", answer: "いちじてき" },
+                { question: "この漢字の読み方は？「入場料」", answer: "にゅうじょうりょう" },
+                { question: "この漢字の読み方は？「大自然」", answer: "だいしぜん" },
+                { question: "この漢字の読み方は？「年会費」", answer: "ねんかいひ" },
+                { question: "この漢字の読み方は？「音楽隊」", answer: "おんがくたい" },
+                { question: "この漢字の読み方は？「気温差」", answer: "きおんさ" },
+                { question: "この漢字の読み方は？「一億人」", answer: "いちおくにん" },
+                { question: "この漢字の読み方は？「水不足」", answer: "みずぶそく" },
+                { question: "この漢字の読み方は？「三輪車」", answer: "さんりんしゃ" },
+                { question: "この漢字の読み方は？「一輪車」", answer: "いちりんしゃ" },
+                { question: "この漢字の読み方は？「目的地」", answer: "もくてきち" },
+                { question: "この漢字の読み方は？「百貨店」", answer: "ひゃっかてん" },
+                { question: "この漢字の読み方は？「学芸会」", answer: "がくげいかい" },
+                { question: "この漢字の読み方は？「生徒会」", answer: "せいとかい" },
+                { question: "この漢字の読み方は？「大型船」", answer: "おおがたせん" },
+                { question: "この漢字の読み方は？「出席者」", answer: "しゅっせきしゃ" },
+                { question: "この漢字の読み方は？「大成功」", answer: "だいせいこう" },
+                { question: "この漢字の読み方は？「大特価」", answer: "だいとっか" },
+                { question: "この漢字の読み方は？「食中毒」", answer: "しょくちゅうどく" },
+                { question: "この漢字の読み方は？「外交官」", answer: "がいこうかん" },
+                { question: "この漢字の読み方は？「外国産」", answer: "がいこくさん" },
+                { question: "この漢字の読み方は？「新記録」", answer: "しんきろく" },
+                { question: "この漢字の読み方は？「京都府」", answer: "きょうとふ" },
+                { question: "この漢字の読み方は？「今世紀」", answer: "こんせいき" },
+                { question: "この漢字の読み方は？「食塩水」", answer: "しょくえんすい" },
+                { question: "この漢字の読み方は？「記念日」", answer: "きねんび" },
+                { question: "この漢字の読み方は？「雪景色」", answer: "ゆきげしき" },
+                { question: "この漢字の読み方は？「会議室」", answer: "かいぎしつ" },
+                { question: "この漢字の読み方は？「朝飯前」", answer: "あさめしまえ" },
+                { question: "この漢字の読み方は？「市街地」", answer: "しがいち" },
+                { question: "この漢字の読み方は？「記念品」", answer: "きねんひん" },
+                { question: "この漢字の読み方は？「合唱曲」", answer: "がっしょうきょく" }
             ],
             5: [
                 { question: "この漢字の読み方は？「輸送」", answer: "ゆそう" },
@@ -1178,9 +1314,9 @@ function kanaLiveSanitize(input){
                 // 人間プレイヤーのターン
                 document.getElementById('rollBtn').disabled = false;
                 
-                // カードボタンは現在のプレイヤーのみ有効化
-                document.getElementById('useCardBtn1').disabled = (currentPlayer !== 1 || players[1].cards.length === 0);
-                document.getElementById('useCardBtn2').disabled = (currentPlayer !== 2 || players[2].cards.length === 0);
+                // カードボタンは常に有効（メニュー内で使用可否を判定）
+                document.getElementById('useCardBtn1').disabled = false;
+                document.getElementById('useCardBtn2').disabled = false;
             }
         }
         
@@ -1195,49 +1331,7 @@ function kanaLiveSanitize(input){
                 player2Group.style.display = 'block';
             }
         }
-
-        document.addEventListener('DOMContentLoaded', () => {
-  loadSettings();
-  togglePlayer2Input();
-
-  const ai = document.getElementById('answerInput');
-  if (!ai) return;
-
-  let composing = false;
-
-  // 日本語IMEの変換開始/確定を検知
-  ai.addEventListener('compositionstart', () => { composing = true; });
-  ai.addEventListener('compositionend', () => {
-    composing = false;
-    const pos = ai.selectionStart;
-    ai.value = kanaLiveSanitize(ai.value); // 確定後にだけ軽めに整える
-    ai.setSelectionRange(pos, pos);
-  });
-
-  // 入力中は“カタカナ→ひらがな”だけ（小書き・長音・空白はそのまま）
-  ai.addEventListener('input', () => {
-    if (composing) return; // 変換中は一切触らない
-    const pos = ai.selectionStart;
-    ai.value = kanaLiveSanitize(ai.value);
-    ai.setSelectionRange(pos, pos);
-  });
-
-  // 貼り付け時も“軽め”に
-  ai.addEventListener('paste', (e) => {
-    e.preventDefault();
-    const text = (e.clipboardData || window.clipboardData).getData('text');
-    const start = ai.selectionStart, end = ai.selectionEnd;
-    const before = ai.value.slice(0, start);
-    const after  = ai.value.slice(end);
-    const mid    = kanaLiveSanitize(text);
-    ai.value = before + mid + after;
-    const pos = (before + mid).length;
-    ai.setSelectionRange(pos, pos);
-  });
-});
-
-
-
+        
         // 初期設定画面の関数
         function showInstructions() {
             const player1Name = document.getElementById('player1Name').value.trim();
@@ -1276,9 +1370,9 @@ function kanaLiveSanitize(input){
             // 説明画面を閉じて、まずはルーレットモーダルへ
             document.getElementById('instructionsScreen').style.display = 'none';
             
-            // 学年表示を追加
-            const titleElement = document.querySelector('.title');
-            if (!titleElement.querySelector('.grade-display')) {
+            // 学年表示を追加（ゲーム画面のタイトルのみに）
+            const titleElement = document.querySelector('#gameContainer .title');
+            if (titleElement && !titleElement.querySelector('.grade-display')) {
                 titleElement.insertAdjacentHTML('beforeend', 
                     ` <span class="grade-display" style="font-size:1rem;opacity:.8">（${selectedGrade}年生）</span>`);
             }
@@ -1472,7 +1566,7 @@ function kanaLiveSanitize(input){
             updatePlayerCards(1);
             updatePlayerCards(2);
             
-            // カード使用ボタンの表示/非表示
+            // カードボタンの表示/非表示（カードを持っていれば常に表示）
             document.getElementById('useCardBtn1').style.display = players[1].cards.length > 0 ? 'block' : 'none';
             document.getElementById('useCardBtn2').style.display = players[2].cards.length > 0 ? 'block' : 'none';
         }
@@ -1572,8 +1666,8 @@ function kanaLiveSanitize(input){
                         console.log('ラッキー6効果をリセット');
                     }
                     
-                    // 複数サイコロの場合は合計を表示
-                    if (diceCount > 1) {
+                    // 複数サイコロの場合は合計を表示（AIのときは非表示）
+                    if (diceCount > 1 && !(isAIGame && pendingAnswerFor === 2)) {
                         setTimeout(() => {
                             alert(`🎲 サイコロの合計: ${diceValues.join(' + ')} = ${total}`);
                         }, 500);
@@ -1590,6 +1684,50 @@ function kanaLiveSanitize(input){
                     timers.push(t);
                 }
             }, 100);
+        }
+        
+        // 15秒タイマーを開始
+        function startAnswerTimer() {
+            timeLeft = 15;
+            const timerDisplay = document.getElementById('timerDisplay');
+            timerDisplay.textContent = timeLeft;
+            timerDisplay.className = 'timer-display';
+            
+            answerTimer = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+                
+                // 色とアニメーションを変更
+                if (timeLeft <= 5) {
+                    timerDisplay.className = 'timer-display danger';
+                } else if (timeLeft <= 10) {
+                    timerDisplay.className = 'timer-display warning';
+                }
+                
+                // 時間切れ
+                if (timeLeft <= 0) {
+                    clearInterval(answerTimer);
+                    answerTimer = null;
+                    timeoutAnswer();
+                }
+            }, 1000);
+        }
+        
+        // タイマーを停止
+        function stopAnswerTimer() {
+            if (answerTimer) {
+                clearInterval(answerTimer);
+                answerTimer = null;
+            }
+        }
+        
+        // 時間切れ処理
+        function timeoutAnswer() {
+            lockInputs();
+            closeModal('questionModal');
+            
+            // 時間切れは不正解扱い
+            showAnswerPopup(false, 0, '時間切れです！');
         }
         
         // 問題表示
@@ -1614,6 +1752,9 @@ function kanaLiveSanitize(input){
             
             openModal('questionModal', '#answerInput');
             
+            // 15秒タイマーを開始
+            startAnswerTimer();
+            
             // ★変更: 回答フェーズのみ入力許可（ロール/カードは不可のまま）
             turnLocked = false;
             document.getElementById('rollBtn').disabled = true;
@@ -1636,6 +1777,9 @@ function kanaLiveSanitize(input){
                 alert('答えを入力してください');
                 return;
             }
+            
+            // タイマーを停止
+            stopAnswerTimer();
             
             lockInputs();
             // ★変更: ターン所有者を渡す（競合バグ修正）
@@ -1731,7 +1875,9 @@ function kanaLiveSanitize(input){
             
             // サイコロボタンのテキストを更新
             const rollBtn = document.getElementById('rollBtn');
-            rollBtn.textContent = `プレイヤー${currentPlayer}の番`;
+            const name = players[currentPlayer].name || `プレイヤー${currentPlayer}`;
+            const icon = (currentPlayer === 1) ? "👦" : (isAIGame ? "🤖" : "👧");
+            rollBtn.textContent = `${icon} ${name} の番`;
         }
         
         // プレイヤーのターンを開始
@@ -1971,7 +2117,12 @@ function kanaLiveSanitize(input){
         
         // シールド発動ポップアップ表示
         function showShieldPopup() {
-            document.getElementById('shieldPopup').style.display = 'flex';
+            const el = document.getElementById('shieldPopup');
+            el.style.display = 'flex';
+            // 1.2秒で自動で閉じる（手動でもOK）
+            setTimeout(() => {
+                if (el.style.display === 'flex') closeShieldPopup();
+            }, 1200);
         }
         
         // シールド発動ポップアップを閉じる
@@ -2146,7 +2297,9 @@ function kanaLiveSanitize(input){
             const winnerText = document.getElementById('winnerText');
             
             const actualWinner = winnerNum || currentPlayer;
-            winnerText.textContent = `👦👧 プレイヤー${actualWinner}の勝利！`;
+            const icon = (actualWinner === 1) ? "👦" : (isAIGame ? "🤖" : "👧");
+            const name = players[actualWinner].name || `プレイヤー${actualWinner}`;
+            winnerText.textContent = `${icon} ${name} の勝利！`;
             winnerModal.style.display = 'flex';
         }
         
@@ -2155,6 +2308,9 @@ function kanaLiveSanitize(input){
             // ★タイマーをクリア
             timers.forEach(clearTimeout);
             timers.length = 0;
+            
+            // 回答タイマーもクリア
+            stopAnswerTimer();
             
             currentPlayer = 1;
             players = {
@@ -2175,8 +2331,8 @@ function kanaLiveSanitize(input){
             isSwitchingTurn = false;
             // ターンIDもリセット
             turnId = 0;
-            // ターンIDもリセット
-            turnId = 0;
+            // タイマー関連もリセット
+            timeLeft = 15;
 
             document.getElementById('winnerModal').style.display = 'none';
             
@@ -2193,7 +2349,8 @@ function kanaLiveSanitize(input){
         
         // カードメニュー表示
         function showCardMenu(playerNum) {
-            if (playerNum !== currentPlayer || turnLocked) return;
+            // カードを持っていない場合は何もしない
+            if (players[playerNum].cards.length === 0) return;
             
             const modal = document.getElementById('cardModal');
             const cardList = document.getElementById('cardList');
@@ -2201,27 +2358,61 @@ function kanaLiveSanitize(input){
             cardList.innerHTML = '';
             
             players[playerNum].cards.forEach((card, index) => {
-                // シールドカードは使用不可
-                if (card.type === 'shield') {
-                    const cardItem = document.createElement('div');
-                    cardItem.className = 'card-item';
+                const cardItem = document.createElement('div');
+                cardItem.className = 'card-item';
+                
+                // カードの種類によって色分け
+                const turnEndCards = ['dice2', 'dice3', 'random', 'steal'];
+                const turnContinueCards = ['lucky6', 'attack', 'jump', 'bomb', 'stop'];
+                
+                if (turnEndCards.includes(card.type)) {
+                    cardItem.classList.add('turn-end');
+                } else if (turnContinueCards.includes(card.type)) {
+                    cardItem.classList.add('turn-continue');
+                }
+                
+                // 使用可能かどうかを判定
+                const canUse = (playerNum === currentPlayer && !turnLocked && card.type !== 'shield');
+                
+                let turnInfo = '';
+                if (turnEndCards.includes(card.type)) {
+                    turnInfo = '🔴 ターン終了';
+                } else if (turnContinueCards.includes(card.type)) {
+                    turnInfo = '🟢 ターン継続';
+                } else if (card.type === 'shield') {
+                    turnInfo = '🛡️ 自動発動';
+                }
+                
+                if (!canUse) {
                     cardItem.style.opacity = '0.5';
                     cardItem.style.cursor = 'not-allowed';
-                    cardItem.innerHTML = `
-                        <div style="font-size: 1.2rem; margin-bottom: 5px;">${card.name}</div>
-                        <div class="card-description">自動発動（使用不可）</div>
-                    `;
-                    cardList.appendChild(cardItem);
-                } else {
-                    const cardItem = document.createElement('div');
-                    cardItem.className = 'card-item';
+                    
+                    let reason = '';
+                    if (card.type === 'shield') {
+                        reason = '自動発動（使用不可）';
+                    } else if (playerNum !== currentPlayer) {
+                        reason = '相手のターンです';
+                    } else if (turnLocked) {
+                        reason = '現在使用できません';
+                    }
+                    
                     cardItem.innerHTML = `
                         <div style="font-size: 1.2rem; margin-bottom: 5px;">${card.name}</div>
                         <div class="card-description">${card.description}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.8; margin: 3px 0;">${turnInfo}</div>
+                        <div style="font-size: 0.8rem; color: #ff6b6b; margin-top: 5px;">${reason}</div>
+                    `;
+                } else {
+                    cardItem.innerHTML = `
+                        <div style="font-size: 1.2rem; margin-bottom: 5px;">${card.name}</div>
+                        <div class="card-description">${card.description}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.8; margin: 3px 0;">${turnInfo}</div>
+                        <div style="font-size: 0.8rem; color: #27ae60; margin-top: 5px;">クリックで使用</div>
                     `;
                     cardItem.onclick = () => useCard(playerNum, index);
-                    cardList.appendChild(cardItem);
                 }
+                
+                cardList.appendChild(cardItem);
             });
             
             modal.style.display = 'flex';
@@ -2423,6 +2614,22 @@ function kanaLiveSanitize(input){
             }
         }
         
+        // 初期化時にプレイヤー2入力欄を非表示にし、設定を読み込む
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+            togglePlayer2Input();
+            
+            // モーダルのアクセシビリティ設定
+            ['questionModal','cardModal','cardPopup','shieldPopup','answerPopup','cardUsePopup','winnerModal','quitModal','firstPlayerModal']
+                .forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) { 
+                        el.setAttribute('role','dialog'); 
+                        el.setAttribute('aria-modal','true'); 
+                        el.setAttribute('aria-hidden','true'); 
+                    }
+                });
+        });
         
         // キーボードイベントリスナー
         document.addEventListener('keydown', function(event) {
@@ -2493,6 +2700,9 @@ function kanaLiveSanitize(input){
         
         // ゲーム終了（最初の画面に戻る）
         function quitGame() {
+            // 回答タイマーもクリア
+            stopAnswerTimer();
+            
             // ゲーム状態をリセット
             currentPlayer = 1;
             players = {
@@ -2513,6 +2723,8 @@ function kanaLiveSanitize(input){
             isSwitchingTurn = false;
             // ターンIDもリセット
             turnId = 0;
+            // タイマー関連もリセット
+            timeLeft = 15;
             
             // 全てのモーダルを閉じる
             document.getElementById('quitModal').style.display = 'none';
@@ -2539,6 +2751,9 @@ function kanaLiveSanitize(input){
         
         // 全ポップアップを閉じる関数
         function closeAllPopups() {
+            // タイマーも停止
+            stopAnswerTimer();
+            
             ['questionModal','cardModal','cardPopup','shieldPopup','answerPopup','winnerModal','quitModal','cardUsePopup','firstPlayerModal']
                 .forEach(id => {
                     const el = document.getElementById(id);
@@ -2580,23 +2795,21 @@ function kanaLiveSanitize(input){
             const el = document.getElementById(id);
             if (!el) return;
             el.style.display = 'flex';
-            if (focusSelector) {
-                // 次フレームでフォーカス（要素生成直後でもOKにするため）
-                requestAnimationFrame(() => {
-                    const f = document.querySelector(focusSelector);
-                    if (f && typeof f.focus === 'function') f.focus();
-                });
-            }
+            el.setAttribute('aria-hidden', 'false');
+            requestAnimationFrame(() => {
+                const f = focusSelector ? document.querySelector(focusSelector) : el.querySelector('button, [tabindex], input, select, textarea');
+                if (f && typeof f.focus === 'function') f.focus();
+            });
         }
 
         function closeModal(id) {
             const el = document.getElementById(id);
             if (!el) return;
             el.style.display = 'none';
+            el.setAttribute('aria-hidden', 'true');
         }
         
-        // ゲーム初期化
-        initializeBoard();
+        // ゲーム初期化は proceedAfterRoulette() で実行されるため、ここでは不要
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'971215ddd552d3ce',t:'MTc1NTUyNzE3OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9785661eb60417c0',t:'MTc1NjczNjMyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
