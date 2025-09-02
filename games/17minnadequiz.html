@@ -1,1 +1,1728 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>数学クイズゲーム - リアルタイム対戦</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+        
+        :root { 
+            --safe-top: env(safe-area-inset-top); 
+            --safe-bottom: env(safe-area-inset-bottom); 
+        }
+        
+        html, body { 
+            height: 100svh; 
+            padding: max(8px, var(--safe-top)) 8px max(8px, var(--safe-bottom)); 
+            overscroll-behavior: none; 
+            touch-action: manipulation; 
+        }
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            touch-action: manipulation;
+        }
+        
+        .bounce-in {
+            animation: bounceIn 0.6s ease-out;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .pulse-glow {
+            animation: pulseGlow 2s infinite;
+        }
+        
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        .celebrate {
+            animation: celebrate 1s ease-out;
+        }
+        
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(255, 107, 107, 0.8); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        @keyframes celebrate {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(5deg); }
+            50% { transform: scale(1.2) rotate(-5deg); }
+            75% { transform: scale(1.1) rotate(3deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+        
+        .timer-circle {
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+            transition: stroke-dashoffset 1s linear;
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #ff6b6b;
+            animation: confetti-fall 3s linear infinite;
+        }
+        
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        .answered {
+            opacity: 0.6;
+            transform: scale(0.95);
+            transition: all 0.3s ease;
+        }
+
+        .first-correct {
+            animation: firstCorrect 1s ease-out;
+        }
+
+        @keyframes firstCorrect {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 0 30px gold; }
+            100% { transform: scale(1); }
+        }
+
+        /* iPad横画面最適化 */
+        @media (orientation: landscape) and (min-width: 768px) {
+            .game-container {
+                max-height: 100vh;
+                overflow-y: auto;
+            }
+            
+            .touch-button {
+                min-height: 60px;
+                font-size: 1.25rem;
+            }
+            
+            .answer-input {
+                font-size: 2rem;
+                padding: 1rem;
+                min-height: 60px;
+            }
+        }
+
+        /* タップ最適化 */
+        button, input {
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        button {
+            min-height: 56px;
+        }
+        
+        button:active {
+            transform: scale(0.95);
+        }
+        
+        @media (orientation: landscape) {
+            .max-screen { 
+                max-width: min(1200px, 92vw); 
+                margin: 0 auto; 
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-400 via-pink-400 to-red-400 min-h-screen overflow-hidden">
+    <!-- 接続状態表示 -->
+    <div id="connectionStatus" class="fixed top-4 right-4 z-50 px-4 py-2 rounded-full text-white font-semibold hidden">
+        🔴 接続中...
+    </div>
+
+    <!-- メイン画面 -->
+    <div id="mainScreen" class="flex items-center justify-center min-h-screen p-4 md:p-8 max-screen">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12 max-w-2xl w-full bounce-in">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-4">
+                    🧮 数学クイズ 🎯
+                </h1>
+                <p class="text-lg md:text-xl text-gray-600">最大公約数・最小公倍数の問題に挑戦！</p>
+                <p class="text-base md:text-lg text-purple-600 font-semibold mt-2">🔥 リアルタイム対戦モード</p>
+            </div>
+            
+            <div class="space-y-4 md:space-y-6">
+                <button onclick="showRoomCreate()" class="w-full bg-gradient-to-r from-green-400 to-blue-500 text-white text-xl md:text-2xl font-bold py-4 md:py-6 px-6 md:px-8 rounded-2xl hover:from-green-500 hover:to-blue-600 transform hover:scale-105 transition-all duration-200 shadow-lg touch-button">
+                    🏠 部屋を作る
+                </button>
+                
+                <button onclick="showRoomJoin()" class="w-full bg-gradient-to-r from-orange-400 to-pink-500 text-white text-xl md:text-2xl font-bold py-4 md:py-6 px-6 md:px-8 rounded-2xl hover:from-orange-500 hover:to-pink-600 transform hover:scale-105 transition-all duration-200 shadow-lg touch-button">
+                    🚪 部屋に入る
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 部屋作成画面 -->
+    <div id="roomCreateScreen" class="hidden flex items-center justify-center min-h-screen p-4 md:p-8 max-screen">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12 max-w-2xl w-full">
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-purple-600 mb-6 md:mb-8">🏠 部屋を作る</h2>
+            
+            <div class="space-y-4 md:space-y-6">
+                <div>
+                    <div class="flex items-center mb-3">
+                        <input id="usePasswordToggle" type="checkbox" class="mr-3 w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
+                        <label for="usePasswordToggle" class="text-lg md:text-xl font-semibold text-gray-700">パスワードを使う（任意）</label>
+                    </div>
+                    <input id="createPassword" type="password" class="w-full text-xl md:text-2xl p-3 md:p-4 border-4 border-purple-300 rounded-xl focus:border-purple-500 focus:outline-none touch-button opacity-50" placeholder="パスワードを入力" disabled>
+                </div>
+                
+                <div>
+                    <label class="block text-lg md:text-xl font-semibold text-gray-700 mb-3">プレイヤー名</label>
+                    <input id="createPlayerName" type="text" class="w-full text-xl md:text-2xl p-3 md:p-4 border-4 border-purple-300 rounded-xl focus:border-purple-500 focus:outline-none touch-button" placeholder="あなたの名前">
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button onclick="createRoom(this)" class="flex-1 bg-gradient-to-r from-green-400 to-blue-500 text-white text-lg md:text-xl font-bold py-3 md:py-4 px-4 md:px-6 rounded-xl hover:from-green-500 hover:to-blue-600 transform hover:scale-105 transition-all duration-200 touch-button">
+                        作成
+                    </button>
+                    <button onclick="showMainScreen()" class="flex-1 bg-gray-400 text-white text-lg md:text-xl font-bold py-3 md:py-4 px-4 md:px-6 rounded-xl hover:bg-gray-500 transform hover:scale-105 transition-all duration-200 touch-button">
+                        戻る
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 部屋参加画面 -->
+    <div id="roomJoinScreen" class="hidden flex items-center justify-center min-h-screen p-4 md:p-8 max-screen">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12 max-w-2xl w-full">
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-orange-600 mb-6 md:mb-8">🚪 部屋に入る</h2>
+            
+            <div class="space-y-4 md:space-y-6">
+                <div>
+                    <label class="block text-lg md:text-xl font-semibold text-gray-700 mb-3">部屋ID</label>
+                    <input id="joinRoomId" type="text" inputmode="text" pattern="[0-9A-Za-z]*" class="w-full text-xl md:text-2xl p-3 md:p-4 border-4 border-orange-300 rounded-xl focus:border-orange-500 focus:outline-none touch-button" placeholder="8桁のID">
+                </div>
+                
+                <div id="joinPasswordSection">
+                    <div class="flex items-center mb-3">
+                        <input id="joinUsePasswordToggle" type="checkbox" class="mr-3 w-5 h-5 text-orange-600 rounded focus:ring-orange-500">
+                        <label for="joinUsePasswordToggle" class="text-lg md:text-xl font-semibold text-gray-700">パスワードが設定されている</label>
+                    </div>
+                    <input id="joinPassword" type="password" class="w-full text-xl md:text-2xl p-3 md:p-4 border-4 border-orange-300 rounded-xl focus:border-orange-500 focus:outline-none touch-button opacity-50" placeholder="パスワードを入力" disabled>
+                </div>
+                
+                <div>
+                    <label class="block text-lg md:text-xl font-semibold text-gray-700 mb-3">プレイヤー名</label>
+                    <input id="joinPlayerName" type="text" class="w-full text-xl md:text-2xl p-3 md:p-4 border-4 border-orange-300 rounded-xl focus:border-orange-500 focus:outline-none touch-button" placeholder="あなたの名前">
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button onclick="joinRoom(this)" class="flex-1 bg-gradient-to-r from-orange-400 to-pink-500 text-white text-lg md:text-xl font-bold py-3 md:py-4 px-4 md:px-6 rounded-xl hover:from-orange-500 hover:to-pink-600 transform hover:scale-105 transition-all duration-200 touch-button">
+                        参加
+                    </button>
+                    <button onclick="showMainScreen()" class="flex-1 bg-gray-400 text-white text-lg md:text-xl font-bold py-3 md:py-4 px-4 md:px-6 rounded-xl hover:bg-gray-500 transform hover:scale-105 transition-all duration-200 touch-button">
+                        戻る
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 待機画面 -->
+    <div id="waitingScreen" class="hidden flex items-center justify-center min-h-screen p-4 md:p-8 max-screen">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12 max-w-4xl w-full game-container">
+            <h2 class="text-3xl md:text-4xl font-bold text-center text-blue-600 mb-6 md:mb-8">🎮 ゲーム待機中</h2>
+            
+            <div class="text-center mb-6">
+                <div class="text-lg md:text-xl text-gray-600">
+                    部屋ID: <span id="currentRoomId" class="font-bold text-blue-600 text-2xl"></span>
+                </div>
+                <div class="flex justify-center space-x-3 mt-3">
+                    <button onclick="copyRoomId()" class="px-4 py-2 rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition-colors">
+                        📋 IDコピー
+                    </button>
+                    <button onclick="copyInviteLink()" class="px-4 py-2 rounded-lg bg-green-100 text-green-700 text-sm font-semibold hover:bg-green-200 transition-colors">
+                        🔗 招待リンク
+                    </button>
+                </div>
+                <div class="text-sm text-gray-500 mt-2">友達に招待リンクを送って簡単参加！</div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-6 md:mb-8">
+                <div class="bg-gradient-to-r from-blue-100 to-purple-100 rounded-2xl p-4 md:p-6">
+                    <h3 class="text-xl md:text-2xl font-bold text-blue-600 mb-4">👥 参加者</h3>
+                    <div id="playerList" class="space-y-2"></div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-green-100 to-blue-100 rounded-2xl p-4 md:p-6">
+                    <h3 class="text-xl md:text-2xl font-bold text-green-600 mb-4">📋 ゲーム情報</h3>
+                    <p class="text-base md:text-lg text-gray-700">問題数: 5問</p>
+                    <p class="text-base md:text-lg text-gray-700">制限時間: 20秒/問</p>
+                    <p class="text-base md:text-lg text-gray-700">内容: 最大公約数・最小公倍数</p>
+                    <p class="text-base md:text-lg text-purple-700 font-semibold">🔥 リアルタイム対戦</p>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <button id="startButton" onclick="startGame(this)" class="bg-gradient-to-r from-red-400 to-pink-500 text-white text-xl md:text-2xl font-bold py-4 md:py-6 px-8 md:px-12 rounded-2xl hover:from-red-500 hover:to-pink-600 transform hover:scale-105 transition-all duration-200 shadow-lg pulse-glow touch-button">
+                    🚀 ゲーム開始！
+                </button>
+                <div class="text-sm text-gray-500 mt-2">※ホストのみ開始できます</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ゲーム画面 -->
+    <div id="gameScreen" class="hidden min-h-screen p-4 md:p-8 game-container max-screen">
+        <div class="max-w-6xl mx-auto">
+            <!-- ヘッダー -->
+            <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-4 md:mb-6 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                <div class="flex items-center space-x-4 md:space-x-6">
+                    <div class="text-xl md:text-2xl font-bold text-purple-600">
+                        問題 <span id="questionNumber">1</span>/5
+                    </div>
+                    <div class="text-lg md:text-xl text-gray-600">
+                        あなたのスコア: <span id="currentScore" class="font-bold text-green-600">0</span>点
+                    </div>
+                </div>
+                
+                <!-- タイマー -->
+                <div class="relative">
+                    <svg class="w-16 h-16 md:w-20 md:h-20 transform -rotate-90">
+                        <circle cx="32" cy="32" r="28" stroke="#e5e7eb" stroke-width="4" fill="transparent" class="md:hidden"/>
+                        <circle cx="40" cy="40" r="35" stroke="#e5e7eb" stroke-width="6" fill="transparent" class="hidden md:block"/>
+                        <circle id="timerCircle" cx="32" cy="32" r="28" stroke="#ff6b6b" stroke-width="4" fill="transparent" class="timer-circle md:hidden"/>
+                        <circle id="timerCircleLarge" cx="40" cy="40" r="35" stroke="#ff6b6b" stroke-width="6" fill="transparent" class="timer-circle hidden md:block"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="timeLeft" class="text-xl md:text-2xl font-bold text-red-500">20</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 問題エリア -->
+            <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-12 mb-4 md:mb-6 bounce-in">
+                <div class="text-center">
+                    <h3 class="text-2xl md:text-4xl font-bold text-gray-800 mb-6 md:mb-8" id="questionText">
+                        12と18の最大公約数を求めなさい。
+                    </h3>
+                    
+                    <div class="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-4 mb-6 md:mb-8">
+                        <span class="text-xl md:text-2xl font-semibold text-gray-600">答え:</span>
+                        <input id="answerInput" type="text" inputmode="numeric" pattern="[0-9０-９]*" aria-label="数学問題の答えを入力してください" class="text-2xl md:text-3xl font-bold p-3 md:p-4 border-4 border-blue-300 rounded-xl focus:border-blue-500 focus:outline-none w-32 md:w-32 text-center answer-input touch-button" placeholder="?">
+                        <button id="submitBtn" onclick="submitAnswer()" class="bg-gradient-to-r from-green-400 to-blue-500 text-white text-lg md:text-xl font-bold py-3 md:py-4 px-6 md:px-8 rounded-xl hover:from-green-500 hover:to-blue-600 transform hover:scale-105 transition-all duration-200 touch-button">
+                            回答
+                        </button>
+                    </div>
+
+                    <!-- リアルタイム回答状況 -->
+                    <div id="answerStatus" class="mt-4 md:mt-6 p-3 md:p-4 bg-gray-100 rounded-xl">
+                        <h4 class="text-base md:text-lg font-bold text-gray-700 mb-3">📊 回答状況</h4>
+                        <div id="playerAnswerStatus" class="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- リアルタイムスコアボード -->
+            <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6">
+                <h4 class="text-xl md:text-2xl font-bold text-center text-gray-700 mb-4">🏆 リアルタイムスコア</h4>
+                <div id="scoreBoard" class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-4 overflow-x-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 問題間の待機画面 -->
+    <div id="betweenQuestionsScreen" class="hidden flex items-center justify-center min-h-screen p-4 md:p-8 max-screen">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12 max-w-4xl w-full text-center game-container">
+            <h2 class="text-3xl md:text-4xl font-bold text-purple-600 mb-6">📊 問題結果</h2>
+            
+            <div id="questionResult" class="mb-6 md:mb-8"></div>
+            
+            <div class="text-xl md:text-2xl font-semibold text-gray-600 mb-4">
+                次の問題まで <span id="nextQuestionCountdown" class="text-red-500 font-bold">3</span> 秒
+            </div>
+            
+            <div id="currentRanking" class="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-2xl p-4 md:p-6">
+                <h3 class="text-xl md:text-2xl font-bold text-orange-600 mb-4">🥇 現在の順位</h3>
+                <div id="rankingList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 結果画面 -->
+    <div id="resultScreen" class="hidden flex items-center justify-center min-h-screen p-4 md:p-8 max-screen">
+        <div class="bg-white rounded-3xl shadow-2xl p-8 md:p-12 max-w-4xl w-full game-container">
+            <div class="text-center mb-6 md:mb-8">
+                <h2 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-4">
+                    🎉 最終結果 🎉
+                </h2>
+            </div>
+            
+            <div id="finalResults" class="space-y-4 mb-6 md:mb-8"></div>
+            
+            <div class="text-center">
+                <button onclick="showMainScreen()" class="bg-gradient-to-r from-purple-400 to-pink-500 text-white text-xl md:text-2xl font-bold py-4 md:py-6 px-8 md:px-12 rounded-2xl hover:from-purple-500 hover:to-pink-600 transform hover:scale-105 transition-all duration-200 shadow-lg touch-button">
+                    🏠 メインに戻る
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- プライバシー・利用規約フッター -->
+    <div class="fixed bottom-2 left-2 right-2 text-center text-xs text-white opacity-75 pointer-events-none z-10">
+        匿名でプレイ・部屋IDを知る人は観戦可能 | データは24時間後自動削除
+    </div>
+
+    <!-- 観戦モード画面 -->
+    <div id="observerScreen" class="hidden min-h-screen p-4 md:p-8 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl md:text-6xl font-bold text-white mb-4">
+                    🏆 リアルタイムスコアボード
+                </h1>
+                <div class="text-xl md:text-2xl text-blue-200">
+                    部屋ID: <span id="observerRoomId" class="font-bold text-yellow-300"></span>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-12">
+                <div id="observerScoreBoard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+            </div>
+            
+            <div class="text-center mt-8">
+                <div class="text-lg text-white opacity-75">
+                    問題 <span id="observerQuestionNumber">-</span>/5 | 
+                    残り時間: <span id="observerTimeLeft">-</span>秒
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            updateDoc, 
+            onSnapshot, 
+            collection, 
+            addDoc, 
+            serverTimestamp, 
+            increment, 
+            query, 
+            where,
+            orderBy,
+            deleteDoc,
+            getDocs,
+            writeBatch,
+            runTransaction,
+            enableIndexedDbPersistence,
+            Timestamp
+        } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+        // Firebase本番設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyBqJVJKvwxJ8F5rZGxQHvKjL2mN3oP4qR5s",
+            authDomain: "math-quiz-realtime.firebaseapp.com",
+            projectId: "math-quiz-realtime",
+            storageBucket: "math-quiz-realtime.appspot.com",
+            messagingSenderId: "987654321098",
+            appId: "1:987654321098:web:abcdef123456789"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // オフライン永続化（対応端末のみ）
+        enableIndexedDbPersistence(db).catch((err) => {
+            // 失敗しても致命ではないのでログだけ
+            console.warn('IndexedDB persistence disabled:', err?.code || err);
+        });
+
+        // Firebase初期化完了
+
+        // 観戦モード用タイマー
+        let observerTimer = null;
+
+        // 匿名認証の初期化
+        let authInitialized = false;
+        onAuthStateChanged(auth, (user) => {
+            if (!user && !authInitialized) {
+                signInAnonymously(auth).catch(console.error);
+            }
+            authInitialized = true;
+        });
+
+        // URL パラメータ処理
+        const urlParams = new URLSearchParams(window.location.search);
+        const isObserverMode = urlParams.get('view') === 'board';
+        const inviteRoomId = urlParams.get('room');
+
+        // ゲーム状態
+        let gameState = {
+            roomId: null,
+            playerId: null,
+            playerName: null,
+            isHost: false,
+            currentQuestion: 0,
+            timeLeft: 20,
+            durationSec: 20,
+            timer: null,
+            questionStartAtMs: null,
+            roomUnsubscribe: null,
+            playersUnsubscribe: null,
+            answersUnsubscribe: null,
+            playersCache: [],
+            isObserver: isObserverMode,
+            questions: [
+                // 最大公約数問題
+                { question: "12と18の最大公約数を求めなさい。", answer: "6" },
+                { question: "24と36の最大公約数を求めなさい。", answer: "12" },
+                { question: "21と28の最大公約数を求めなさい。", answer: "7" },
+                { question: "18と24の最大公約数を求めなさい。", answer: "6" },
+                { question: "16と24の最大公約数を求めなさい。", answer: "8" },
+                { question: "20と30の最大公約数を求めなさい。", answer: "10" },
+                { question: "14と35の最大公約数を求めなさい。", answer: "7" },
+                { question: "27と36の最大公約数を求めなさい。", answer: "9" },
+                { question: "32と48の最大公約数を求めなさい。", answer: "16" },
+                { question: "45と60の最大公約数を求めなさい。", answer: "15" },
+                { question: "25と40の最大公約数を求めなさい。", answer: "5" },
+                { question: "28と42の最大公約数を求めなさい。", answer: "14" },
+                { question: "30と45の最大公約数を求めなさい。", answer: "15" },
+                { question: "12と20の最大公約数を求めなさい。", answer: "4" },
+                { question: "36と54の最大公約数を求めなさい。", answer: "18" },
+                { question: "40と56の最大公約数を求めなさい。", answer: "8" },
+                { question: "9と15の最大公約数を求めなさい。", answer: "3" },
+                { question: "48と60の最大公約数を求めなさい。", answer: "12" },
+                { question: "33と44の最大公約数を求めなさい。", answer: "11" },
+                { question: "35と49の最大公約数を求めなさい。", answer: "7" },
+                { question: "24と40の最大公約数を求めなさい。", answer: "8" },
+                { question: "42と63の最大公約数を求めなさい。", answer: "21" },
+                { question: "18と27の最大公約数を求めなさい。", answer: "9" },
+                { question: "50と65の最大公約数を求めなさい。", answer: "5" },
+                { question: "12と15の最大公約数を求めなさい。", answer: "3" },
+                { question: "8、12、20の最大公約数を求めなさい。", answer: "4" },
+                { question: "18、30、42の最大公約数を求めなさい。", answer: "6" },
+                { question: "16、20、24の最大公約数を求めなさい。", answer: "4" },
+                { question: "6、9、15の最大公約数を求めなさい。", answer: "3" },
+                { question: "14、21、28の最大公約数を求めなさい。", answer: "7" },
+                
+                // 最小公倍数問題
+                { question: "2と3の最小公倍数を求めなさい。", answer: "6" },
+                { question: "3と5の最小公倍数を求めなさい。", answer: "15" },
+                { question: "4と6の最小公倍数を求めなさい。", answer: "12" },
+                { question: "6と8の最小公倍数を求めなさい。", answer: "24" },
+                { question: "7と9の最小公倍数を求めなさい。", answer: "63" },
+                { question: "8と9の最小公倍数を求めなさい。", answer: "72" },
+                { question: "4と9の最小公倍数を求めなさい。", answer: "36" },
+                { question: "5と6の最小公倍数を求めなさい。", answer: "30" },
+                { question: "6と7の最小公倍数を求めなさい。", answer: "42" },
+                { question: "5と8の最小公倍数を求めなさい。", answer: "40" },
+                { question: "3と6の最小公倍数を求めなさい。", answer: "6" },
+                { question: "2と8の最小公倍数を求めなさい。", answer: "8" },
+                { question: "3と9の最小公倍数を求めなさい。", answer: "9" },
+                { question: "4と8の最小公倍数を求めなさい。", answer: "8" },
+                { question: "2と4の最小公倍数を求めなさい。", answer: "4" },
+                { question: "5と7の最小公倍数を求めなさい。", answer: "35" },
+                { question: "2と5の最小公倍数を求めなさい。", answer: "10" },
+                { question: "6と9の最小公倍数を求めなさい。", answer: "18" },
+                { question: "7と8の最小公倍数を求めなさい。", answer: "56" },
+                { question: "2と7の最小公倍数を求めなさい。", answer: "14" },
+                { question: "3と7の最小公倍数を求めなさい。", answer: "21" },
+                { question: "4と7の最小公倍数を求めなさい。", answer: "28" },
+                { question: "5と9の最小公倍数を求めなさい。", answer: "45" },
+                { question: "3と4の最小公倍数を求めなさい。", answer: "12" },
+                { question: "12と18の最小公倍数を求めなさい。", answer: "36" },
+                { question: "8と20の最小公倍数を求めなさい。", answer: "40" },
+                { question: "14と35の最小公倍数を求めなさい。", answer: "70" },
+                { question: "2、3、4の最小公倍数を求めなさい。", answer: "12" },
+                { question: "2、3、5の最小公倍数を求めなさい。", answer: "30" },
+                { question: "3、4、6の最小公倍数を求めなさい。", answer: "12" },
+                { question: "4、6、8の最小公倍数を求めなさい。", answer: "24" },
+                { question: "3、5、9の最小公倍数を求めなさい。", answer: "45" },
+                { question: "4、5、8の最小公倍数を求めなさい。", answer: "40" },
+                { question: "6、8、12の最小公倍数を求めなさい。", answer: "24" },
+                { question: "15、20、30の最小公倍数を求めなさい。", answer: "60" }
+            ]
+        };
+
+        // SHA256ハッシュ関数
+        async function sha256(text) {
+            const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+            return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // 全角数字を半角数字に正規化
+        function normalizeNum(s) { 
+            return s.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)); 
+        }
+
+        // XSS対策用エスケープ関数
+        function safe(s) {
+            return String(s).replace(/[&<>"']/g, m => ({
+                '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;'
+            }[m]));
+        }
+
+        // プレイヤー名正規化（長さ制限）
+        function normalizeName(s){
+            return String(s || '').trim().slice(0, 20);
+        }
+
+        // 部屋IDコピー
+        window.copyRoomId = async function(){
+            try {
+                const id = gameState.roomId || '';
+                await navigator.clipboard.writeText(id);
+                showConnectionStatus('📋 部屋IDをコピーしました');
+            } catch(e){
+                showConnectionStatus('❌ コピーに失敗しました', true);
+            }
+        }
+
+        // 招待リンクコピー
+        window.copyInviteLink = async function(){
+            try {
+                const url = `${location.origin}${location.pathname}?room=${gameState.roomId}`;
+                await navigator.clipboard.writeText(url);
+                showConnectionStatus('🔗 招待リンクをコピーしました');
+            } catch(e){
+                showConnectionStatus('❌ コピーに失敗しました', true);
+            }
+        }
+
+        // 接続状態表示
+        function showConnectionStatus(message, isError = false) {
+            const status = document.getElementById('connectionStatus');
+            status.textContent = message;
+            status.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-full text-white font-semibold ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+            status.classList.remove('hidden');
+            
+            if (!isError) {
+                setTimeout(() => {
+                    status.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        // 観戦モード初期化
+        if (isObserverMode) {
+            document.addEventListener('DOMContentLoaded', () => {
+                const roomId = urlParams.get('room');
+                if (roomId) {
+                    gameState.roomId = roomId;
+                    showObserverScreen();
+                } else {
+                    alert('観戦モードには ?view=board&room=ROOMID が必要です');
+                }
+            });
+        }
+
+        // 画面切り替え関数
+        function showScreen(screenId) {
+            const screens = ['mainScreen', 'roomCreateScreen', 'roomJoinScreen', 'waitingScreen', 'gameScreen', 'resultScreen', 'betweenQuestionsScreen', 'observerScreen'];
+            screens.forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        window.showMainScreen = function() {
+            showScreen('mainScreen');
+            resetGame();
+        }
+
+        window.showRoomCreate = function() {
+            showScreen('roomCreateScreen');
+        }
+
+        window.showRoomJoin = function() {
+            showScreen('roomJoinScreen');
+        }
+
+        // 観戦モード画面表示
+        function showObserverScreen() {
+            showScreen('observerScreen');
+            document.getElementById('observerRoomId').textContent = gameState.roomId;
+            
+            // 部屋とプレイヤーの購読開始
+            subscribeToRoom();
+            subscribeToPlayers();
+        }
+
+        // 観戦タイマー
+        function startObserverTimer() {
+            if (observerTimer) clearInterval(observerTimer);
+            observerTimer = setInterval(() => {
+                if (!gameState.questionStartAtMs) return;
+                const elapsed = Math.floor((Date.now() - gameState.questionStartAtMs) / 1000);
+                const timeLeft = Math.max(0, gameState.durationSec - elapsed);
+                const el = document.getElementById('observerTimeLeft');
+                if (el) el.textContent = timeLeft;
+            }, 250);
+        }
+
+        // 強化されたルームID生成（8-10桁、暗号学的に安全）
+        function randomId(len = 8) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            const buf = new Uint8Array(len);
+            crypto.getRandomValues(buf);
+            return Array.from(buf, b => chars[b % chars.length]).join('');
+        }
+
+        async function generateRoomId() {
+            for (let i = 0; i < 5; i++) {
+                const id = randomId(8); // 8桁推奨
+                const snap = await getDoc(doc(db, 'rooms', id));
+                if (!snap.exists()) return id;
+            }
+            return randomId(10); // 衝突時は10桁にフォールバック
+        }
+
+        // 部屋作成
+        window.createRoom = async function(btn) {
+            if (!auth.currentUser) { 
+                showConnectionStatus('🔐 接続準備中… 数秒後に再試行してください', true); 
+                return; 
+            }
+            
+            btn?.setAttribute('disabled', true);
+            
+            const usePassword = document.getElementById('usePasswordToggle').checked;
+            const password = usePassword ? document.getElementById('createPassword').value.trim() : '';
+            const playerName = normalizeName(document.getElementById('createPlayerName').value);
+            
+            if (!playerName) {
+                showConnectionStatus('プレイヤー名を入力してください！', true);
+                btn?.removeAttribute('disabled');
+                return;
+            }
+
+            if (usePassword && !password) {
+                showConnectionStatus('パスワードを入力してください！', true);
+                btn?.removeAttribute('disabled');
+                return;
+            }
+
+            try {
+                showConnectionStatus('🔄 部屋を作成中...');
+                
+                // 8桁のランダムID生成（衝突回避）
+                const roomId = await generateRoomId();
+                const passwordHash = password ? await sha256(password) : null;
+                
+                // 問題をシャッフル
+                const shuffledQuestions = [...gameState.questions].sort(() => Math.random() - 0.5).slice(0, 5);
+                
+                // 部屋作成（24時間後に自動削除）
+                const expiresAt = Timestamp.fromMillis(Date.now() + 24*60*60*1000);
+                
+                await setDoc(doc(db, 'rooms', roomId), {
+                    passwordHash: passwordHash,
+                    requirePassword: !!password,
+                    locked: false,
+                    status: 'waiting',
+                    questionIndex: 0,
+                    questions: shuffledQuestions,
+                    hostUid: auth.currentUser?.uid,
+                    durationSec: 20,
+                    createdAt: serverTimestamp(),
+                    expiresAt: expiresAt
+                });
+
+                // プレイヤー追加（uidをドキュメントIDに使用）
+                const playerId = auth.currentUser?.uid;
+                await setDoc(doc(db, 'rooms', roomId, 'players', playerId), {
+                    name: playerName,
+                    score: 0,
+                    joinedAt: serverTimestamp(),
+                    role: 'host',
+                    expiresAt: expiresAt
+                });
+
+                gameState.roomId = roomId;
+                gameState.playerId = playerId;
+                gameState.playerName = playerName;
+                gameState.isHost = true;
+
+                showConnectionStatus('✅ 部屋を作成しました！');
+                showWaitingScreen();
+                
+            } catch (error) {
+                console.error('部屋作成エラー:', error);
+                showConnectionStatus('❌ 部屋作成に失敗しました', true);
+            } finally {
+                btn?.removeAttribute('disabled');
+            }
+        }
+
+        // 部屋参加
+        window.joinRoom = async function(btn) {
+            if (!auth.currentUser) { 
+                showConnectionStatus('🔐 接続準備中… 数秒後に再試行してください', true); 
+                return; 
+            }
+            
+            btn?.setAttribute('disabled', true);
+            
+            const roomId = document.getElementById('joinRoomId').value.trim().toUpperCase();
+            const usePassword = document.getElementById('joinUsePasswordToggle').checked;
+            const password = usePassword ? document.getElementById('joinPassword').value.trim() : '';
+            const playerName = normalizeName(document.getElementById('joinPlayerName').value);
+            
+            if (!roomId || !playerName) {
+                showConnectionStatus('部屋IDとプレイヤー名を入力してください！', true);
+                btn?.removeAttribute('disabled');
+                return;
+            }
+
+            if (usePassword && !password) {
+                showConnectionStatus('パスワードを入力してください！', true);
+                btn?.removeAttribute('disabled');
+                return;
+            }
+
+            try {
+                showConnectionStatus('🔄 部屋に参加中...');
+                
+                // 部屋の存在確認とパスワード照合
+                const roomDoc = await getDoc(doc(db, 'rooms', roomId));
+                if (!roomDoc.exists()) {
+                    showConnectionStatus('部屋が見つかりません！', true);
+                    return;
+                }
+
+                const roomData = roomDoc.data();
+                
+                // ロック確認
+                if (roomData.locked) {
+                    showConnectionStatus('この部屋はロック中です！', true);
+                    return;
+                }
+
+                // パスワード確認
+                if (roomData.requirePassword) {
+                    if (!password) {
+                        showConnectionStatus('この部屋はパスワードが必要です！', true);
+                        return;
+                    }
+                    const passwordHash = await sha256(password);
+                    if (roomData.passwordHash !== passwordHash) {
+                        showConnectionStatus('パスワードが間違っています！', true);
+                        return;
+                    }
+                }
+
+                if (roomData.status !== 'waiting') {
+                    showConnectionStatus('この部屋はすでにゲーム中です！', true);
+                    return;
+                }
+
+                // プレイヤー追加（uidをドキュメントIDに使用）
+                const playerId = auth.currentUser?.uid;
+                const expiresAt = Timestamp.fromMillis(Date.now() + 24*60*60*1000);
+                await setDoc(doc(db, 'rooms', roomId, 'players', playerId), {
+                    name: playerName,
+                    score: 0,
+                    joinedAt: serverTimestamp(),
+                    role: 'player',
+                    expiresAt: expiresAt
+                });
+
+                gameState.roomId = roomId;
+                gameState.playerId = playerId;
+                gameState.playerName = playerName;
+                gameState.isHost = false;
+
+                showConnectionStatus('✅ 部屋に参加しました！');
+                showWaitingScreen();
+                
+            } catch (error) {
+                console.error('部屋参加エラー:', error);
+                showConnectionStatus('❌ 部屋参加に失敗しました', true);
+            } finally {
+                btn?.removeAttribute('disabled');
+            }
+        }
+
+        // 待機画面表示
+        function showWaitingScreen() {
+            showScreen('waitingScreen');
+            document.getElementById('currentRoomId').textContent = gameState.roomId;
+            
+            // ホストのみ開始ボタンを有効化
+            const startButton = document.getElementById('startButton');
+            if (gameState.isHost) {
+                startButton.disabled = false;
+                startButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                startButton.disabled = true;
+                startButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            
+            // リアルタイム更新の購読開始
+            subscribeToRoom();
+            subscribeToPlayers();
+        }
+
+        // 部屋状態の購読
+        function subscribeToRoom() {
+            if (gameState.roomUnsubscribe) {
+                gameState.roomUnsubscribe();
+            }
+            
+            gameState.roomUnsubscribe = onSnapshot(doc(db, 'rooms', gameState.roomId), (doc) => {
+                if (doc.exists()) {
+                    const roomData = doc.data();
+                    
+                    // 持続時間をキャッシュ
+                    gameState.durationSec = roomData.durationSec || 20;
+                    
+                    // inGameなら最初に開始時刻を反映（遷移前に揃える）
+                    if (roomData.status === 'inGame' && roomData.questionStartAt) {
+                        gameState.questionStartAtMs = roomData.questionStartAt.toMillis();
+                    }
+                    
+                    // 終了時は即リザルトへ
+                    if (roomData.status === 'ended') {
+                        if (observerTimer) { clearInterval(observerTimer); observerTimer = null; }
+                        if (gameState.isObserver) {
+                            const el = document.getElementById('observerTimeLeft');
+                            if (el) el.textContent = 0;
+                            // 観戦UIのまま固定表示
+                        } else {
+                            showResults();
+                        }
+                        if (gameState.playersUnsubscribe) { gameState.playersUnsubscribe(); gameState.playersUnsubscribe = null; }
+                        if (gameState.answersUnsubscribe) { gameState.answersUnsubscribe(); gameState.answersUnsubscribe = null; }
+                        return;
+                    }
+                    
+                    // 観戦モードの場合
+                    if (gameState.isObserver) {
+                        document.getElementById('observerQuestionNumber').textContent = (roomData.questionIndex || 0) + 1;
+                        
+                        // タイマー同期（観戦モード用）
+                        if (roomData.questionStartAt && roomData.status === 'inGame') {
+                            gameState.questionStartAtMs = roomData.questionStartAt.toMillis();
+                            startObserverTimer();
+                        }
+                        return;
+                    }
+                    
+                    if (roomData.status === 'inGame' && document.getElementById('waitingScreen').classList.contains('hidden') === false) {
+                        // ゲーム開始
+                        gameState.questions = roomData.questions;
+                        showScreen('gameScreen');
+                        showQuestion();
+                    } else if (roomData.status === 'inGame') {
+                        // 問題インデックスの更新
+                        if (roomData.questionIndex !== gameState.currentQuestion) {
+                            gameState.currentQuestion = roomData.questionIndex;
+                            if (gameState.currentQuestion >= 5) {
+                                showResults();
+                            } else {
+                                showQuestion();
+                            }
+                        }
+                        
+                        // タイマー同期
+                        if (roomData.questionStartAt) {
+                            gameState.questionStartAtMs = roomData.questionStartAt.toMillis();
+                        }
+                    }
+                }
+            });
+        }
+
+        // プレイヤー一覧の購読
+        function subscribeToPlayers() {
+            if (gameState.playersUnsubscribe) {
+                gameState.playersUnsubscribe();
+            }
+            
+            gameState.playersUnsubscribe = onSnapshot(
+                query(collection(db, 'rooms', gameState.roomId, 'players'), orderBy('joinedAt')),
+                (snapshot) => {
+                    // プレイヤーキャッシュを更新
+                    gameState.playersCache = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    
+                    if (gameState.isObserver) {
+                        updateObserverScoreBoard(snapshot.docs);
+                    } else {
+                        updatePlayerList(snapshot.docs);
+                        updateScoreBoard(snapshot.docs);
+                    }
+                }
+            );
+        }
+
+        // 回答の購読
+        function subscribeToAnswers() {
+            if (gameState.answersUnsubscribe) {
+                gameState.answersUnsubscribe();
+            }
+            
+            const answersQuery = query(
+                collection(db, 'rooms', gameState.roomId, 'answers'),
+                where('questionIndex', '==', gameState.currentQuestion)
+            );
+            
+            gameState.answersUnsubscribe = onSnapshot(answersQuery, (snapshot) => {
+                updateAnswerStatus(snapshot.docs);
+            });
+        }
+
+        // プレイヤーリスト更新
+        function updatePlayerList(playerDocs) {
+            const playerList = document.getElementById('playerList');
+            if (!playerList) return;
+            
+            playerList.innerHTML = '';
+            
+            playerDocs.forEach((doc, index) => {
+                const player = doc.data();
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'bg-white rounded-lg p-3 flex items-center space-x-3';
+                playerDiv.innerHTML = `
+                    <div class="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        ${index + 1}
+                    </div>
+                    <span class="text-base md:text-lg font-semibold">${safe(player.name)}</span>
+                    ${doc.id === gameState.playerId ? '<span class="text-xs md:text-sm text-blue-500">（あなた）</span>' : ''}
+                    ${player.role === 'host' ? '<span class="text-xs md:text-sm text-purple-500">👑</span>' : ''}
+                `;
+                playerList.appendChild(playerDiv);
+            });
+        }
+
+        // 観戦モード用スコアボード更新
+        function updateObserverScoreBoard(playerDocs) {
+            const scoreBoard = document.getElementById('observerScoreBoard');
+            if (!scoreBoard) return;
+            
+            scoreBoard.innerHTML = '';
+            
+            // スコア順にソート
+            const sortedPlayers = playerDocs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => b.score - a.score);
+            
+            sortedPlayers.forEach((player, index) => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = `rounded-2xl p-6 text-center transition-all duration-300 transform hover:scale-105`;
+                
+                if (index === 0) {
+                    playerDiv.className += ' bg-gradient-to-r from-yellow-300 to-yellow-500 shadow-2xl';
+                } else if (index === 1) {
+                    playerDiv.className += ' bg-gradient-to-r from-gray-300 to-gray-500 shadow-xl';
+                } else if (index === 2) {
+                    playerDiv.className += ' bg-gradient-to-r from-orange-300 to-orange-500 shadow-xl';
+                } else {
+                    playerDiv.className += ' bg-gradient-to-r from-blue-200 to-purple-300 shadow-lg';
+                }
+                
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
+                
+                playerDiv.innerHTML = `
+                    <div class="text-4xl mb-3">${medal}</div>
+                    <div class="text-2xl font-bold text-gray-800 mb-2">${safe(player.name)}</div>
+                    <div class="text-3xl font-bold text-blue-700">${player.score}点</div>
+                    <div class="text-lg text-gray-600 mt-2">${index + 1}位</div>
+                `;
+                scoreBoard.appendChild(playerDiv);
+            });
+        }
+
+        // ゲーム開始
+        window.startGame = async function(btn) {
+            if (!gameState.isHost) return;
+            
+            btn?.setAttribute('disabled', true);
+            
+            try {
+                showConnectionStatus('🚀 ゲームを開始します...');
+                
+                await updateDoc(doc(db, 'rooms', gameState.roomId), {
+                    status: 'inGame',
+                    locked: true,
+                    questionIndex: 0,
+                    questionStartAt: serverTimestamp()
+                });
+                
+            } catch (error) {
+                console.error('ゲーム開始エラー:', error);
+                showConnectionStatus('❌ ゲーム開始に失敗しました', true);
+            } finally {
+                btn?.removeAttribute('disabled');
+            }
+        }
+
+        // 問題表示
+        function showQuestion() {
+            if (gameState.currentQuestion >= 5) {
+                showResults();
+                return;
+            }
+            
+            const question = gameState.questions[gameState.currentQuestion];
+            document.getElementById('questionNumber').textContent = gameState.currentQuestion + 1;
+            document.getElementById('questionText').textContent = question.question;
+            document.getElementById('answerInput').value = '';
+            
+            // UI要素をリセット
+            document.getElementById('answerInput').disabled = false;
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('answerInput').classList.remove('answered');
+            
+            // タイマー開始
+            startTimer();
+            
+            // 回答状況の購読開始
+            subscribeToAnswers();
+            
+            // 入力フィールドにフォーカス
+            setTimeout(() => {
+                document.getElementById('answerInput').focus();
+            }, 100);
+        }
+
+        // タイマー開始
+        function startTimer() {
+            if (gameState.timer) {
+                clearInterval(gameState.timer);
+            }
+            
+            gameState.timer = setInterval(() => {
+                if (!gameState.questionStartAtMs) return;
+                
+                const elapsed = Math.floor((Date.now() - gameState.questionStartAtMs) / 1000);
+                gameState.timeLeft = Math.max(0, gameState.durationSec - elapsed);
+                updateTimerDisplay();
+                
+                if (gameState.timeLeft <= 0) {
+                    clearInterval(gameState.timer);
+                    // 時間切れの場合も回答として記録
+                    if (document.getElementById('answerInput').disabled === false) {
+                        submitAnswer();
+                    }
+                }
+            }, 250); // 細かく更新して見た目なめらかに
+        }
+
+        // タイマー表示更新
+        function updateTimerDisplay() {
+            const timeLeftElement = document.getElementById('timeLeft');
+            if (timeLeftElement) {
+                timeLeftElement.textContent = gameState.timeLeft;
+            }
+            
+            const circles = [document.getElementById('timerCircle'), document.getElementById('timerCircleLarge')];
+            circles.forEach((circle) => {
+                if (circle) {
+                    const durationSec = gameState.durationSec;
+                    
+                    const radius = parseFloat(circle.getAttribute('r') || '0');
+                    const circumference = 2 * Math.PI * radius;
+                    const offset = circumference - (circumference * gameState.timeLeft / durationSec);
+                    circle.style.strokeDasharray = circumference;
+                    circle.style.strokeDashoffset = offset;
+                    
+                    // 時間が少なくなったら色を変更
+                    const halfTime = durationSec / 2;
+                    const quarterTime = durationSec / 4;
+                    
+                    if (gameState.timeLeft <= quarterTime) {
+                        circle.style.stroke = '#ef4444';
+                    } else if (gameState.timeLeft <= halfTime) {
+                        circle.style.stroke = '#f59e0b';
+                    } else {
+                        circle.style.stroke = '#10b981';
+                    }
+                }
+            });
+        }
+
+        // 回答送信
+        window.submitAnswer = async function() {
+            if (window._submittingAnswer) return;
+            const ai = document.getElementById('answerInput');
+            const sb = document.getElementById('submitBtn');
+            if (ai.disabled) return;
+            window._submittingAnswer = true;
+            ai.disabled = true; sb.disabled = true; ai.classList.add('answered');
+            
+            const raw = ai.value.trim();
+            const userAnswer = normalizeNum(raw).replace(/[()（）]/g, '');
+            const correctAnswer = normalizeNum(gameState.questions[gameState.currentQuestion].answer).replace(/[()（）]/g, '');
+            
+            const isCorrect = userAnswer === correctAnswer;
+            
+            try {
+                const answerRef = doc(db, 'rooms', gameState.roomId, 'answers',
+                    `${gameState.currentQuestion}_${gameState.playerId}`);
+                await runTransaction(db, async (tx) => {
+                    const snap = await tx.get(answerRef);
+                    if (snap.exists()) return; // 先着のみ
+                    const expiresAt = Timestamp.fromMillis(Date.now() + 24*60*60*1000);
+                    tx.set(answerRef, {
+                        playerId: gameState.playerId,
+                        playerName: gameState.playerName,
+                        questionIndex: gameState.currentQuestion,
+                        answer: userAnswer,
+                        isCorrect: isCorrect,
+                        timeLeft: gameState.timeLeft,
+                        submittedAt: serverTimestamp(),
+                        expiresAt: expiresAt
+                    });
+                });
+
+                // UIはすでに無効化済み
+                
+                // ホストの場合、時間切れで採点＆次の問題へ
+                if (gameState.isHost) {
+                    if (_hostWaitInterval) clearInterval(_hostWaitInterval);
+                    _hostWaitInterval = setInterval(() => {
+                        const elapsed = Math.floor((Date.now() - (gameState.questionStartAtMs || 0)) / 1000);
+                        if (elapsed >= (gameState.durationSec || 20)) {
+                            clearInterval(_hostWaitInterval);
+                            _hostWaitInterval = null;
+                            gradeAndAdvance();
+                        }
+                    }, 200);
+                }
+                
+            } catch (error) {
+                console.error('回答送信エラー:', error);
+                showConnectionStatus('❌ 回答送信に失敗しました', true);
+                // エラー時は再回答できるよう復帰
+                ai.disabled = false; sb.disabled = false; ai.classList.remove('answered');
+            } finally { 
+                window._submittingAnswer = false; 
+            }
+        }
+
+        // 採点中フラグ
+        let gradingInFlight = false;
+        
+        // ホスト用時間切れ待ちタイマー（重複防止）
+        let _hostWaitInterval = null;
+
+        // サーバー時刻ベース採点と次問題への進行（ホスト専用）
+        async function gradeAndAdvance() {
+            if (gradingInFlight) return;
+            // ホストが不在 or 離脱 or 時間超過なら代行採点を許可
+            const hostAlive = gameState.playersCache.some(p => p.role === 'host' && !p.leftAt);
+            const elapsedMs = Date.now() - (gameState.questionStartAtMs || 0);
+            const timeExpired = elapsedMs > ((gameState.durationSec || 20) + 2) * 1000; // 2秒猶予
+            const canGrade = gameState.isHost || !hostAlive || timeExpired;
+            if (!canGrade) return;
+            gradingInFlight = true;
+            
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const roomRef = doc(db, 'rooms', gameState.roomId);
+                    const roomSnap = await transaction.get(roomRef);
+                    const roomData = roomSnap.data();
+                    const QIDX = roomData.questionIndex ?? 0;
+                    
+                    // 採点オーナー制による二重実行防止
+                    if (roomData.grading?.inProgress === true) return;
+                    
+                    transaction.update(roomRef, {
+                        grading: { 
+                            inProgress: true, 
+                            owner: gameState.playerId, 
+                            q: QIDX, 
+                            at: serverTimestamp() 
+                        }
+                    });
+                    
+                    // 採点処理（トランザクション外で実行）
+                    setTimeout(async () => {
+                        try {
+                            // オーナー確認 - 自分が採点権限を持っているかチェック
+                            const latest = await getDoc(roomRef);
+                            const g = latest.data()?.grading;
+                            if (!g || !g.inProgress || g.owner !== gameState.playerId || g.q !== QIDX) {
+                                return; // 自分の採点権限ではない
+                            }
+                            
+                            // 回答データ取得
+                            const answersQuery = query(
+                                collection(db, 'rooms', gameState.roomId, 'answers'),
+                                where('questionIndex', '==', QIDX)
+                            );
+                            const answersSnap = await getDocs(answersQuery);
+                            
+                            // サーバー時刻ベースで残り時間を再計算
+                            const questionStartMs = roomData.questionStartAt?.toMillis?.() ?? Date.now();
+                            const DURATION = roomData.durationSec || 20;
+                            
+                            const batch = writeBatch(db);
+                            answersSnap.forEach(answerDoc => {
+                                const answerData = answerDoc.data();
+                                const submittedMs = answerData.submittedAt?.toMillis?.() ?? questionStartMs;
+                                const elapsed = Math.max(0, Math.floor((submittedMs - questionStartMs) / 1000));
+                                const earned = answerData.isCorrect ? Math.max(0, DURATION - elapsed) : 0;
+                                
+                                if (earned > 0) {
+                                    const playerRef = doc(db, 'rooms', gameState.roomId, 'players', answerData.playerId);
+                                    batch.update(playerRef, { score: increment(earned) });
+                                }
+                            });
+                            await batch.commit();
+                            
+                            // 次の問題へ進行＆ロック解除
+                            if (QIDX + 1 >= 5) {
+                                await updateDoc(roomRef, { 
+                                    status: 'ended',
+                                    grading: null 
+                                });
+                            } else {
+                                await updateDoc(roomRef, {
+                                    questionIndex: QIDX + 1,
+                                    questionStartAt: serverTimestamp(),
+                                    grading: null
+                                });
+                            }
+                        } catch (error) {
+                            console.error('採点エラー:', error);
+                            // エラー時もロック解除
+                            await updateDoc(roomRef, { grading: null });
+                        }
+                    }, 100);
+                });
+            } catch (error) {
+                console.error('採点トランザクションエラー:', error);
+            } finally {
+                gradingInFlight = false;
+            }
+        }
+
+        // 回答状況更新
+        function updateAnswerStatus(answerDocs) {
+            const statusDiv = document.getElementById('playerAnswerStatus');
+            if (!statusDiv) return;
+            
+            statusDiv.innerHTML = '';
+            
+            // 回答データをプレイヤーIDでマップ化
+            const answersMap = {};
+            answerDocs.forEach(doc => {
+                const answerData = doc.data();
+                answersMap[answerData.playerId] = answerData;
+            });
+            
+            // プレイヤーキャッシュを使用してID基準で処理
+            gameState.playersCache.forEach(player => {
+                const statusItem = document.createElement('div');
+                statusItem.className = 'flex items-center justify-between p-2 rounded-lg text-sm md:text-base';
+                
+                const answerData = answersMap[player.id];
+                
+                if (answerData) {
+                    statusItem.className += answerData.isCorrect ? ' bg-green-100 border-l-4 border-green-500' : ' bg-red-100 border-l-4 border-red-500';
+                    const serverTimeLeft = Math.max(0,
+                        (gameState.durationSec || 20)
+                        - Math.max(0, Math.floor(
+                            ((answerData.submittedAt?.toMillis?.() ?? gameState.questionStartAtMs)
+                             - gameState.questionStartAtMs) / 1000
+                          ))
+                    );
+                    
+                    statusItem.innerHTML = `
+                        <span class="font-semibold">${safe(player.name)}</span>
+                        <span class="${answerData.isCorrect ? 'text-green-600' : 'text-red-600'} font-semibold">
+                            ${answerData.isCorrect ? '✅ 正解 CORRECT' : '❌ 不正解 WRONG'} (${serverTimeLeft}秒)
+                        </span>
+                    `;
+                } else {
+                    statusItem.className += ' bg-gray-100 border-l-4 border-gray-400';
+                    statusItem.innerHTML = `
+                        <span class="font-semibold">${safe(player.name)}</span>
+                        <span class="text-gray-500">⏳ 回答中... ANSWERING</span>
+                    `;
+                }
+                
+                statusDiv.appendChild(statusItem);
+            });
+            
+            // 早期終了チェック（ホストのみ）
+            if (gameState.isHost) {
+                const answeredIds = new Set(answerDocs.map(d => d.data().playerId));
+                const activePlayers = gameState.playersCache
+                    .filter(p => !p.leftAt) // 退出者除外
+                    .map(p => p.id);
+                const allAnswered = activePlayers.length > 0 && activePlayers.every(id => answeredIds.has(id));
+                
+                if (allAnswered) {
+                    // 全員回答済みなら即座に採点
+                    setTimeout(() => gradeAndAdvance(), 500);
+                }
+            }
+        }
+
+        // スコアボード更新
+        function updateScoreBoard(playerDocs) {
+            const scoreBoard = document.getElementById('scoreBoard');
+            if (!scoreBoard) return;
+            
+            scoreBoard.innerHTML = '';
+            
+            // スコア順にソート
+            const sortedPlayers = playerDocs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => b.score - a.score);
+            
+            // 現在のプレイヤーのスコアを更新
+            const currentPlayer = sortedPlayers.find(p => p.id === gameState.playerId);
+            if (currentPlayer) {
+                const scoreElement = document.getElementById('currentScore');
+                if (scoreElement) {
+                    scoreElement.textContent = currentPlayer.score;
+                }
+            }
+            
+            sortedPlayers.forEach((player, index) => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = `rounded-lg p-3 md:p-4 text-center transition-all duration-300`;
+                
+                if (index === 0) {
+                    playerDiv.className += ' bg-gradient-to-r from-yellow-200 to-yellow-400';
+                } else if (index === 1) {
+                    playerDiv.className += ' bg-gradient-to-r from-gray-200 to-gray-400';
+                } else if (index === 2) {
+                    playerDiv.className += ' bg-gradient-to-r from-orange-200 to-orange-400';
+                } else {
+                    playerDiv.className += ' bg-gradient-to-r from-blue-100 to-purple-100';
+                }
+                
+                playerDiv.innerHTML = `
+                    <div class="text-sm md:text-lg font-bold text-gray-800">${safe(player.name)}</div>
+                    <div class="text-lg md:text-2xl font-bold text-blue-600">${player.score}点</div>
+                    <div class="text-xs md:text-sm text-gray-600">${index + 1}位</div>
+                    ${player.id === gameState.playerId ? '<div class="text-xs text-blue-500">あなた</div>' : ''}
+                `;
+                scoreBoard.appendChild(playerDiv);
+            });
+        }
+
+        // 結果表示
+        function showResults() {
+            showScreen('resultScreen');
+            
+            // 最終結果を取得して表示
+            const unsubscribe = onSnapshot(
+                query(collection(db, 'rooms', gameState.roomId, 'players'), orderBy('score', 'desc')),
+                (snapshot) => {
+                    const sortedPlayers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    displayFinalResults(sortedPlayers);
+                    unsubscribe(); // 一度だけ実行
+                }
+            );
+        }
+
+        // 最終結果表示
+        function displayFinalResults(sortedPlayers) {
+            const resultsDiv = document.getElementById('finalResults');
+            resultsDiv.innerHTML = '';
+            
+            sortedPlayers.forEach((player, index) => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = `bg-gradient-to-r rounded-2xl p-4 md:p-6 text-center fade-in`;
+                
+                let bgClass, medal;
+                if (index === 0) {
+                    bgClass = 'from-yellow-200 to-yellow-400';
+                    medal = '🥇';
+                } else if (index === 1) {
+                    bgClass = 'from-gray-200 to-gray-400';
+                    medal = '🥈';
+                } else if (index === 2) {
+                    bgClass = 'from-orange-200 to-orange-400';
+                    medal = '🥉';
+                } else {
+                    bgClass = 'from-blue-100 to-blue-200';
+                    medal = '🏅';
+                }
+                
+                resultDiv.className += ` ${bgClass}`;
+                resultDiv.innerHTML = `
+                    <div class="text-3xl md:text-4xl mb-2">${medal}</div>
+                    <div class="text-xl md:text-2xl font-bold text-gray-800">${index + 1}位: ${safe(player.name)}</div>
+                    <div class="text-2xl md:text-3xl font-bold text-blue-600">${player.score}点</div>
+                    ${player.id === gameState.playerId ? '<div class="text-base md:text-lg text-purple-600 font-semibold">あなたの結果</div>' : ''}
+                `;
+                
+                resultsDiv.appendChild(resultDiv);
+            });
+            
+            // 1位の場合は特別エフェクト
+            if (sortedPlayers[0] && sortedPlayers[0].id === gameState.playerId) {
+                createConfetti();
+            }
+        }
+
+        // 紙吹雪エフェクト
+        function createConfetti() {
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dda0dd'];
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 3 + 's';
+                confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+
+        // ゲームリセット
+        function resetGame() {
+            const keepObserver = gameState.isObserver; // 退避
+            
+            // タイマーをクリア
+            if (gameState.timer) {
+                clearInterval(gameState.timer);
+            }
+            if (observerTimer) {
+                clearInterval(observerTimer);
+                observerTimer = null;
+            }
+            if (_hostWaitInterval) {
+                clearInterval(_hostWaitInterval);
+                _hostWaitInterval = null;
+            }
+            
+            // Firebase購読を解除
+            if (gameState.roomUnsubscribe) {
+                gameState.roomUnsubscribe();
+                gameState.roomUnsubscribe = null;
+            }
+            if (gameState.playersUnsubscribe) {
+                gameState.playersUnsubscribe();
+                gameState.playersUnsubscribe = null;
+            }
+            if (gameState.answersUnsubscribe) {
+                gameState.answersUnsubscribe();
+                gameState.answersUnsubscribe = null;
+            }
+            
+            // 状態をリセット
+            gameState = {
+                roomId: null,
+                playerId: null,
+                playerName: null,
+                isHost: false,
+                currentQuestion: 0,
+                timeLeft: 20,
+                durationSec: 20,
+                timer: null,
+                questionStartAtMs: null,
+                roomUnsubscribe: null,
+                playersUnsubscribe: null,
+                answersUnsubscribe: null,
+                playersCache: [],
+                isObserver: keepObserver, // 復元
+                questions: [
+                    // 最大公約数問題
+                    { question: "12と18の最大公約数を求めなさい。", answer: "6" },
+                    { question: "24と36の最大公約数を求めなさい。", answer: "12" },
+                    { question: "21と28の最大公約数を求めなさい。", answer: "7" },
+                    { question: "18と24の最大公約数を求めなさい。", answer: "6" },
+                    { question: "16と24の最大公約数を求めなさい。", answer: "8" },
+                    { question: "20と30の最大公約数を求めなさい。", answer: "10" },
+                    { question: "14と35の最大公約数を求めなさい。", answer: "7" },
+                    { question: "27と36の最大公約数を求めなさい。", answer: "9" },
+                    { question: "32と48の最大公約数を求めなさい。", answer: "16" },
+                    { question: "45と60の最大公約数を求めなさい。", answer: "15" },
+                    { question: "25と40の最大公約数を求めなさい。", answer: "5" },
+                    { question: "28と42の最大公約数を求めなさい。", answer: "14" },
+                    { question: "30と45の最大公約数を求めなさい。", answer: "15" },
+                    { question: "12と20の最大公約数を求めなさい。", answer: "4" },
+                    { question: "36と54の最大公約数を求めなさい。", answer: "18" },
+                    { question: "40と56の最大公約数を求めなさい。", answer: "8" },
+                    { question: "9と15の最大公約数を求めなさい。", answer: "3" },
+                    { question: "48と60の最大公約数を求めなさい。", answer: "12" },
+                    { question: "33と44の最大公約数を求めなさい。", answer: "11" },
+                    { question: "35と49の最大公約数を求めなさい。", answer: "7" },
+                    { question: "24と40の最大公約数を求めなさい。", answer: "8" },
+                    { question: "42と63の最大公約数を求めなさい。", answer: "21" },
+                    { question: "18と27の最大公約数を求めなさい。", answer: "9" },
+                    { question: "50と65の最大公約数を求めなさい。", answer: "5" },
+                    { question: "12と15の最大公約数を求めなさい。", answer: "3" },
+                    { question: "8、12、20の最大公約数を求めなさい。", answer: "4" },
+                    { question: "18、30、42の最大公約数を求めなさい。", answer: "6" },
+                    { question: "16、20、24の最大公約数を求めなさい。", answer: "4" },
+                    { question: "6、9、15の最大公約数を求めなさい。", answer: "3" },
+                    { question: "14、21、28の最大公約数を求めなさい。", answer: "7" },
+                    
+                    // 最小公倍数問題
+                    { question: "2と3の最小公倍数を求めなさい。", answer: "6" },
+                    { question: "3と5の最小公倍数を求めなさい。", answer: "15" },
+                    { question: "4と6の最小公倍数を求めなさい。", answer: "12" },
+                    { question: "6と8の最小公倍数を求めなさい。", answer: "24" },
+                    { question: "7と9の最小公倍数を求めなさい。", answer: "63" },
+                    { question: "8と9の最小公倍数を求めなさい。", answer: "72" },
+                    { question: "4と9の最小公倍数を求めなさい。", answer: "36" },
+                    { question: "5と6の最小公倍数を求めなさい。", answer: "30" },
+                    { question: "6と7の最小公倍数を求めなさい。", answer: "42" },
+                    { question: "5と8の最小公倍数を求めなさい。", answer: "40" },
+                    { question: "3と6の最小公倍数を求めなさい。", answer: "6" },
+                    { question: "2と8の最小公倍数を求めなさい。", answer: "8" },
+                    { question: "3と9の最小公倍数を求めなさい。", answer: "9" },
+                    { question: "4と8の最小公倍数を求めなさい。", answer: "8" },
+                    { question: "2と4の最小公倍数を求めなさい。", answer: "4" },
+                    { question: "5と7の最小公倍数を求めなさい。", answer: "35" },
+                    { question: "2と5の最小公倍数を求めなさい。", answer: "10" },
+                    { question: "6と9の最小公倍数を求めなさい。", answer: "18" },
+                    { question: "7と8の最小公倍数を求めなさい。", answer: "56" },
+                    { question: "2と7の最小公倍数を求めなさい。", answer: "14" },
+                    { question: "3と7の最小公倍数を求めなさい。", answer: "21" },
+                    { question: "4と7の最小公倍数を求めなさい。", answer: "28" },
+                    { question: "5と9の最小公倍数を求めなさい。", answer: "45" },
+                    { question: "3と4の最小公倍数を求めなさい。", answer: "12" },
+                    { question: "12と18の最小公倍数を求めなさい。", answer: "36" },
+                    { question: "8と20の最小公倍数を求めなさい。", answer: "40" },
+                    { question: "14と35の最小公倍数を求めなさい。", answer: "70" },
+                    { question: "2、3、4の最小公倍数を求めなさい。", answer: "12" },
+                    { question: "2、3、5の最小公倍数を求めなさい。", answer: "30" },
+                    { question: "3、4、6の最小公倍数を求めなさい。", answer: "12" },
+                    { question: "4、6、8の最小公倍数を求めなさい。", answer: "24" },
+                    { question: "3、5、9の最小公倍数を求めなさい。", answer: "45" },
+                    { question: "4、5、8の最小公倍数を求めなさい。", answer: "40" },
+                    { question: "6、8、12の最小公倍数を求めなさい。", answer: "24" },
+                    { question: "15、20、30の最小公倍数を求めなさい。", answer: "60" }
+                ]
+            };
+        }
+
+        // IME確定前Enter誤送信防止とキーボードイベント
+        document.addEventListener('DOMContentLoaded', function() {
+            const answerInput = document.getElementById('answerInput');
+            if (answerInput) {
+                let composing = false;
+                
+                answerInput.addEventListener('compositionstart', () => composing = true);
+                answerInput.addEventListener('compositionend', () => composing = false);
+                answerInput.addEventListener('keydown', e => { 
+                    if (e.key === 'Enter' && !composing) {
+                        window.submitAnswer();
+                    }
+                });
+                answerInput.addEventListener('input', () => {
+                    // 全角→半角のうえで数字以外は削除
+                    const normalized = normalizeNum(answerInput.value).replace(/[^0-9]/g, '');
+                    if (answerInput.value !== normalized) answerInput.value = normalized;
+                });
+            }
+
+            // パスワードトグル機能（作成画面）
+            const usePasswordToggle = document.getElementById('usePasswordToggle');
+            const createPassword = document.getElementById('createPassword');
+            if (usePasswordToggle && createPassword) {
+                usePasswordToggle.addEventListener('change', function() {
+                    if (this.checked) {
+                        createPassword.disabled = false;
+                        createPassword.classList.remove('opacity-50');
+                        createPassword.focus();
+                    } else {
+                        createPassword.disabled = true;
+                        createPassword.classList.add('opacity-50');
+                        createPassword.value = '';
+                    }
+                });
+            }
+
+            // パスワードトグル機能（参加画面）
+            const joinUsePasswordToggle = document.getElementById('joinUsePasswordToggle');
+            const joinPassword = document.getElementById('joinPassword');
+            if (joinUsePasswordToggle && joinPassword) {
+                joinUsePasswordToggle.addEventListener('change', function() {
+                    if (this.checked) {
+                        joinPassword.disabled = false;
+                        joinPassword.classList.remove('opacity-50');
+                        joinPassword.focus();
+                    } else {
+                        joinPassword.disabled = true;
+                        joinPassword.classList.add('opacity-50');
+                        joinPassword.value = '';
+                    }
+                });
+            }
+
+            // 招待リンクからの自動入力
+            if (inviteRoomId && !isObserverMode) {
+                const joinRoomIdInput = document.getElementById('joinRoomId');
+                if (joinRoomIdInput) {
+                    joinRoomIdInput.value = inviteRoomId.toUpperCase();
+                    // 参加画面を表示
+                    setTimeout(() => {
+                        showScreen('roomJoinScreen');
+                        showConnectionStatus('🔗 招待リンクから部屋IDを設定しました');
+                    }, 100);
+                }
+            }
+
+            // オンライン/オフライン通知
+            window.addEventListener('offline', () => showConnectionStatus('⚠️ オフラインになりました', true));
+            window.addEventListener('online',  () => showConnectionStatus('✅ オンラインに復帰しました'));
+        });
+
+        // ページ離脱時のクリーンアップ
+        window.addEventListener('beforeunload', async () => {
+            // プレイヤー退出記録
+            if (gameState.roomId && gameState.playerId) {
+                try {
+                    await updateDoc(doc(db, 'rooms', gameState.roomId, 'players', gameState.playerId), {
+                        leftAt: serverTimestamp()
+                    });
+                } catch (error) {
+                    console.error('退出記録エラー:', error);
+                }
+            }
+            resetGame();
+        });
+
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'978ff54f15d88d21',t:'MTc1Njg0NzA1MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
 
