@@ -1,521 +1,1378 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>分数バトル！どっちが大きい？</title>
-  <link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --bg1:#86a8e7; --bg2:#7f7fd5; --bg3:#91eae4;
-      --card:#ffffff; --ink:#233044; --muted:#5b6b82;
-      --ok:#22c55e; --ng:#ef4444; --mid:#64748b;
-      --accent:#f59e0b; --accent2:#38bdf8;
-      --radius:20px;
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-right: env(safe-area-inset-right, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-left: env(safe-area-inset-left, 0px);
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family:'BIZ UDGothic', system-ui, -apple-system, Segoe UI, Noto Sans JP, sans-serif;
-      color:var(--ink);
-      background: linear-gradient(135deg, var(--bg2), var(--bg1) 40%, var(--bg3));
-      padding: max(12px, var(--safe-top)) max(12px, var(--safe-right)) max(12px, var(--safe-bottom)) max(12px, var(--safe-left));
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-      user-select:none;
-    }
-    .app{
-      max-width:1200px; margin:0 auto; 
-      background:rgba(255,255,255,0.85);
-      backdrop-filter: blur(10px);
-      border-radius: var(--radius);
-      box-shadow: 0 20px 60px rgba(0,0,0,.18);
-      padding: 16px;
-      display:grid; gap:12px;
-      grid-template-rows:auto auto 1fr auto;
-      min-height: calc(100svh - 24px);
-    }
-    header{
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-      flex-wrap:wrap;
-    }
-    .title{
-      display:flex; align-items:center; gap:10px; 
-      font-weight:700; font-size: clamp(20px, 2.4vw, 28px);
-    }
-    .pill{
-      background: linear-gradient(135deg, #fde68a, #fca5a5);
-      padding:4px 10px; border-radius:999px; font-size:12px; color:#3b3b3b;
-    }
-    .toolbar{display:flex; gap:8px; flex-wrap:wrap}
-    .seg{
-      background:#f1f5f9; border-radius:999px; padding:4px; display:flex; gap:4px;
-    }
-    .seg button{
-      border:0; padding:8px 12px; border-radius:999px; background:transparent; cursor:pointer; font-weight:700; color:var(--muted);
-    }
-    .seg button.active{ background:#fff; color:#111827; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-    .hint-toggle{
-      border:0; padding:8px 12px; border-radius:10px; background:#e2e8f0; color:#0f172a; cursor:pointer; font-weight:700;
-    }
-    .hint-toggle.on{ background:#d1fae5; color:#065f46; }
-
-    .board{
-      background:#fff; border-radius: var(--radius); padding: clamp(12px, 1.8vw, 20px);
-      display:grid; gap: clamp(10px, 1.2vw, 14px);
-      grid-template-rows:auto 1fr auto;
-      min-height: 300px;
-    }
-    .fractions{
-      display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; gap: clamp(12px, 2vw, 24px);
-    }
-    .vs{
-      font-weight:900; color:#475569; 
-      font-size: clamp(18px, 2.6vw, 28px);
-      background:#e2e8f0; padding: 4px 10px; border-radius: 999px;
-    }
-    .frac{
-      display:inline-grid; justify-items:center; align-items:center; 
-      padding: clamp(8px, 1.2vw, 12px) clamp(10px, 1.6vw, 16px);
-      border-radius:14px;
-      background:linear-gradient(180deg,#f8fafc,#f1f5f9);
-      box-shadow: inset 0 0 0 2px rgba(0,0,0,.04);
-      min-width: 160px;
-      transform: translateZ(0);
-    }
-    .frac .top{border-bottom:2px solid #111827; width:100%; text-align:center; padding-bottom:6px;}
-    .frac .bot{padding-top:6px;}
-    .frac .num, .frac .den{
-      font-weight:800; 
-      font-size: clamp(36px, 5vw, 64px);
-      line-height:1;
-      color:#111827;
-      text-shadow: 0 1px 0 rgba(255,255,255,.6);
-    }
-
-    .controls-1p, .controls-2p{display:none}
-    .controls-1p.active, .controls-2p.active{display:grid}
-    .controls-1p{
-      grid-template-columns: repeat(3, 1fr); gap:12px;
-    }
-    .controls-2p{
-      grid-template-columns: 1fr auto 1fr; gap: 12px; align-items:stretch;
-    }
-    .btn{
-      border:0; border-radius:16px; padding: clamp(12px, 1.6vw, 16px);
-      font-size: clamp(18px, 2.2vw, 24px); font-weight:900; color:#0b1020;
-      cursor:pointer; box-shadow: 0 8px 20px rgba(0,0,0,.12);
-      display:flex; align-items:center; justify-content:center; gap:10px;
-      transition: transform .06s ease, box-shadow .2s ease, filter .2s ease;
-    }
-    .btn:active{ transform: translateY(1px) scale(.99); filter:brightness(.98); }
-    .b-left{ background: linear-gradient(135deg,#93c5fd,#60a5fa); }
-    .b-eq{ background: linear-gradient(135deg,#cbd5e1,#e2e8f0); }
-    .b-right{ background: linear-gradient(135deg,#fca5a5,#f87171); }
-
-    .split{
-      display:grid; gap:12px; grid-template-rows:1fr auto 1fr; align-items:center;
-    }
-    .player-col{ display:grid; gap:12px; grid-template-rows:repeat(3,1fr); }
-    .midline{
-      align-self:stretch; width:6px; border-radius:999px; background: linear-gradient(180deg, #38bdf8, #f59e0b);
-    }
-
-    .status{
-      display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
-      font-weight:700; color:#0f172a;
-    }
-    .score-badges{display:flex; gap:8px; flex-wrap:wrap}
-    .badge{
-      background:#f1f5f9; border-radius:999px; padding:6px 12px; color:#0f172a; font-size:14px;
-    }
-    .badge.ok{ background:#dcfce7; color:#14532d;}
-    .badge.ng{ background:#fee2e2; color:#7f1d1d;}
-    .next{
-      border:0; padding:8px 14px; border-radius:10px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.08); cursor:pointer; font-weight:800;
-    }
-
-    .toast{
-      position:fixed; left:50%; top: max(16px, calc(var(--safe-top) + 8px)); transform:translateX(-50%);
-      background:#111827; color:#f8fafc; padding:10px 14px; border-radius:10px; font-weight:700; 
-      box-shadow:0 10px 30px rgba(0,0,0,.25); opacity:0; pointer-events:none;
-      transition:opacity .25s ease, transform .25s ease;
-    }
-    .toast.show{ opacity:1; transform:translateX(-50%) translateY(4px); }
-
-    .result{
-      text-align:center; font-weight:900; color:#0b1020; 
-      font-size: clamp(16px, 2vw, 20px);
-    }
-    .explain{
-      text-align:center; color:#0f172a; font-size: clamp(14px, 1.6vw, 16px);
-      background:#f8fafc; border-radius:12px; padding:8px 10px; margin-top:6px;
-    }
-    .correct{ outline: 4px solid var(--ok); }
-    .wrong{ outline: 4px solid var(--ng); }
-
-    /* 縦向きの時に案内 */
-    .rotate-overlay{
-      position: fixed; inset:0; display:none; place-items:center; 
-      background:rgba(0,0,0,.6); color:#fff; z-index:50; text-align:center; padding:24px;
-    }
-    @media (orientation: portrait){
-      .rotate-overlay{ display:grid; }
-    }
-
-    @media (max-width: 900px){
-      .frac{ min-width: 120px; }
-    }
-    @media (prefers-reduced-motion: reduce){
-      .btn, .toast{ transition:none }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>分数バトル！</title>
+    <link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --safe-top: env(safe-area-inset-top);
+            --safe-right: env(safe-area-inset-right);
+            --safe-bottom: env(safe-area-inset-bottom);
+            --safe-left: env(safe-area-inset-left);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100svh;
+        }
+        
+        body {
+            font-family: 'BIZ UDGothic', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            padding: max(8px, var(--safe-top)) max(8px, var(--safe-right)) max(8px, var(--safe-bottom)) max(8px, var(--safe-left));
+            touch-action: manipulation;
+        }
+        
+        .container {
+            width: min(1200px, 100%);
+            padding: 20px;
+        }
+        
+        .screen {
+            display: none;
+            background: white;
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            min-height: 600px;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        .title {
+            font-size: 3.5rem;
+            color: #4a5568;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            font-size: 1.5rem;
+            color: #718096;
+            margin-bottom: 40px;
+        }
+        
+        .mode-buttons {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        
+        .mode-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 25px 40px;
+            font-size: 1.8rem;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            min-width: 200px;
+        }
+        
+        .mode-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.2);
+        }
+        
+        .mode-btn.two-player {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+        }
+        
+        .game-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 40px 0;
+            gap: 30px;
+        }
+        
+        .fraction-card {
+            background: linear-gradient(135deg, #ffecd2, #fcb69f);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            min-width: 200px;
+            transform: scale(1);
+            transition: all 0.3s ease;
+        }
+        
+        .fraction-card:hover {
+            transform: scale(1.05);
+        }
+        
+        .fraction {
+            font-size: 4rem;
+            color: #2d3748;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .numerator {
+            border-bottom: 4px solid #2d3748;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            min-width: 80px;
+        }
+        
+        .denominator {
+            min-width: 80px;
+        }
+        
+        .vs {
+            font-size: 3rem;
+            color: #e53e3e;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .answer-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        
+        .answer-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 50px 35px;
+            font-size: 1.5rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            min-width: 120px;
+            min-height: 80px;
+        }
+        
+        .answer-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        .answer-btn.left {
+            background: linear-gradient(135deg, #ff9a9e, #fecfef);
+            color: #2d3748;
+        }
+        
+        .answer-btn.right {
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            color: #2d3748;
+        }
+        
+        .answer-btn.equal {
+            background: linear-gradient(135deg, #ffecd2, #fcb69f);
+            color: #2d3748;
+        }
+        
+        .score-area {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .score-card {
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            padding: 8px 15px;
+            border-radius: 15px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+            min-width: 120px;
+        }
+        
+        .score-label {
+            font-size: 1rem;
+            color: #4a5568;
+            margin-bottom: 5px;
+        }
+        
+        .score-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        
+        .back-btn {
+            background: linear-gradient(135deg, #cbd5e0, #a0aec0);
+            color: #2d3748;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px;
+        }
+        
+        .back-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .result-message {
+            font-size: 2rem;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 15px;
+            font-weight: bold;
+        }
+        
+        .correct {
+            background: linear-gradient(135deg, #68d391, #38b2ac);
+            color: white;
+        }
+        
+        .incorrect {
+            background: linear-gradient(135deg, #fc8181, #e53e3e);
+            color: white;
+        }
+        
+        .rules {
+            text-align: left;
+            background: #f7fafc;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            font-size: 1.2rem;
+            line-height: 1.6;
+        }
+        
+        .rules h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .rules ul {
+            margin-left: 20px;
+        }
+        
+        .rules li {
+            margin-bottom: 10px;
+            color: #4a5568;
+        }
+        
+        /* 2人モード設定画面 */
+        .score-selection {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .score-btn {
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e0);
+            color: #4a5568;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.3rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .score-btn.selected {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .score-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 40px 0;
+            gap: 20px;
+        }
+        
+        .player-card {
+            background: linear-gradient(135deg, #ffecd2, #fcb69f);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+            flex: 1;
+            max-width: 300px;
+        }
+        
+        .player-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #2d3748;
+        }
+        
+        .player-card p {
+            color: #4a5568;
+            font-size: 1.1rem;
+        }
+        
+        .player-name-input {
+            background: transparent;
+            border: none;
+            color: #2d3748;
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-family: inherit;
+            text-align: center;
+            outline: none;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            padding: 2px 8px;
+            border-radius: 4px;
+            max-width: 150px;
+        }
+        
+        .player-name-input:focus {
+            border-bottom: 2px solid #4ecdc4;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        .player-name-input:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .vs-large {
+            font-size: 2.5rem;
+            color: #e53e3e;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* 2人モードゲーム画面 */
+        .two-player-buttons {
+            display: flex;
+            gap: 40px;
+            justify-content: space-between;
+            margin: 30px 0;
+        }
+        
+        .player-section {
+            flex: 1;
+            background: linear-gradient(135deg, #f7fafc, #edf2f7);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        
+        .left-section {
+            border-left: 5px solid #ff6b6b;
+        }
+        
+        .right-section {
+            border-right: 5px solid #4ecdc4;
+        }
+        
+        .player-title {
+            font-size: 1.5rem;
+            color: #2d3748;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .player-answer-buttons {
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .player1-btn {
+            background: linear-gradient(135deg, #ff9a9e, #fecfef) !important;
+            color: #2d3748 !important;
+        }
+        
+        .player2-btn {
+            background: linear-gradient(135deg, #a8edea, #fed6e3) !important;
+            color: #2d3748 !important;
+        }
+        
+        .player1-btn:hover, .player2-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        .answer-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        /* 大きなポップアップアニメーション */
+        .big-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, #68d391, #38b2ac);
+            color: white;
+            padding: 30px 80px;
+            border-radius: 25px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: popupAnimation 1.5s ease-out;
+            pointer-events: none;
+            text-align: center;
+            line-height: 1.2;
+            min-width: 400px;
+        }
+        
+        .big-popup.player1 {
+            background: linear-gradient(135deg, #ff9a9e, #fecfef);
+            color: #2d3748;
+        }
+        
+        .big-popup.player2 {
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            color: #2d3748;
+        }
+        
+        @keyframes popupAnimation {
+            0% {
+                transform: translate(-50%, -50%) scale(0) rotate(-10deg);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2) rotate(5deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1) rotate(0deg);
+                opacity: 0;
+            }
+        }
+        
+        /* iPad横画面最適化 */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            .container {
+                max-width: 100%;
+                padding: 10px;
+            }
+            
+            .screen {
+                padding: 20px;
+                min-height: auto;
+                max-height: 100vh;
+                overflow: hidden;
+            }
+            
+            .title {
+                font-size: 2.5rem;
+                margin-bottom: 15px;
+            }
+            
+            .subtitle {
+                font-size: 1.2rem;
+                margin-bottom: 20px;
+            }
+            
+            .rules {
+                padding: 15px;
+                margin: 15px 0;
+                font-size: 1rem;
+            }
+            
+            .game-area {
+                margin: 20px 0;
+                gap: 15px;
+            }
+            
+            .fraction-card {
+                padding: 25px;
+                min-width: 150px;
+            }
+            
+            .fraction {
+                font-size: 2.5rem;
+            }
+            
+            .vs {
+                font-size: 2rem;
+            }
+            
+            .score-area {
+                margin: 15px 0;
+                gap: 10px;
+            }
+            
+            .score-card {
+                padding: 15px;
+                min-width: 120px;
+            }
+            
+            .answer-buttons {
+                margin: 20px 0;
+                gap: 15px;
+            }
+            
+            .answer-btn {
+                padding: 15px 20px;
+                font-size: 1.2rem;
+                min-width: 100px;
+            }
+            
+            /* 2人モード用iPad最適化 */
+            .two-player-buttons {
+                gap: 20px;
+                margin: 15px 0;
+            }
+            
+            .player-section {
+                padding: 15px;
+            }
+            
+            .player-title {
+                font-size: 1.2rem;
+                margin-bottom: 15px;
+            }
+            
+            .player-answer-buttons {
+                gap: 8px;
+                flex-direction: row;
+            }
+            
+            .player-answer-buttons .answer-btn {
+                padding: 10px 12px;
+                font-size: 0.9rem;
+                min-width: 80px;
+            }
+            
+            .player-info {
+                margin: 20px 0;
+                gap: 15px;
+            }
+            
+            .player-card {
+                padding: 15px;
+            }
+            
+            .vs-large {
+                font-size: 2rem;
+            }
+            
+            .score-selection {
+                gap: 10px;
+                margin: 20px 0;
+            }
+            
+            .score-btn {
+                padding: 12px 20px;
+                font-size: 1.1rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+            }
+            
+            .game-area {
+                flex-direction: column;
+                gap: 30px;
+            }
+            
+            .fraction {
+                font-size: 3rem;
+            }
+            
+            .vs {
+                font-size: 2rem;
+            }
+        }
+        
+        /* 動きに弱い子向けのアニメ軽減 */
+        @media (prefers-reduced-motion: reduce) {
+            .big-popup { animation: none !important; }
+            .answer-btn:hover { transform: none !important; box-shadow: none !important; }
+        }
+    </style>
 </head>
 <body>
-  <div class="app" role="application" aria-label="分数の大小判別ゲーム">
-    <header>
-      <div class="title">
-        <span style="font-size:1.4em">🎈</span>
-        <div>分数バトル！<span class="pill">iPad横向きに最適化</span></div>
-      </div>
-      <div class="toolbar">
-        <div class="seg" role="tablist" aria-label="モード切替">
-          <button id="mode1p" class="active" role="tab" aria-selected="true">1人モード</button>
-          <button id="mode2p" role="tab" aria-selected="false">2人モード</button>
+    <div class="container">
+        <!-- メニュー画面 -->
+        <div id="menu-screen" class="screen active">
+            <h1 class="title" id="menu-title" tabindex="-1">🎯 分数バトル！</h1>
+            <p class="subtitle">どちらの分数が大きいかな？</p>
+            
+            <div class="rules">
+                <h3>📚 ゲームのルール</h3>
+                <ul>
+                    <li>画面に2つの分数が表示されます</li>
+                    <li>どちらが大きいか、または等しいかを選んでください</li>
+                    <li>正解すると1点もらえます</li>
+                    <li>10問チャレンジして高得点を目指そう！</li>
+                </ul>
+            </div>
+            
+            <div class="score-area" style="margin: 20px 0;">
+                <div class="score-card">
+                    <div class="score-label">🏆 ハイスコア</div>
+                    <div class="score-value" id="high-score-display">--</div>
+                </div>
+            </div>
+            
+            <div class="mode-buttons">
+                <button class="mode-btn" onclick="startGame(1)">
+                    🎮 1人モード
+                </button>
+                <button class="mode-btn two-player" onclick="showTwoPlayerSetup()">
+                    👥 2人モード
+                </button>
+            </div>
         </div>
-        <button id="toggleHint" class="hint-toggle" aria-pressed="false">ヒントOFF</button>
-        <button id="reset" class="hint-toggle">リセット</button>
-      </div>
-    </header>
-
-    <section class="board" aria-live="polite">
-      <div class="fractions">
-        <div id="leftFrac" class="frac" aria-label="左の分数">
-          <div class="top"><span class="num">1</span></div>
-          <div class="bot"><span class="den">2</span></div>
+        
+        <!-- 2人モード設定画面 -->
+        <div id="two-player-setup" class="screen">
+            <h2 class="title">👥 2人モード設定</h2>
+            <p class="subtitle">何点先取で勝負しますか？</p>
+            
+            <div class="score-selection">
+                <button class="score-btn" onclick="setTargetScore(this, 3)">3点先取</button>
+                <button class="score-btn selected" onclick="setTargetScore(this, 5)">5点先取</button>
+                <button class="score-btn" onclick="setTargetScore(this, 7)">7点先取</button>
+                <button class="score-btn" onclick="setTargetScore(this, 10)">10点先取</button>
+            </div>
+            
+            <div class="player-info">
+                <div class="player-card left-player">
+                    <h3>👤 <input type="text" id="player1-name" class="player-name-input" value="プレイヤー1" onclick="this.select()"></h3>
+                    <p>左側のボタンで解答</p>
+                </div>
+                <div class="vs-large">VS</div>
+                <div class="player-card right-player">
+                    <h3>👤 <input type="text" id="player2-name" class="player-name-input" value="プレイヤー2" onclick="this.select()"></h3>
+                    <p>右側のボタンで解答</p>
+                </div>
+            </div>
+            
+            <div class="mode-buttons">
+                <button class="mode-btn" onclick="showMenu()">← 戻る</button>
+                <button class="mode-btn two-player" onclick="startTwoPlayerGame()">ゲーム開始！</button>
+            </div>
         </div>
-        <div class="vs">VS</div>
-        <div id="rightFrac" class="frac" aria-label="右の分数">
-          <div class="top"><span class="num">1</span></div>
-          <div class="bot"><span class="den">3</span></div>
+
+        <!-- ゲーム画面 -->
+        <div id="game-screen" class="screen">
+            <button class="back-btn" onclick="showMenu()">← メニューに戻る</button>
+            
+            <div class="score-area">
+                <div class="score-card">
+                    <div class="score-label">問題</div>
+                    <div class="score-value" id="question-count">1 / 10</div>
+                </div>
+                <div class="score-card" id="timer-card" style="display: none;">
+                    <div class="score-label">⏱️ 経過時間</div>
+                    <div class="score-value" id="timer-display">0秒</div>
+                </div>
+                <div class="score-card" id="player1-score-card">
+                    <div class="score-label" id="player1-label">あなたの得点</div>
+                    <div class="score-value" id="player1-score">0</div>
+                </div>
+                <div class="score-card" id="player2-score-card" style="display: none;">
+                    <div class="score-label" id="player2-label">プレイヤー2の得点</div>
+                    <div class="score-value" id="player2-score">0</div>
+                </div>
+            </div>
+            
+            <div class="game-area">
+                <div class="fraction-card">
+                    <div class="fraction">
+                        <div class="numerator" id="fraction1-num">1</div>
+                        <div class="denominator" id="fraction1-den">2</div>
+                    </div>
+                </div>
+                
+                <div class="vs">VS</div>
+                
+                <div class="fraction-card">
+                    <div class="fraction">
+                        <div class="numerator" id="fraction2-num">1</div>
+                        <div class="denominator" id="fraction2-den">3</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 1人モード用ボタン -->
+            <div class="answer-buttons" id="single-player-buttons">
+                <button class="answer-btn left" onclick="checkAnswer('left')">
+                    ← 左が大きい
+                </button>
+                <button class="answer-btn equal" onclick="checkAnswer('equal')">
+                    = 等しい
+                </button>
+                <button class="answer-btn right" onclick="checkAnswer('right')">
+                    右が大きい →
+                </button>
+            </div>
+
+            <!-- 2人モード用ボタン -->
+            <div class="two-player-buttons" id="two-player-buttons" style="display: none;">
+                <div class="player-section left-section">
+                    <h3 class="player-title" id="game-player1-title">👤 プレイヤー1</h3>
+                    <div class="player-answer-buttons">
+                        <button class="answer-btn left player1-btn" onclick="checkAnswerTwoPlayer(1, 'left')">
+                            ← 左が大きい
+                        </button>
+                        <button class="answer-btn equal player1-btn" onclick="checkAnswerTwoPlayer(1, 'equal')">
+                            = 等しい
+                        </button>
+                        <button class="answer-btn right player1-btn" onclick="checkAnswerTwoPlayer(1, 'right')">
+                            右が大きい →
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="player-section right-section">
+                    <h3 class="player-title" id="game-player2-title">👤 プレイヤー2</h3>
+                    <div class="player-answer-buttons">
+                        <button class="answer-btn left player2-btn" onclick="checkAnswerTwoPlayer(2, 'left')">
+                            ← 左が大きい
+                        </button>
+                        <button class="answer-btn equal player2-btn" onclick="checkAnswerTwoPlayer(2, 'equal')">
+                            = 等しい
+                        </button>
+                        <button class="answer-btn right player2-btn" onclick="checkAnswerTwoPlayer(2, 'right')">
+                            右が大きい →
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 2人戦用パスボタン -->
+            <div id="pass-button-area" style="display: none; text-align: center; margin: 20px 0;">
+                <button class="back-btn" onclick="skipToNextQuestion()" style="background: linear-gradient(135deg, #ffecd2, #fcb69f); color: #2d3748;">
+                    ⏭️ 次の問題へ
+                </button>
+            </div>
+            
+            <div id="result-message" class="result-message" style="display: none;" aria-live="polite"></div>
+            
+            <!-- 大きなポップアップ用 -->
+            <div id="big-popup" class="big-popup" style="display: none;"></div>
         </div>
-      </div>
-
-      <!-- 1人用コントロール -->
-      <div id="controls1p" class="controls-1p active" aria-hidden="false">
-        <button class="btn b-left" id="btn1pLeft" aria-label="左が大きい">⬅️ 左</button>
-        <button class="btn b-eq" id="btn1pEq" aria-label="等しい">＝ 等しい</button>
-        <button class="btn b-right" id="btn1pRight" aria-label="右が大きい">右 ➡️</button>
-      </div>
-
-      <!-- 2人用コントロール（早押し） -->
-      <div id="controls2p" class="controls-2p" aria-hidden="true">
-        <div class="player-col">
-          <button class="btn b-left" data-side="P1" data-ans="L" aria-label="P1 左が大きい">P1 ⬅️ 左</button>
-          <button class="btn b-eq" data-side="P1" data-ans="E" aria-label="P1 等しい">P1 ＝ 等しい</button>
-          <button class="btn b-right" data-side="P1" data-ans="R" aria-label="P1 右が大きい">P1 右 ➡️</button>
+        
+        <!-- 不正解問題復習画面 -->
+        <div id="review-screen" class="screen">
+            <h2 class="title">📚 不正解問題の復習</h2>
+            <p class="subtitle">間違えた問題をもう一度チャレンジしよう！</p>
+            
+            <div class="mode-buttons">
+                <button class="mode-btn" onclick="startReview()">
+                    🔄 復習開始
+                </button>
+                <button class="mode-btn two-player" onclick="skipReview()">
+                    ⏭️ スキップして結果へ
+                </button>
+            </div>
         </div>
-        <div class="split">
-          <div></div>
-          <div class="midline" aria-hidden="true"></div>
-          <div></div>
+        
+        <!-- 結果画面 -->
+        <div id="result-screen" class="screen">
+            <h2 class="title">🎉 ゲーム終了！</h2>
+            
+            <div class="score-area">
+                <div class="score-card">
+                    <div class="score-label" id="final-player1-label">あなたの最終得点</div>
+                    <div class="score-value" id="final-player1-score">0</div>
+                </div>
+                <div class="score-card" id="final-timer-card" style="display: none;">
+                    <div class="score-label">⏱️ クリア時間</div>
+                    <div class="score-value" id="final-timer">0秒</div>
+                </div>
+                <div class="score-card" id="final-player2-card" style="display: none;">
+                    <div class="score-label" id="final-player2-label">プレイヤー2の最終得点</div>
+                    <div class="score-value" id="final-player2-score">0</div>
+                </div>
+            </div>
+            
+            <div id="winner-message" class="result-message"></div>
+            
+            <div class="mode-buttons">
+                <button class="mode-btn" onclick="showMenu()">
+                    🏠 メニューに戻る
+                </button>
+                <button class="mode-btn two-player" onclick="restartGame()">
+                    🔄 もう一度プレイ
+                </button>
+            </div>
         </div>
-        <div class="player-col">
-          <button class="btn b-left" data-side="P2" data-ans="L" aria-label="P2 左が大きい">⬅️ 左 P2</button>
-          <button class="btn b-eq" data-side="P2" data-ans="E" aria-label="P2 等しい">＝ 等しい P2</button>
-          <button class="btn b-right" data-side="P2" data-ans="R" aria-label="P2 右が大きい">右 ➡️ P2</button>
-        </div>
-      </div>
-
-      <div class="result" id="resultText">どちらが大きいかな？</div>
-      <div class="explain" id="explainText" hidden>ヒント：a/b と c/d は a×d と c×b をくらべるよ</div>
-    </section>
-
-    <footer class="status">
-      <div class="score-badges" id="scoreArea">
-        <span class="badge">合計 正解: <b id="score1p">0</b></span>
-        <span class="badge">連続 正解: <b id="streak">0</b></span>
-      </div>
-      <button class="next" id="nextBtn">次の問題 ▶</button>
-    </footer>
-  </div>
-
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <div class="rotate-overlay">
-    <div>
-      <div style="font-size:40px; margin-bottom:12px;">📱↩️</div>
-      <div style="font-size:20px; font-weight:800;">横向きにしてね</div>
-      <div style="opacity:.85; margin-top:6px;">iPad横画面で遊びやすいデザインです</div>
     </div>
-  </div>
 
-  <script>
-    const denoms = [2,3,4,5,6];
-
-    const state = {
-      mode: '1P',
-      hint: false,
-      lock: false,
-      score1p: 0,
-      streak: 0,
-      p1: 0,
-      p2: 0,
-      current: { L:{n:1,d:2}, R:{n:1,d:3} }
-    };
-
-    // DOM refs
-    const el = {
-      left: document.getElementById('leftFrac'),
-      right: document.getElementById('rightFrac'),
-      res: document.getElementById('resultText'),
-      exp: document.getElementById('explainText'),
-      toast: document.getElementById('toast'),
-      score1p: document.getElementById('score1p'),
-      streak: document.getElementById('streak'),
-      scoreArea: document.getElementById('scoreArea'),
-      next: document.getElementById('nextBtn'),
-
-      // mode
-      m1p: document.getElementById('mode1p'),
-      m2p: document.getElementById('mode2p'),
-      c1p: document.getElementById('controls1p'),
-      c2p: document.getElementById('controls2p'),
-      hintBtn: document.getElementById('toggleHint'),
-      reset: document.getElementById('reset'),
-    };
-
-    // Render a fraction
-    function renderFrac(node, n, d){
-      node.querySelector('.num').textContent = n;
-      node.querySelector('.den').textContent = d;
-      node.classList.remove('correct','wrong');
-    }
-
-    function rng(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
-
-    function randomFraction(){
-      const d = denoms[rng(0, denoms.length-1)];
-      const n = rng(1, d);
-      return {n, d};
-    }
-
-    // Sometimes force an equal pair (within 2..6 range)
-    function maybeEqualPair(){
-      const sets = [
-        [{n:1,d:2},{n:2,d:4}], [{n:1,d:2},{n:3,d:6}], [{n:2,d:4},{n:3,d:6}],
-        [{n:1,d:3},{n:2,d:6}],
-        [{n:2,d:3},{n:4,d:6}]
-      ];
-      return sets[rng(0, sets.length-1)];
-    }
-
-    function nextQuestion(){
-      state.lock = false;
-      el.res.textContent = 'どちらが大きいかな？';
-      el.left.classList.remove('correct','wrong');
-      el.right.classList.remove('correct','wrong');
-
-      // 20% equal case
-      let L,R;
-      if(Math.random()<0.2){
-        [L, R] = maybeEqualPair();
-        if(Math.random()<0.5){ const t=L; L=R; R=t; }
-      }else{
-        L = randomFraction(); R = randomFraction();
-      }
-      state.current = {L, R};
-      renderFrac(el.left, L.n, L.d);
-      renderFrac(el.right, R.n, R.d);
-      updateExplain(false);
-    }
-
-    function compareFractions(a,b){
-      // Compare a.n/a.d ? b.n/b.d using cross multiply
-      const left = a.n * b.d;
-      const right = b.n * a.d;
-      if(left > right) return 'L';
-      if(left < right) return 'R';
-      return 'E';
-    }
-
-    function updateExplain(showNow){
-      const {L,R} = state.current;
-      if(state.hint || showNow){
-        el.exp.hidden = false;
-        const left = L.n * R.d;
-        const right = R.n * L.d;
-        el.exp.textContent = `判定：${L.n}×${R.d}＝${left} と ${R.n}×${L.d}＝${right} をくらべるよ`;
-      }else{
-        el.exp.hidden = true;
-      }
-    }
-
-    function toast(msg){
-      el.toast.textContent = msg;
-      el.toast.classList.add('show');
-      setTimeout(()=> el.toast.classList.remove('show'), 900);
-    }
-
-    function beep(ok=true){
-      try{
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = ok ? 'triangle' : 'square';
-        o.frequency.value = ok ? 880 : 220;
-        o.connect(g); g.connect(ctx.destination);
-        g.gain.setValueAtTime(0.0001, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
-        o.start();
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
-        o.stop(ctx.currentTime + 0.16);
-      }catch(e){}
-    }
-
-    function markResult(correctSide, userPick, who=''){
-      const isEqual = (correctSide==='E');
-      if(isEqual){
-        el.left.classList.add('correct');
-        el.right.classList.add('correct');
-      }else{
-        const winnerEl = (correctSide==='L') ? el.left : el.right;
-        const loserEl = (correctSide==='L') ? el.right : el.left;
-        winnerEl.classList.add('correct');
-        loserEl.classList.remove('correct');
-        loserEl.classList.add('wrong');
-      }
-      updateExplain(true);
-
-      if(state.mode==='1P'){
-        if(userPick === correctSide){
-          state.score1p++; state.streak++;
-          el.res.textContent = '✅ 正解！';
-          beep(true);
-        }else{
-          state.streak = 0;
-          el.res.textContent = '❌ おしい！';
-          beep(false);
+    <script>
+        let gameMode = 1; // 1人モードまたは2人モード
+        let currentPlayer = 1; // 現在のプレイヤー（2人モードで使用）
+        let questionCount = 0;
+        let maxQuestions = 10;
+        let player1Score = 0;
+        let player2Score = 0;
+        let currentFraction1 = { num: 1, den: 2 };
+        let currentFraction2 = { num: 1, den: 3 };
+        let startTime = 0;
+        let gameTime = 0;
+        let timerInterval = null;
+        let incorrectQuestions = []; // 不正解だった問題を保存
+        let highScore = parseFloat(localStorage.getItem('fractionGameHighScore')) || 999.99;
+        let isReviewMode = false; // 復習モードかどうか
+        let reviewIndex = 0; // 復習中の問題インデックス
+        let targetScore = 5; // 2人モードの目標点数
+        let buttonsDisabled = false; // 早押し制御用
+        let player1Eliminated = false; // プレイヤー1が不正解で除外されたか
+        let player2Eliminated = false; // プレイヤー2が不正解で除外されたか
+        
+        const EQUAL_PROB = 0.18; // 等号の出題率
+        
+        // 直近の出題ペアを軽く去重（被り感を減らす）
+        const recentPairs = [];
+        function pairKey(a,b){ return `${a.num}/${a.den}|${b.num}/${b.den}`; }
+        function isRecent(a,b){
+            const k1 = pairKey(a,b), k2 = pairKey(b,a);
+            return recentPairs.includes(k1) || recentPairs.includes(k2);
         }
-        el.score1p.textContent = state.score1p;
-        el.streak.textContent = state.streak;
-      }else{
-        // 2P: first responder "who"
-        if(userPick === correctSide){
-          if(who==='P1'){ state.p1++; el.res.textContent = 'P1 正解！+1'; }
-          else if(who==='P2'){ state.p2++; el.res.textContent = 'P2 正解！+1'; }
-          beep(true);
-        }else{
-          el.res.textContent = (who||'') + ' ミス！';
-          beep(false);
+        function rememberPair(a,b){
+            const k = pairKey(a,b);
+            recentPairs.push(k);
+            if (recentPairs.length > 8) recentPairs.shift(); // 直近8問だけ記憶
         }
-        render2PBadges();
-      }
-    }
+        
+        // 分数比較関数（交差積使用）
+        function cmp(fr1, fr2){
+            const L = fr1.num * fr2.den;
+            const R = fr2.num * fr1.den;
+            return L === R ? 0 : (L > R ? 1 : -1); // 1:left, 0:equal, -1:right
+        }
+        
+        function fractionsAreIdentical(a, b){
+            return a.num === b.num && a.den === b.den;
+        }
+        
+        function fractionsAreEquivalent(a, b){
+            return a.num * b.den === b.num * a.den;
+        }
+        
+        function showMenu() {
+            document.getElementById('menu-screen').classList.add('active');
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('result-screen').classList.remove('active');
+            document.getElementById('review-screen').classList.remove('active');
+            document.getElementById('two-player-setup').classList.remove('active');
+            
+            // ハイスコア表示更新
+            const highScoreDisplay = document.getElementById('high-score-display');
+            if (highScore < 999) {
+                highScoreDisplay.textContent = highScore.toFixed(2) + '秒';
+            } else {
+                highScoreDisplay.textContent = '--';
+            }
+            
+            // フォーカス移動
+            document.getElementById('menu-title')?.focus();
+        }
+        
+        function showTwoPlayerSetup() {
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('two-player-setup').classList.add('active');
+        }
+        
+        function setTargetScore(el, score) {
+            targetScore = score;
+            document.querySelectorAll('.score-btn').forEach(btn => btn.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+        
+        function startTwoPlayerGame() {
+            gameMode = 2;
+            maxQuestions = 999; // 2人モードは無制限
+            startGame(2);
+        }
+        
+        function startGame(mode) {
+            gameMode = mode;
+            currentPlayer = 1;
+            questionCount = 0;
+            player1Score = 0;
+            player2Score = 0;
+            incorrectQuestions = []; // 不正解問題リセット
+            
+            // タイマー初期化
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            startTime = Date.now();
+            gameTime = 0;
+            
+            // UI更新
+            document.getElementById('menu-screen').classList.remove('active');
+            document.getElementById('two-player-setup').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            document.getElementById('result-screen').classList.remove('active');
+            
+            if (mode === 2) {
+                document.getElementById('player2-score-card').style.display = 'block';
+                const player1Name = document.getElementById('player1-name').value || 'プレイヤー1';
+                const player2Name = document.getElementById('player2-name').value || 'プレイヤー2';
+                document.getElementById('player1-label').textContent = player1Name + 'の得点';
+                document.getElementById('player2-label').textContent = player2Name + 'の得点';
+                document.getElementById('game-player1-title').textContent = '👤 ' + player1Name;
+                document.getElementById('game-player2-title').textContent = '👤 ' + player2Name;
+                document.getElementById('timer-card').style.display = 'none';
+                document.getElementById('single-player-buttons').style.display = 'none';
+                document.getElementById('two-player-buttons').style.display = 'flex';
+                document.getElementById('pass-button-area').style.display = 'block';
+                document.getElementById('question-count').textContent = `${targetScore}点先取`;
+            } else {
+                document.getElementById('player2-score-card').style.display = 'none';
+                document.getElementById('player1-label').textContent = 'あなたの得点';
+                document.getElementById('timer-card').style.display = 'block';
+                document.getElementById('single-player-buttons').style.display = 'flex';
+                document.getElementById('two-player-buttons').style.display = 'none';
+                document.getElementById('pass-button-area').style.display = 'none';
+                startTimer();
+            }
+            
+            updateScores();
+            generateQuestion();
+        }
+        
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                gameTime = (Date.now() - startTime) / 1000;
+                document.getElementById('timer-display').textContent = gameTime.toFixed(2) + '秒';
+            }, 100);
+        }
+        
+        function generateQuestion() {
+            if (gameMode === 1 && !isReviewMode) {
+                questionCount++;
+            }
+            
+            // 等しい問題か等しくない問題かを確率で決定（方針を最初に固定）
+            const wantEqual = Math.random() < EQUAL_PROB;
+            let pair = wantEqual ? generateEqualPair() : generateNonEqualPair();
+            
+            // 直近の出題ペアと重複しないよう軽く調整（方針を維持）
+            let tries = 0;
+            while (isRecent(pair[0], pair[1]) && tries < 10) {
+                pair = wantEqual ? generateEqualPair() : generateNonEqualPair();
+                tries++;
+            }
+            currentFraction1 = pair[0];
+            currentFraction2 = pair[1];
+            rememberPair(currentFraction1, currentFraction2);
+            
+            // UI更新
+            document.getElementById('fraction1-num').textContent = currentFraction1.num;
+            document.getElementById('fraction1-den').textContent = currentFraction1.den;
+            document.getElementById('fraction2-num').textContent = currentFraction2.num;
+            document.getElementById('fraction2-den').textContent = currentFraction2.den;
+            
+            if (gameMode === 1) {
+                document.getElementById('question-count').textContent = `${questionCount} / ${maxQuestions}`;
+            } else {
+                document.getElementById('question-count').textContent = `${targetScore}点先取`;
+            }
+            
+            // 結果メッセージを隠す
+            document.getElementById('result-message').style.display = 'none';
+            
+            // ボタンを有効化（2人モードでは除外状態をリセット）
+            buttonsDisabled = false;
+            if (gameMode === 2) {
+                player1Eliminated = false;
+                player2Eliminated = false;
+            }
+            enableAllButtons();
+        }
+        
+        function generateFraction() {
+            let denominator, numerator;
+            do {
+                denominator = Math.floor(Math.random() * 5) + 2; // 2-6
+                numerator = Math.floor(Math.random() * denominator) + 1; // 1-分母
+            } while (numerator === denominator); // 分子と分母が同じ（=1）の場合は除外
+            return { num: numerator, den: denominator };
+        }
+        
+        // 等しい分数ペア生成（必ず別表記）
+        function generateEqualPair(){
+            const base = generateFraction();
+            const g = (a,b)=> b?g(b,a%b):a;
+            const d = g(base.num, base.den);
+            const n0 = base.num / d, d0 = base.den / d;
 
-    function render2PBadges(){
-      el.scoreArea.innerHTML = `
-        <span class="badge ok">P1: <b>${state.p1}</b></span>
-        <span class="badge ok">P2: <b>${state.p2}</b></span>
-      `;
-    }
+            const options = [];
+            const maxK = Math.floor(6 / d0);
+            for(let k=1; k<=maxK; k++){
+                const cand = { num: n0*k, den: d0*k };
+                if (!fractionsAreIdentical(cand, base)) options.push(cand);
+            }
+            // 候補がなければ引き直し
+            if (!options.length) return generateEqualPair();
 
-    // 1P handlers
-    function answer1P(which){
-      if(state.lock || state.mode!=='1P') return;
-      state.lock = true;
-      const correct = compareFractions(state.current.L, state.current.R);
-      markResult(correct, which);
-      setTimeout(nextQuestion, 900);
-    }
-
-    // 2P handlers (first touch wins the round)
-    function answer2P(who, which){
-      if(state.lock || state.mode!=='2P') return;
-      state.lock = true;
-      const correct = compareFractions(state.current.L, state.current.R);
-      markResult(correct, which, who);
-      setTimeout(nextQuestion, 900);
-    }
-
-    // Bind
-    document.getElementById('btn1pLeft').addEventListener('click', ()=>answer1P('L'));
-    document.getElementById('btn1pEq').addEventListener('click', ()=>answer1P('E'));
-    document.getElementById('btn1pRight').addEventListener('click', ()=>answer1P('R'));
-
-    // 2P buttons (delegate)
-    document.getElementById('controls2p').addEventListener('click', (e)=>{
-      const btn = e.target.closest('button[data-side]');
-      if(!btn) return;
-      const who = btn.getAttribute('data-side');
-      const ans = btn.getAttribute('data-ans');
-      answer2P(who, ans);
-    });
-
-    // Keyboard (for 1P)
-    window.addEventListener('keydown', (e)=>{
-      if(state.mode!=='1P') return;
-      if(e.key==='ArrowLeft'){ answer1P('L'); }
-      else if(e.key==='=' || e.key==='Enter'){ answer1P('E'); }
-      else if(e.key==='ArrowRight'){ answer1P('R'); }
-    });
-
-    // Mode switch
-    el.m1p.addEventListener('click', ()=>{
-      state.mode='1P';
-      el.m1p.classList.add('active'); el.m2p.classList.remove('active');
-      el.c1p.classList.add('active'); el.c1p.setAttribute('aria-hidden','false');
-      el.c2p.classList.remove('active'); el.c2p.setAttribute('aria-hidden','true');
-      el.scoreArea.innerHTML = `
-        <span class="badge">合計 正解: <b id="score1p">${state.score1p}</b></span>
-        <span class="badge">連続 正解: <b id="streak">${state.streak}</b></span>
-      `;
-      // rebind refs inside scoreArea
-      el.score1p = document.getElementById('score1p');
-      el.streak = document.getElementById('streak');
-      toast('1人モード');
-      nextQuestion();
-    });
-    el.m2p.addEventListener('click', ()=>{
-      state.mode='2P';
-      state.lock=false;
-      el.m2p.classList.add('active'); el.m1p.classList.remove('active');
-      el.c2p.classList.add('active'); el.c2p.setAttribute('aria-hidden','false');
-      el.c1p.classList.remove('active'); el.c1p.setAttribute('aria-hidden','true');
-      render2PBadges();
-      toast('2人モード（早押し）');
-      nextQuestion();
-    });
-
-    // Hint toggle
-    el.hintBtn.addEventListener('click', ()=>{
-      state.hint = !state.hint;
-      el.hintBtn.classList.toggle('on', state.hint);
-      el.hintBtn.textContent = state.hint ? 'ヒントON' : 'ヒントOFF';
-      updateExplain(false);
-    });
-
-    // Reset
-    el.reset.addEventListener('click', ()=>{
-      state.score1p=0; state.streak=0; state.p1=0; state.p2=0;
-      if(state.mode==='1P'){ 
-        el.score1p.textContent = '0'; el.streak.textContent = '0';
-      } else {
-        render2PBadges();
-      }
-      toast('リセットしました');
-      nextQuestion();
-    });
-
-    // Next button
-    el.next.addEventListener('click', ()=>{ if(!state.lock) { el.res.textContent='スキップ'; } nextQuestion(); });
-
-    // Init
-    nextQuestion();
-  </script>
-</body>
+            return [base, options[Math.floor(Math.random()*options.length)]];
+        }
+        
+        // 等しくない分数ペア生成
+        function generateNonEqualPair(){
+            const a = generateFraction();
+            let b;
+            do {
+                b = generateFraction();
+            } while (fractionsAreIdentical(a, b) || fractionsAreEquivalent(a, b));
+            return [a, b];
+        }
+        
+        function enableAllButtons() {
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.disabled = false;
+            });
+        }
+        
+        function disableAllButtons() {
+            document.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+        }
+        
+        function disablePlayerButtons(player) {
+            if (player === 1) {
+                document.querySelectorAll('.player1-btn').forEach(btn => {
+                    btn.disabled = true;
+                });
+            } else {
+                document.querySelectorAll('.player2-btn').forEach(btn => {
+                    btn.disabled = true;
+                });
+            }
+        }
+        
+        function showBigPopup(player, message) {
+            const popup = document.getElementById('big-popup');
+            popup.innerHTML = message.replace('\n', '<br>');
+            popup.className = `big-popup player${player}`;
+            popup.style.display = 'block';
+            
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 1500);
+        }
+        
+        function checkAnswerTwoPlayer(player, answer) {
+            if (buttonsDisabled) return;
+            buttonsDisabled = true; // 先にロック
+            
+            // そのプレイヤーが既に除外されている場合は無視
+            if ((player === 1 && player1Eliminated) || (player === 2 && player2Eliminated)) {
+                buttonsDisabled = false;
+                return;
+            }
+            
+            const r = cmp(currentFraction1, currentFraction2);
+            const correctAnswer = (r===0 ? 'equal' : r>0 ? 'left' : 'right');
+            const correct = (answer === correctAnswer);
+            
+            if (correct) {
+                // 正解の場合：大きなポップアップ表示、得点追加、次の問題へ
+                const playerName = player === 1 ? 
+                    (document.getElementById('player1-name').value || 'プレイヤー1') : 
+                    (document.getElementById('player2-name').value || 'プレイヤー2');
+                showBigPopup(player, `${playerName}\n🎉 正解！`);
+                
+                if (player === 1) {
+                    player1Score++;
+                } else {
+                    player2Score++;
+                }
+                
+                updateScores();
+                disableAllButtons();
+                
+                // 勝利判定
+                setTimeout(() => {
+                    if (player1Score >= targetScore || player2Score >= targetScore) {
+                        showResults();
+                    } else {
+                        generateQuestion();
+                    }
+                }, 1200);
+            } else {
+                // 不正解の場合：そのプレイヤーを除外、もう一方は継続可能
+                if (player === 1) {
+                    player1Eliminated = true;
+                    disablePlayerButtons(1);
+                } else {
+                    player2Eliminated = true;
+                    disablePlayerButtons(2);
+                }
+                
+                // 結果メッセージ表示
+                const resultMessage = document.getElementById('result-message');
+                const playerName = player === 1 ? 
+                    (document.getElementById('player1-name').value || 'プレイヤー1') : 
+                    (document.getElementById('player2-name').value || 'プレイヤー2');
+                resultMessage.textContent = `❌ ${playerName}不正解... 解答権を失いました`;
+                resultMessage.className = 'result-message incorrect';
+                resultMessage.style.display = 'block';
+                
+                // まだ誰か答えられるならロック解除（もう一人にチャンス）
+                if (!(player1Eliminated && player2Eliminated)) {
+                    buttonsDisabled = false;
+                }
+                
+                // 両方のプレイヤーが除外された場合は次の問題へ
+                if (player1Eliminated && player2Eliminated) {
+                    setTimeout(() => {
+                        resultMessage.style.display = 'none';
+                        generateQuestion();
+                    }, 1500);
+                } else {
+                    // まだ解答可能なプレイヤーがいる場合は結果メッセージだけ消す
+                    setTimeout(() => {
+                        resultMessage.style.display = 'none';
+                    }, 1500);
+                }
+            }
+        }
+        
+        function checkAnswer(answer) {
+            const r = cmp(currentFraction1, currentFraction2);
+            const correctAnswer = (r===0 ? 'equal' : r>0 ? 'left' : 'right');
+            const correct = (answer === correctAnswer);
+            
+            // 結果表示
+            const resultMessage = document.getElementById('result-message');
+            if (correct) {
+                resultMessage.textContent = '🎉 正解！';
+                resultMessage.className = 'result-message correct';
+                
+                if (gameMode === 1 || currentPlayer === 1) {
+                    player1Score++;
+                } else {
+                    player2Score++;
+                }
+            } else {
+                resultMessage.textContent = '❌ 不正解... (+5秒ペナルティ)';
+                resultMessage.className = 'result-message incorrect';
+                
+                // 1人モードの場合、5秒ペナルティ
+                if (gameMode === 1) {
+                    startTime -= 5000; // 5秒分タイマーを遅らせる
+                }
+                
+                // 不正解問題を保存
+                incorrectQuestions.push({
+                    fraction1: { ...currentFraction1 },
+                    fraction2: { ...currentFraction2 }
+                });
+            }
+            
+            resultMessage.style.display = 'block';
+            updateScores();
+            
+            // 次の問題または結果画面へ（高速化：800ms）
+            setTimeout(() => {
+                resultMessage.style.display = 'none';
+                if (isReviewMode) {
+                    reviewIndex++;
+                    generateReviewQuestion();
+                } else if (questionCount >= maxQuestions) {
+                    // 不正解問題の復習があるかチェック
+                    if (gameMode === 1 && incorrectQuestions.length > 0) {
+                        showIncorrectReview();
+                    } else {
+                        showResults();
+                    }
+                } else {
+                    generateQuestion();
+                }
+            }, 800);
+        }
+        
+        function updateScores() {
+            document.getElementById('player1-score').textContent = player1Score;
+            document.getElementById('player2-score').textContent = player2Score;
+        }
+        
+        function showResults() {
+            // タイマー停止
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('result-screen').classList.add('active');
+            
+            document.getElementById('final-player1-score').textContent = player1Score;
+            
+            if (gameMode === 2) {
+                document.getElementById('final-player2-card').style.display = 'block';
+                document.getElementById('final-player2-score').textContent = player2Score;
+                const player1Name = document.getElementById('player1-name').value || 'プレイヤー1';
+                const player2Name = document.getElementById('player2-name').value || 'プレイヤー2';
+                document.getElementById('final-player1-label').textContent = player1Name + 'の最終得点';
+                document.getElementById('final-player2-label').textContent = player2Name + 'の最終得点';
+                document.getElementById('final-timer-card').style.display = 'none';
+                
+                const winnerMessage = document.getElementById('winner-message');
+                if (player1Score > player2Score) {
+                    winnerMessage.textContent = `🏆 ${player1Name}の勝利！`;
+                    winnerMessage.className = 'result-message correct';
+                } else if (player2Score > player1Score) {
+                    winnerMessage.textContent = `🏆 ${player2Name}の勝利！`;
+                    winnerMessage.className = 'result-message correct';
+                } else {
+                    winnerMessage.textContent = '🤝 引き分け！';
+                    winnerMessage.className = 'result-message';
+                    winnerMessage.style.background = 'linear-gradient(135deg, #ffecd2, #fcb69f)';
+                    winnerMessage.style.color = '#2d3748';
+                }
+            } else {
+                document.getElementById('final-player2-card').style.display = 'none';
+                document.getElementById('final-player1-label').textContent = 'あなたの最終得点';
+                document.getElementById('final-timer-card').style.display = 'block';
+                document.getElementById('final-timer').textContent = gameTime.toFixed(2) + '秒';
+                
+                const winnerMessage = document.getElementById('winner-message');
+                
+                // ハイスコア更新チェック（満点の場合のみ）
+                let isNewRecord = false;
+                if (player1Score === 10 && gameTime < highScore) {
+                    highScore = gameTime;
+                    localStorage.setItem('fractionGameHighScore', highScore.toString());
+                    isNewRecord = true;
+                }
+                
+                if (player1Score >= 8) {
+                    if (isNewRecord) {
+                        winnerMessage.textContent = '🏆 新記録！分数マスターです！';
+                    } else if (gameTime <= 30) {
+                        winnerMessage.textContent = '🚀 超高速！分数マスターです！';
+                    } else if (gameTime <= 60) {
+                        winnerMessage.textContent = '🌟 素晴らしい！分数マスターです！';
+                    } else {
+                        winnerMessage.textContent = '🌟 分数マスターです！';
+                    }
+                    winnerMessage.className = 'result-message correct';
+                } else if (player1Score >= 6) {
+                    winnerMessage.textContent = '👍 よくできました！';
+                    winnerMessage.className = 'result-message correct';
+                } else {
+                    winnerMessage.textContent = '💪 もう一度チャレンジしてみよう！';
+                    winnerMessage.className = 'result-message incorrect';
+                }
+            }
+        }
+        
+        function showIncorrectReview() {
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('review-screen').classList.add('active');
+        }
+        
+        function startReview() {
+            isReviewMode = true;
+            reviewIndex = 0;
+            questionCount = 0;
+            
+            document.getElementById('review-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            
+            generateReviewQuestion();
+        }
+        
+        function skipReview() {
+            showResults();
+        }
+        
+        function generateReviewQuestion() {
+            if (reviewIndex >= incorrectQuestions.length) {
+                isReviewMode = false;
+                showResults();
+                return;
+            }
+            
+            const q = incorrectQuestions[reviewIndex];
+            currentFraction1 = q.fraction1;
+            currentFraction2 = q.fraction2;
+            
+            // UI更新
+            document.getElementById('question-count').textContent = `復習 ${reviewIndex + 1} / ${incorrectQuestions.length}`;
+            document.getElementById('fraction1-num').textContent = currentFraction1.num;
+            document.getElementById('fraction1-den').textContent = currentFraction1.den;
+            document.getElementById('fraction2-num').textContent = currentFraction2.num;
+            document.getElementById('fraction2-den').textContent = currentFraction2.den;
+            
+            // 結果メッセージを隠す
+            document.getElementById('result-message').style.display = 'none';
+        }
+        
+        function restartGame() {
+            startGame(gameMode);
+        }
+        
+        // 2人戦用パス機能
+        function skipToNextQuestion() {
+            if (gameMode !== 2) return;
+            
+            const resultMessage = document.getElementById('result-message');
+            resultMessage.textContent = '⏭️ 次の問題へスキップしました';
+            resultMessage.className = 'result-message';
+            resultMessage.style.background = 'linear-gradient(135deg, #ffecd2, #fcb69f)';
+            resultMessage.style.color = '#2d3748';
+            resultMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                resultMessage.style.display = 'none';
+                generateQuestion();
+            }, 1000);
+        }
+        
+        // キーボード操作（1人モード用）
+        window.addEventListener('keydown', (e) => {
+            if (!document.getElementById('game-screen').classList.contains('active')) return;
+            if (gameMode !== 1) return;
+            if (buttonsDisabled) return;
+            
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                checkAnswer('left');
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                checkAnswer('right');
+            } else if (e.key === '=' || e.key === 'Enter') {
+                e.preventDefault();
+                checkAnswer('equal');
+            }
+        });
+    </script>
 </html>
