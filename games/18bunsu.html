@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>分数バトル！どっちが大きい？</title>
+  <link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#86a8e7; --bg2:#7f7fd5; --bg3:#91eae4;
+      --card:#ffffff; --ink:#233044; --muted:#5b6b82;
+      --ok:#22c55e; --ng:#ef4444; --mid:#64748b;
+      --accent:#f59e0b; --accent2:#38bdf8;
+      --radius:20px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:'BIZ UDGothic', system-ui, -apple-system, Segoe UI, Noto Sans JP, sans-serif;
+      color:var(--ink);
+      background: linear-gradient(135deg, var(--bg2), var(--bg1) 40%, var(--bg3));
+      padding: max(12px, var(--safe-top)) max(12px, var(--safe-right)) max(12px, var(--safe-bottom)) max(12px, var(--safe-left));
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select:none;
+    }
+    .app{
+      max-width:1200px; margin:0 auto; 
+      background:rgba(255,255,255,0.85);
+      backdrop-filter: blur(10px);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 60px rgba(0,0,0,.18);
+      padding: 16px;
+      display:grid; gap:12px;
+      grid-template-rows:auto auto 1fr auto;
+      min-height: calc(100svh - 24px);
+    }
+    header{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      flex-wrap:wrap;
+    }
+    .title{
+      display:flex; align-items:center; gap:10px; 
+      font-weight:700; font-size: clamp(20px, 2.4vw, 28px);
+    }
+    .pill{
+      background: linear-gradient(135deg, #fde68a, #fca5a5);
+      padding:4px 10px; border-radius:999px; font-size:12px; color:#3b3b3b;
+    }
+    .toolbar{display:flex; gap:8px; flex-wrap:wrap}
+    .seg{
+      background:#f1f5f9; border-radius:999px; padding:4px; display:flex; gap:4px;
+    }
+    .seg button{
+      border:0; padding:8px 12px; border-radius:999px; background:transparent; cursor:pointer; font-weight:700; color:var(--muted);
+    }
+    .seg button.active{ background:#fff; color:#111827; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .hint-toggle{
+      border:0; padding:8px 12px; border-radius:10px; background:#e2e8f0; color:#0f172a; cursor:pointer; font-weight:700;
+    }
+    .hint-toggle.on{ background:#d1fae5; color:#065f46; }
+
+    .board{
+      background:#fff; border-radius: var(--radius); padding: clamp(12px, 1.8vw, 20px);
+      display:grid; gap: clamp(10px, 1.2vw, 14px);
+      grid-template-rows:auto 1fr auto;
+      min-height: 300px;
+    }
+    .fractions{
+      display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; gap: clamp(12px, 2vw, 24px);
+    }
+    .vs{
+      font-weight:900; color:#475569; 
+      font-size: clamp(18px, 2.6vw, 28px);
+      background:#e2e8f0; padding: 4px 10px; border-radius: 999px;
+    }
+    .frac{
+      display:inline-grid; justify-items:center; align-items:center; 
+      padding: clamp(8px, 1.2vw, 12px) clamp(10px, 1.6vw, 16px);
+      border-radius:14px;
+      background:linear-gradient(180deg,#f8fafc,#f1f5f9);
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,.04);
+      min-width: 160px;
+      transform: translateZ(0);
+    }
+    .frac .top{border-bottom:2px solid #111827; width:100%; text-align:center; padding-bottom:6px;}
+    .frac .bot{padding-top:6px;}
+    .frac .num, .frac .den{
+      font-weight:800; 
+      font-size: clamp(36px, 5vw, 64px);
+      line-height:1;
+      color:#111827;
+      text-shadow: 0 1px 0 rgba(255,255,255,.6);
+    }
+
+    .controls-1p, .controls-2p{display:none}
+    .controls-1p.active, .controls-2p.active{display:grid}
+    .controls-1p{
+      grid-template-columns: repeat(3, 1fr); gap:12px;
+    }
+    .controls-2p{
+      grid-template-columns: 1fr auto 1fr; gap: 12px; align-items:stretch;
+    }
+    .btn{
+      border:0; border-radius:16px; padding: clamp(12px, 1.6vw, 16px);
+      font-size: clamp(18px, 2.2vw, 24px); font-weight:900; color:#0b1020;
+      cursor:pointer; box-shadow: 0 8px 20px rgba(0,0,0,.12);
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      transition: transform .06s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .btn:active{ transform: translateY(1px) scale(.99); filter:brightness(.98); }
+    .b-left{ background: linear-gradient(135deg,#93c5fd,#60a5fa); }
+    .b-eq{ background: linear-gradient(135deg,#cbd5e1,#e2e8f0); }
+    .b-right{ background: linear-gradient(135deg,#fca5a5,#f87171); }
+
+    .split{
+      display:grid; gap:12px; grid-template-rows:1fr auto 1fr; align-items:center;
+    }
+    .player-col{ display:grid; gap:12px; grid-template-rows:repeat(3,1fr); }
+    .midline{
+      align-self:stretch; width:6px; border-radius:999px; background: linear-gradient(180deg, #38bdf8, #f59e0b);
+    }
+
+    .status{
+      display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+      font-weight:700; color:#0f172a;
+    }
+    .score-badges{display:flex; gap:8px; flex-wrap:wrap}
+    .badge{
+      background:#f1f5f9; border-radius:999px; padding:6px 12px; color:#0f172a; font-size:14px;
+    }
+    .badge.ok{ background:#dcfce7; color:#14532d;}
+    .badge.ng{ background:#fee2e2; color:#7f1d1d;}
+    .next{
+      border:0; padding:8px 14px; border-radius:10px; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.08); cursor:pointer; font-weight:800;
+    }
+
+    .toast{
+      position:fixed; left:50%; top: max(16px, calc(var(--safe-top) + 8px)); transform:translateX(-50%);
+      background:#111827; color:#f8fafc; padding:10px 14px; border-radius:10px; font-weight:700; 
+      box-shadow:0 10px 30px rgba(0,0,0,.25); opacity:0; pointer-events:none;
+      transition:opacity .25s ease, transform .25s ease;
+    }
+    .toast.show{ opacity:1; transform:translateX(-50%) translateY(4px); }
+
+    .result{
+      text-align:center; font-weight:900; color:#0b1020; 
+      font-size: clamp(16px, 2vw, 20px);
+    }
+    .explain{
+      text-align:center; color:#0f172a; font-size: clamp(14px, 1.6vw, 16px);
+      background:#f8fafc; border-radius:12px; padding:8px 10px; margin-top:6px;
+    }
+    .correct{ outline: 4px solid var(--ok); }
+    .wrong{ outline: 4px solid var(--ng); }
+
+    /* 縦向きの時に案内 */
+    .rotate-overlay{
+      position: fixed; inset:0; display:none; place-items:center; 
+      background:rgba(0,0,0,.6); color:#fff; z-index:50; text-align:center; padding:24px;
+    }
+    @media (orientation: portrait){
+      .rotate-overlay{ display:grid; }
+    }
+
+    @media (max-width: 900px){
+      .frac{ min-width: 120px; }
+    }
+    @media (prefers-reduced-motion: reduce){
+      .btn, .toast{ transition:none }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="分数の大小判別ゲーム">
+    <header>
+      <div class="title">
+        <span style="font-size:1.4em">🎈</span>
+        <div>分数バトル！<span class="pill">iPad横向きに最適化</span></div>
+      </div>
+      <div class="toolbar">
+        <div class="seg" role="tablist" aria-label="モード切替">
+          <button id="mode1p" class="active" role="tab" aria-selected="true">1人モード</button>
+          <button id="mode2p" role="tab" aria-selected="false">2人モード</button>
+        </div>
+        <button id="toggleHint" class="hint-toggle" aria-pressed="false">ヒントOFF</button>
+        <button id="reset" class="hint-toggle">リセット</button>
+      </div>
+    </header>
+
+    <section class="board" aria-live="polite">
+      <div class="fractions">
+        <div id="leftFrac" class="frac" aria-label="左の分数">
+          <div class="top"><span class="num">1</span></div>
+          <div class="bot"><span class="den">2</span></div>
+        </div>
+        <div class="vs">VS</div>
+        <div id="rightFrac" class="frac" aria-label="右の分数">
+          <div class="top"><span class="num">1</span></div>
+          <div class="bot"><span class="den">3</span></div>
+        </div>
+      </div>
+
+      <!-- 1人用コントロール -->
+      <div id="controls1p" class="controls-1p active" aria-hidden="false">
+        <button class="btn b-left" id="btn1pLeft" aria-label="左が大きい">⬅️ 左</button>
+        <button class="btn b-eq" id="btn1pEq" aria-label="等しい">＝ 等しい</button>
+        <button class="btn b-right" id="btn1pRight" aria-label="右が大きい">右 ➡️</button>
+      </div>
+
+      <!-- 2人用コントロール（早押し） -->
+      <div id="controls2p" class="controls-2p" aria-hidden="true">
+        <div class="player-col">
+          <button class="btn b-left" data-side="P1" data-ans="L" aria-label="P1 左が大きい">P1 ⬅️ 左</button>
+          <button class="btn b-eq" data-side="P1" data-ans="E" aria-label="P1 等しい">P1 ＝ 等しい</button>
+          <button class="btn b-right" data-side="P1" data-ans="R" aria-label="P1 右が大きい">P1 右 ➡️</button>
+        </div>
+        <div class="split">
+          <div></div>
+          <div class="midline" aria-hidden="true"></div>
+          <div></div>
+        </div>
+        <div class="player-col">
+          <button class="btn b-left" data-side="P2" data-ans="L" aria-label="P2 左が大きい">⬅️ 左 P2</button>
+          <button class="btn b-eq" data-side="P2" data-ans="E" aria-label="P2 等しい">＝ 等しい P2</button>
+          <button class="btn b-right" data-side="P2" data-ans="R" aria-label="P2 右が大きい">右 ➡️ P2</button>
+        </div>
+      </div>
+
+      <div class="result" id="resultText">どちらが大きいかな？</div>
+      <div class="explain" id="explainText" hidden>ヒント：a/b と c/d は a×d と c×b をくらべるよ</div>
+    </section>
+
+    <footer class="status">
+      <div class="score-badges" id="scoreArea">
+        <span class="badge">合計 正解: <b id="score1p">0</b></span>
+        <span class="badge">連続 正解: <b id="streak">0</b></span>
+      </div>
+      <button class="next" id="nextBtn">次の問題 ▶</button>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="rotate-overlay">
+    <div>
+      <div style="font-size:40px; margin-bottom:12px;">📱↩️</div>
+      <div style="font-size:20px; font-weight:800;">横向きにしてね</div>
+      <div style="opacity:.85; margin-top:6px;">iPad横画面で遊びやすいデザインです</div>
+    </div>
+  </div>
+
+  <script>
+    const denoms = [2,3,4,5,6];
+
+    const state = {
+      mode: '1P',
+      hint: false,
+      lock: false,
+      score1p: 0,
+      streak: 0,
+      p1: 0,
+      p2: 0,
+      current: { L:{n:1,d:2}, R:{n:1,d:3} }
+    };
+
+    // DOM refs
+    const el = {
+      left: document.getElementById('leftFrac'),
+      right: document.getElementById('rightFrac'),
+      res: document.getElementById('resultText'),
+      exp: document.getElementById('explainText'),
+      toast: document.getElementById('toast'),
+      score1p: document.getElementById('score1p'),
+      streak: document.getElementById('streak'),
+      scoreArea: document.getElementById('scoreArea'),
+      next: document.getElementById('nextBtn'),
+
+      // mode
+      m1p: document.getElementById('mode1p'),
+      m2p: document.getElementById('mode2p'),
+      c1p: document.getElementById('controls1p'),
+      c2p: document.getElementById('controls2p'),
+      hintBtn: document.getElementById('toggleHint'),
+      reset: document.getElementById('reset'),
+    };
+
+    // Render a fraction
+    function renderFrac(node, n, d){
+      node.querySelector('.num').textContent = n;
+      node.querySelector('.den').textContent = d;
+      node.classList.remove('correct','wrong');
+    }
+
+    function rng(min, max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+    function randomFraction(){
+      const d = denoms[rng(0, denoms.length-1)];
+      const n = rng(1, d);
+      return {n, d};
+    }
+
+    // Sometimes force an equal pair (within 2..6 range)
+    function maybeEqualPair(){
+      const sets = [
+        [{n:1,d:2},{n:2,d:4}], [{n:1,d:2},{n:3,d:6}], [{n:2,d:4},{n:3,d:6}],
+        [{n:1,d:3},{n:2,d:6}],
+        [{n:2,d:3},{n:4,d:6}]
+      ];
+      return sets[rng(0, sets.length-1)];
+    }
+
+    function nextQuestion(){
+      state.lock = false;
+      el.res.textContent = 'どちらが大きいかな？';
+      el.left.classList.remove('correct','wrong');
+      el.right.classList.remove('correct','wrong');
+
+      // 20% equal case
+      let L,R;
+      if(Math.random()<0.2){
+        [L, R] = maybeEqualPair();
+        if(Math.random()<0.5){ const t=L; L=R; R=t; }
+      }else{
+        L = randomFraction(); R = randomFraction();
+      }
+      state.current = {L, R};
+      renderFrac(el.left, L.n, L.d);
+      renderFrac(el.right, R.n, R.d);
+      updateExplain(false);
+    }
+
+    function compareFractions(a,b){
+      // Compare a.n/a.d ? b.n/b.d using cross multiply
+      const left = a.n * b.d;
+      const right = b.n * a.d;
+      if(left > right) return 'L';
+      if(left < right) return 'R';
+      return 'E';
+    }
+
+    function updateExplain(showNow){
+      const {L,R} = state.current;
+      if(state.hint || showNow){
+        el.exp.hidden = false;
+        const left = L.n * R.d;
+        const right = R.n * L.d;
+        el.exp.textContent = `判定：${L.n}×${R.d}＝${left} と ${R.n}×${L.d}＝${right} をくらべるよ`;
+      }else{
+        el.exp.hidden = true;
+      }
+    }
+
+    function toast(msg){
+      el.toast.textContent = msg;
+      el.toast.classList.add('show');
+      setTimeout(()=> el.toast.classList.remove('show'), 900);
+    }
+
+    function beep(ok=true){
+      try{
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = ok ? 'triangle' : 'square';
+        o.frequency.value = ok ? 880 : 220;
+        o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+        o.start();
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+        o.stop(ctx.currentTime + 0.16);
+      }catch(e){}
+    }
+
+    function markResult(correctSide, userPick, who=''){
+      const isEqual = (correctSide==='E');
+      if(isEqual){
+        el.left.classList.add('correct');
+        el.right.classList.add('correct');
+      }else{
+        const winnerEl = (correctSide==='L') ? el.left : el.right;
+        const loserEl = (correctSide==='L') ? el.right : el.left;
+        winnerEl.classList.add('correct');
+        loserEl.classList.remove('correct');
+        loserEl.classList.add('wrong');
+      }
+      updateExplain(true);
+
+      if(state.mode==='1P'){
+        if(userPick === correctSide){
+          state.score1p++; state.streak++;
+          el.res.textContent = '✅ 正解！';
+          beep(true);
+        }else{
+          state.streak = 0;
+          el.res.textContent = '❌ おしい！';
+          beep(false);
+        }
+        el.score1p.textContent = state.score1p;
+        el.streak.textContent = state.streak;
+      }else{
+        // 2P: first responder "who"
+        if(userPick === correctSide){
+          if(who==='P1'){ state.p1++; el.res.textContent = 'P1 正解！+1'; }
+          else if(who==='P2'){ state.p2++; el.res.textContent = 'P2 正解！+1'; }
+          beep(true);
+        }else{
+          el.res.textContent = (who||'') + ' ミス！';
+          beep(false);
+        }
+        render2PBadges();
+      }
+    }
+
+    function render2PBadges(){
+      el.scoreArea.innerHTML = `
+        <span class="badge ok">P1: <b>${state.p1}</b></span>
+        <span class="badge ok">P2: <b>${state.p2}</b></span>
+      `;
+    }
+
+    // 1P handlers
+    function answer1P(which){
+      if(state.lock || state.mode!=='1P') return;
+      state.lock = true;
+      const correct = compareFractions(state.current.L, state.current.R);
+      markResult(correct, which);
+      setTimeout(nextQuestion, 900);
+    }
+
+    // 2P handlers (first touch wins the round)
+    function answer2P(who, which){
+      if(state.lock || state.mode!=='2P') return;
+      state.lock = true;
+      const correct = compareFractions(state.current.L, state.current.R);
+      markResult(correct, which, who);
+      setTimeout(nextQuestion, 900);
+    }
+
+    // Bind
+    document.getElementById('btn1pLeft').addEventListener('click', ()=>answer1P('L'));
+    document.getElementById('btn1pEq').addEventListener('click', ()=>answer1P('E'));
+    document.getElementById('btn1pRight').addEventListener('click', ()=>answer1P('R'));
+
+    // 2P buttons (delegate)
+    document.getElementById('controls2p').addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-side]');
+      if(!btn) return;
+      const who = btn.getAttribute('data-side');
+      const ans = btn.getAttribute('data-ans');
+      answer2P(who, ans);
+    });
+
+    // Keyboard (for 1P)
+    window.addEventListener('keydown', (e)=>{
+      if(state.mode!=='1P') return;
+      if(e.key==='ArrowLeft'){ answer1P('L'); }
+      else if(e.key==='=' || e.key==='Enter'){ answer1P('E'); }
+      else if(e.key==='ArrowRight'){ answer1P('R'); }
+    });
+
+    // Mode switch
+    el.m1p.addEventListener('click', ()=>{
+      state.mode='1P';
+      el.m1p.classList.add('active'); el.m2p.classList.remove('active');
+      el.c1p.classList.add('active'); el.c1p.setAttribute('aria-hidden','false');
+      el.c2p.classList.remove('active'); el.c2p.setAttribute('aria-hidden','true');
+      el.scoreArea.innerHTML = `
+        <span class="badge">合計 正解: <b id="score1p">${state.score1p}</b></span>
+        <span class="badge">連続 正解: <b id="streak">${state.streak}</b></span>
+      `;
+      // rebind refs inside scoreArea
+      el.score1p = document.getElementById('score1p');
+      el.streak = document.getElementById('streak');
+      toast('1人モード');
+      nextQuestion();
+    });
+    el.m2p.addEventListener('click', ()=>{
+      state.mode='2P';
+      state.lock=false;
+      el.m2p.classList.add('active'); el.m1p.classList.remove('active');
+      el.c2p.classList.add('active'); el.c2p.setAttribute('aria-hidden','false');
+      el.c1p.classList.remove('active'); el.c1p.setAttribute('aria-hidden','true');
+      render2PBadges();
+      toast('2人モード（早押し）');
+      nextQuestion();
+    });
+
+    // Hint toggle
+    el.hintBtn.addEventListener('click', ()=>{
+      state.hint = !state.hint;
+      el.hintBtn.classList.toggle('on', state.hint);
+      el.hintBtn.textContent = state.hint ? 'ヒントON' : 'ヒントOFF';
+      updateExplain(false);
+    });
+
+    // Reset
+    el.reset.addEventListener('click', ()=>{
+      state.score1p=0; state.streak=0; state.p1=0; state.p2=0;
+      if(state.mode==='1P'){ 
+        el.score1p.textContent = '0'; el.streak.textContent = '0';
+      } else {
+        render2PBadges();
+      }
+      toast('リセットしました');
+      nextQuestion();
+    });
+
+    // Next button
+    el.next.addEventListener('click', ()=>{ if(!state.lock) { el.res.textContent='スキップ'; } nextQuestion(); });
+
+    // Init
+    nextQuestion();
+  </script>
+</body>
+</html>
