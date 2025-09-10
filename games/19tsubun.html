@@ -1,1 +1,1058 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>分数マッチゲーム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+        
+        :root{
+            --safe-top: env(safe-area-inset-top);
+            --safe-right: env(safe-area-inset-right);
+            --safe-bottom: env(safe-area-inset-bottom);
+            --safe-left: env(safe-area-inset-left);
+        }
+        
+        html, body { 
+            height: 100svh; 
+            font-family: 'Nunito', sans-serif;
+        }
+        
+        body{
+            padding: max(12px, var(--safe-top)) max(12px, var(--safe-right))
+                     max(12px, var(--safe-bottom)) max(12px, var(--safe-left));
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        /* フォントサイズをiPad横で自動調整 */
+        .fraction{ font-size: clamp(24px, 3.6vw, 52px); line-height:1; }
+        .fraction-large{ font-size: clamp(40px, 6vw, 96px); line-height:1; }
+        
+        button:focus-visible{ outline:3px solid #f59e0b; outline-offset:3px; }
+        
+        .bounce-in { animation: bounceIn 0.6s ease-out; }
+        .pop-in { animation: popIn 0.4s ease-out; }
+        .pulse-ring { animation: pulseRing 2s infinite; }
+        
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes pulseRing {
+            0% { transform: scale(0.33); }
+            80%, 100% { opacity: 0; }
+        }
+        
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .game-bg { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <!-- メイン画面 -->
+    <div id="mainScreen" class="min-h-screen flex items-center justify-center p-8">
+        <div class="bg-white rounded-3xl shadow-2xl p-12 max-w-4xl w-full text-center">
+            <h1 class="text-6xl font-bold text-purple-600 mb-8">🎯 分数マッチ</h1>
+            <p class="text-xl text-gray-600 mb-8 leading-relaxed">
+                表示された分数と等しい分数を見つけよう！<br>
+                最低1つ、最高3つの正解があるよ 🎲
+            </p>
+            
+            <!-- ハイスコア表示 -->
+            <div id="highScoreDisplay" class="bg-yellow-50 rounded-2xl p-6 mb-8">
+                <div class="text-3xl mb-2">🏆</div>
+                <h3 class="text-xl font-bold text-yellow-600 mb-2">ベストタイム</h3>
+                <div id="bestTime" class="text-2xl font-bold text-yellow-700">--:--</div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <button onclick="startSinglePlayer()" class="bg-blue-50 hover:bg-blue-100 border-2 border-blue-300 rounded-2xl p-8 transition-all duration-200 transform hover:scale-105">
+                    <div class="text-4xl mb-4">⏱️</div>
+                    <h3 class="text-2xl font-bold text-blue-600 mb-4">1人モード</h3>
+                    <p class="text-gray-600">5問正解するまでのタイムを競おう！<br><span class="text-red-500 font-semibold">間違えると+10秒ペナルティ</span></p>
+                </button>
+                <button onclick="showTwoPlayerSetup()" class="bg-pink-50 hover:bg-pink-100 border-2 border-pink-300 rounded-2xl p-8 transition-all duration-200 transform hover:scale-105">
+                    <div class="text-4xl mb-4">👥</div>
+                    <h3 class="text-2xl font-bold text-pink-600 mb-4">2人モード</h3>
+                    <p class="text-gray-600">友達と対戦！先に目標点数に到達しよう！</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2人モード設定画面 -->
+    <div id="twoPlayerSetup" class="min-h-screen flex items-center justify-center p-8 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl p-12 max-w-3xl w-full text-center">
+            <h2 class="text-4xl font-bold text-pink-600 mb-8">👥 2人モード設定</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <div>
+                    <label class="block text-lg font-semibold text-gray-700 mb-3">プレイヤー1の名前（任意）</label>
+                    <input id="player1Name" type="text" placeholder="プレイヤー1" class="w-full text-xl p-4 border-2 border-pink-300 rounded-xl focus:border-pink-500 focus:outline-none text-center font-semibold">
+                </div>
+                <div>
+                    <label class="block text-lg font-semibold text-gray-700 mb-3">プレイヤー2の名前（任意）</label>
+                    <input id="player2Name" type="text" placeholder="プレイヤー2" class="w-full text-xl p-4 border-2 border-pink-300 rounded-xl focus:border-pink-500 focus:outline-none text-center font-semibold">
+                </div>
+            </div>
+            
+            <div class="mb-8">
+                <label class="block text-lg font-semibold text-gray-700 mb-3">目標点数</label>
+                <select id="targetScore" class="text-xl p-4 border-2 border-pink-300 rounded-xl focus:border-pink-500 focus:outline-none font-semibold">
+                    <option value="3">3点先取</option>
+                    <option value="5">5点先取</option>
+                    <option value="7">7点先取</option>
+                </select>
+            </div>
+            
+            <div class="space-y-4">
+                <button onclick="startTwoPlayer()" class="bg-pink-500 hover:bg-pink-600 text-white text-2xl font-bold py-4 px-12 rounded-2xl shadow-lg transform hover:scale-105 transition-all duration-200">
+                    🎮 ゲーム開始！
+                </button>
+                <button onclick="backToMain()" class="bg-gray-400 hover:bg-gray-500 text-white text-xl font-semibold py-3 px-8 rounded-xl">
+                    ← 戻る
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ゲーム画面 -->
+    <div id="gameScreen" class="game-bg min-h-screen p-8 hidden">
+        <!-- ゲームヘッダー -->
+        <div id="gameHeader" class="flex justify-between items-center mb-8">
+            <div class="bg-white rounded-2xl px-6 py-3 shadow-lg">
+                <div id="timerDisplay" class="text-2xl font-bold text-purple-600">⏱️ 00:00</div>
+                <div id="scoreDisplay" class="text-lg font-semibold text-gray-600"></div>
+            </div>
+            <div class="bg-white rounded-2xl px-6 py-3 shadow-lg">
+                <div id="questionCounter" class="text-xl font-bold text-purple-600">問題 1/5</div>
+            </div>
+            <button onclick="backToMain()" class="bg-gray-400 hover:bg-gray-500 text-white text-lg font-semibold py-2 px-4 rounded-xl shadow-lg">
+                🏠 メイン
+            </button>
+        </div>
+
+        <!-- 分数表示エリア -->
+        <div id="fractionDisplay" class="text-center mb-8">
+            <div class="bg-white rounded-3xl shadow-2xl p-12 inline-block">
+                <div class="text-2xl font-semibold text-gray-600 mb-4">この分数と等しいものを選んでね！</div>
+                <div id="targetFraction" class="fraction-large font-bold text-purple-600"></div>
+            </div>
+        </div>
+
+        <!-- 選択肢エリア -->
+        <div id="choicesArea" class="hidden">
+            <!-- 1人モード用 -->
+            <div id="singlePlayerChoices" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"></div>
+            
+            <!-- 2人モード用 -->
+            <div id="twoPlayerChoices" class="grid grid-cols-2 gap-12 mb-8">
+                <div>
+                    <h3 id="player1Header" class="text-2xl font-bold text-white text-center mb-4">プレイヤー1</h3>
+                    <div id="player1Choices" class="grid grid-cols-2 gap-4"></div>
+                </div>
+                <div>
+                    <h3 id="player2Header" class="text-2xl font-bold text-white text-center mb-4">プレイヤー2</h3>
+                    <div id="player2Choices" class="grid grid-cols-2 gap-4"></div>
+                </div>
+            </div>
+            
+            <!-- 送信ボタン -->
+            <div class="text-center">
+                <!-- 1人モード用送信ボタン -->
+                <button id="singleSubmitButton" onclick="submitAnswer()" class="bg-yellow-400 hover:bg-yellow-500 text-black text-2xl font-bold py-4 px-12 rounded-2xl shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    ✨ 答えを送信！
+                </button>
+                
+                <!-- 2人モード用送信ボタン -->
+                <div id="twoPlayerSubmitButtons" class="grid grid-cols-2 gap-8 hidden">
+                    <button id="player1Submit" onclick="submitPlayerAnswer(1)" class="bg-blue-400 hover:bg-blue-500 text-white text-xl font-bold py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200">
+                        ✨ 送信！
+                    </button>
+                    <button id="player2Submit" onclick="submitPlayerAnswer(2)" class="bg-pink-400 hover:bg-pink-500 text-white text-xl font-bold py-3 px-8 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200">
+                        ✨ 送信！
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 結果画面 -->
+    <div id="resultScreen" class="min-h-screen flex items-center justify-center p-8 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl p-12 max-w-2xl w-full text-center">
+            <div id="resultContent"></div>
+            <div class="space-y-4 mt-8">
+                <button onclick="restartGame()" class="bg-green-500 hover:bg-green-600 text-white text-2xl font-bold py-4 px-12 rounded-2xl shadow-lg transform hover:scale-105 transition-all duration-200">
+                    🔄 もう一度遊ぶ
+                </button>
+                <button onclick="backToMain()" class="bg-gray-400 hover:bg-gray-500 text-white text-xl font-semibold py-3 px-8 rounded-xl">
+                    🏠 メインに戻る
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 問題データ
+        const questionData = [
+            {
+                "id": 1,
+                "target": "1/3",
+                "choices": ["10/30","9/27","5/7"],
+                "answers": [0,1],
+                "correct": ["10/30","9/27"]
+            },
+            {
+                "id": 2,
+                "target": "1/2",
+                "choices": ["6/12","9/18","1/3"],
+                "answers": [0,1],
+                "correct": ["6/12","9/18"]
+            },
+            {
+                "id": 3,
+                "target": "2/5",
+                "choices": ["8/20","7/10","4/10"],
+                "answers": [0,2],
+                "correct": ["8/20","4/10"]
+            },
+            {
+                "id": 4,
+                "target": "3/4",
+                "choices": ["6/8","9/12","5/6"],
+                "answers": [0,1],
+                "correct": ["6/8","9/12"]
+            },
+            {
+                "id": 5,
+                "target": "4/7",
+                "choices": ["8/14","12/21","5/7"],
+                "answers": [0,1],
+                "correct": ["8/14","12/21"]
+            },
+            {
+                "id": 6,
+                "target": "3/5",
+                "choices": ["6/10","9/15","7/10"],
+                "answers": [0,1],
+                "correct": ["6/10","9/15"]
+            },
+            {
+                "id": 7,
+                "target": "5/6",
+                "choices": ["10/12","15/18","8/9"],
+                "answers": [0,1],
+                "correct": ["10/12","15/18"]
+            },
+            {
+                "id": 8,
+                "target": "1/4",
+                "choices": ["2/8","3/12","3/10"],
+                "answers": [0,1],
+                "correct": ["2/8","3/12"]
+            },
+            {
+                "id": 9,
+                "target": "2/3",
+                "choices": ["4/6","8/12","3/4"],
+                "answers": [0,1],
+                "correct": ["4/6","8/12"]
+            },
+            {
+                "id": 10,
+                "target": "3/8",
+                "choices": ["6/16","9/24","3/10"],
+                "answers": [0,1],
+                "correct": ["6/16","9/24"]
+            },
+            {
+                "id": 11,
+                "target": "4/9",
+                "choices": ["8/18","12/27","5/9"],
+                "answers": [0,1],
+                "correct": ["8/18","12/27"]
+            },
+            {
+                "id": 12,
+                "target": "5/8",
+                "choices": ["10/16","15/24","6/8"],
+                "answers": [0,1],
+                "correct": ["10/16","15/24"]
+            },
+            {
+                "id": 13,
+                "target": "2/7",
+                "choices": ["4/14","6/21","3/7"],
+                "answers": [0,1],
+                "correct": ["4/14","6/21"]
+            },
+            {
+                "id": 14,
+                "target": "3/7",
+                "choices": ["6/14","9/21","4/7"],
+                "answers": [0,1],
+                "correct": ["6/14","9/21"]
+            },
+            {
+                "id": 15,
+                "target": "4/5",
+                "choices": ["8/10","12/15","3/5"],
+                "answers": [0,1],
+                "correct": ["8/10","12/15"]
+            },
+            {
+                "id": 16,
+                "target": "1/5",
+                "choices": ["2/10","3/15","1/6"],
+                "answers": [0,1],
+                "correct": ["2/10","3/15"]
+            },
+            {
+                "id": 17,
+                "target": "5/7",
+                "choices": ["10/14","15/21","6/8"],
+                "answers": [0,1],
+                "correct": ["10/14","15/21"]
+            },
+            {
+                "id": 18,
+                "target": "2/9",
+                "choices": ["4/18","6/27","3/9"],
+                "answers": [0,1],
+                "correct": ["4/18","6/27"]
+            },
+            {
+                "id": 19,
+                "target": "3/10",
+                "choices": ["6/20","9/30","4/10"],
+                "answers": [0,1],
+                "correct": ["6/20","9/30"]
+            },
+            {
+                "id": 20,
+                "target": "7/8",
+                "choices": ["14/16","21/24","6/7"],
+                "answers": [0,1],
+                "correct": ["14/16","21/24"]
+            },
+            {
+                "id": 21,
+                "target": "4/11",
+                "choices": ["8/22","12/33","3/11"],
+                "answers": [0,1],
+                "correct": ["8/22","12/33"]
+            },
+            {
+                "id": 22,
+                "target": "5/9",
+                "choices": ["10/18","15/27","6/9"],
+                "answers": [0,1],
+                "correct": ["10/18","15/27"]
+            },
+            {
+                "id": 23,
+                "target": "2/11",
+                "choices": ["4/22","6/33","3/11"],
+                "answers": [0,1],
+                "correct": ["4/22","6/33"]
+            },
+            {
+                "id": 24,
+                "target": "3/11",
+                "choices": ["6/22","9/33","4/11"],
+                "answers": [0,1],
+                "correct": ["6/22","9/33"]
+            },
+            {
+                "id": 25,
+                "target": "5/12",
+                "choices": ["10/24","15/36","6/12"],
+                "answers": [0,1],
+                "correct": ["10/24","15/36"]
+            },
+            {
+                "id": 26,
+                "target": "7/9",
+                "choices": ["14/18","21/27","8/9"],
+                "answers": [0,1],
+                "correct": ["14/18","21/27"]
+            },
+            {
+                "id": 27,
+                "target": "4/13",
+                "choices": ["8/26","12/39","5/13"],
+                "answers": [0,1],
+                "correct": ["8/26","12/39"]
+            },
+            {
+                "id": 28,
+                "target": "3/13",
+                "choices": ["6/26","9/39","4/13"],
+                "answers": [0,1],
+                "correct": ["6/26","9/39"]
+            },
+            {
+                "id": 29,
+                "target": "2/13",
+                "choices": ["4/26","6/39","3/13"],
+                "answers": [0,1],
+                "correct": ["4/26","6/39"]
+            },
+            {
+                "id": 30,
+                "target": "5/14",
+                "choices": ["10/28","15/42","6/14"],
+                "answers": [0,1],
+                "correct": ["10/28","15/42"]
+            },
+            {
+                "id": 31,
+                "target": "1/6",
+                "choices": ["2/12","3/9","4/15"],
+                "answers": [0],
+                "correct": ["2/12"]
+            },
+            {
+                "id": 32,
+                "target": "3/8",
+                "choices": ["6/16","5/10","7/14"],
+                "answers": [0],
+                "correct": ["6/16"]
+            },
+            {
+                "id": 33,
+                "target": "2/9",
+                "choices": ["4/18","3/12","5/15"],
+                "answers": [0],
+                "correct": ["4/18"]
+            },
+            {
+                "id": 34,
+                "target": "4/15",
+                "choices": ["8/30","6/18","9/21"],
+                "answers": [0],
+                "correct": ["8/30"]
+            },
+            {
+                "id": 35,
+                "target": "5/12",
+                "choices": ["10/24","8/16","12/28"],
+                "answers": [0],
+                "correct": ["10/24"]
+            },
+            {
+                "id": 36,
+                "target": "1/8",
+                "choices": ["3/24","4/16","5/20"],
+                "answers": [0],
+                "correct": ["3/24"]
+            },
+            {
+                "id": 37,
+                "target": "7/10",
+                "choices": ["14/20","9/15","11/16"],
+                "answers": [0],
+                "correct": ["14/20"]
+            },
+            {
+                "id": 38,
+                "target": "3/16",
+                "choices": ["6/32","8/24","10/30"],
+                "answers": [0],
+                "correct": ["6/32"]
+            },
+            {
+                "id": 39,
+                "target": "2/15",
+                "choices": ["4/30","6/24","8/28"],
+                "answers": [0],
+                "correct": ["4/30"]
+            },
+            {
+                "id": 40,
+                "target": "5/18",
+                "choices": ["10/36","12/30","14/32"],
+                "answers": [0],
+                "correct": ["10/36"]
+            },
+            {
+                "id": 41,
+                "target": "1/12",
+                "choices": ["2/24","3/18","4/20"],
+                "answers": [0],
+                "correct": ["2/24"]
+            },
+            {
+                "id": 42,
+                "target": "7/15",
+                "choices": ["14/30","16/32","18/36"],
+                "answers": [0],
+                "correct": ["14/30"]
+            },
+            {
+                "id": 43,
+                "target": "4/21",
+                "choices": ["8/42","10/35","12/39"],
+                "answers": [0],
+                "correct": ["8/42"]
+            },
+            {
+                "id": 44,
+                "target": "3/20",
+                "choices": ["6/40","8/32","10/35"],
+                "answers": [0],
+                "correct": ["6/40"]
+            },
+            {
+                "id": 45,
+                "target": "2/21",
+                "choices": ["4/42","6/36","8/40"],
+                "answers": [0],
+                "correct": ["4/42"]
+            }
+        ];
+
+        let gameState = {
+            mode: 'single', // 'single' or 'two'
+            currentQuestion: 1,
+            totalQuestions: 5,
+            startTime: null,
+            targetFraction: null,
+            correctAnswers: [],
+            selectedAnswers: [],
+            player1Score: 0,
+            player2Score: 0,
+            player1Name: 'プレイヤー1',
+            player2Name: 'プレイヤー2',
+            targetScore: 3,
+            currentPlayer: 1,
+            usedQuestions: [],
+            currentChoices: []
+        };
+
+        // 分数HTML生成の共通化
+        function fracHTML(num, den, extra='text-2xl'){
+            return `<div class="fraction ${extra}">
+                <div>${num}</div><hr class="border-2 border-current my-1"><div>${den}</div>
+            </div>`;
+        }
+
+        // 分数クラス
+        class Fraction {
+            constructor(numerator, denominator) {
+                this.numerator = numerator;
+                this.denominator = denominator;
+                this.simplify();
+            }
+
+            simplify() {
+                const gcd = this.gcd(Math.abs(this.numerator), Math.abs(this.denominator));
+                this.numerator /= gcd;
+                this.denominator /= gcd;
+                if (this.denominator < 0) {
+                    this.numerator *= -1;
+                    this.denominator *= -1;
+                }
+            }
+
+            gcd(a, b) {
+                return b === 0 ? a : this.gcd(b, a % b);
+            }
+
+            equals(other) {
+                return this.numerator === other.numerator && this.denominator === other.denominator;
+            }
+
+            toString() {
+                return `<div class="fraction"><div>${this.numerator}</div><hr class="border-2 border-current my-1"><div>${this.denominator}</div></div>`;
+            }
+        }
+
+        // ハイスコア管理
+        function loadHighScore() {
+            const saved = localStorage.getItem('fractionMatchHighScore');
+            if (saved) {
+                const seconds = parseInt(saved);
+                const minutes = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                document.getElementById('bestTime').textContent = `${minutes}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+
+        function saveHighScore(timeInSeconds) {
+            const current = localStorage.getItem('fractionMatchHighScore');
+            if (!current || timeInSeconds < parseInt(current)) {
+                localStorage.setItem('fractionMatchHighScore', timeInSeconds.toString());
+                loadHighScore();
+                return true; // 新記録
+            }
+            return false;
+        }
+
+        // ゲーム開始
+        function startSinglePlayer() {
+            gameState.mode = 'single';
+            gameState.currentQuestion = 1;
+            gameState.player1Score = 0;
+            gameState.usedQuestions = [];
+            gameState.startTime = Date.now();
+            showScreen('gameScreen');
+            updateGameHeader();
+            startQuestion();
+        }
+
+        function showTwoPlayerSetup() {
+            showScreen('twoPlayerSetup');
+            // 名前入力フィールドを全選択
+            setTimeout(() => {
+                document.getElementById('player1Name').select();
+            }, 100);
+        }
+
+        function startTwoPlayer() {
+            gameState.mode = 'two';
+            gameState.player1Name = document.getElementById('player1Name').value || 'プレイヤー1';
+            gameState.player2Name = document.getElementById('player2Name').value || 'プレイヤー2';
+            gameState.targetScore = parseInt(document.getElementById('targetScore').value);
+            gameState.currentQuestion = 1;
+            gameState.player1Score = 0;
+            gameState.player2Score = 0;
+            gameState.usedQuestions = [];
+            
+            showScreen('gameScreen');
+            updateGameHeader();
+            startQuestion();
+        }
+
+        function showScreen(screenId) {
+            const screens = ['mainScreen', 'twoPlayerSetup', 'gameScreen', 'resultScreen'];
+            screens.forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        function updateGameHeader() {
+            if (gameState.mode === 'single') {
+                const elapsed = gameState.startTime ? Math.floor((Date.now() - gameState.startTime) / 1000) : 0;
+                const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                const seconds = (elapsed % 60).toString().padStart(2, '0');
+                document.getElementById('timerDisplay').textContent = `⏱️ ${minutes}:${seconds}`;
+                document.getElementById('scoreDisplay').textContent = '';
+                document.getElementById('questionCounter').textContent = `問題 ${gameState.currentQuestion}/5`;
+            } else {
+                document.getElementById('timerDisplay').textContent = `🏆 目標: ${gameState.targetScore}点`;
+                document.getElementById('scoreDisplay').innerHTML = `
+                    ${gameState.player1Name}: ${gameState.player1Score}点<br>
+                    ${gameState.player2Name}: ${gameState.player2Score}点
+                `;
+                document.getElementById('questionCounter').textContent = `問題 ${gameState.currentQuestion}`;
+            }
+        }
+
+        function startQuestion() {
+            document.getElementById('choicesArea').classList.add('hidden');
+
+            // 2人モードの送信ボタンをリセット
+            if (gameState.mode === 'two') {
+                const player1Btn = document.getElementById('player1Submit');
+                const player2Btn = document.getElementById('player2Submit');
+                if (player1Btn) {
+                    player1Btn.disabled = false;
+                    player1Btn.textContent = '✨ 送信！';
+                    player1Btn.classList.remove('bg-gray-400');
+                    player1Btn.classList.add('bg-blue-400');
+                }
+                if (player2Btn) {
+                    player2Btn.disabled = false;
+                    player2Btn.textContent = '✨ 送信！';
+                    player2Btn.classList.remove('bg-gray-400');
+                    player2Btn.classList.add('bg-pink-400');
+                }
+            }
+
+            // 未使用かつ「3択・正解数<=2」の問題だけ抽出
+            let availableQuestions = questionData.filter(q =>
+                !gameState.usedQuestions.includes(q.id) &&
+                q.choices.length === 3 && q.answers.length <= 2
+            );
+            if (availableQuestions.length === 0) {
+                gameState.usedQuestions = [];
+                availableQuestions = questionData.filter(q => q.choices.length === 3 && q.answers.length <= 2);
+            }
+
+            const q = availableQuestions[Math.floor(Math.random()*availableQuestions.length)];
+            gameState.usedQuestions.push(q.id);
+            gameState.currentQuestionData = q;
+
+            const [num, den] = q.target.split('/');
+            document.getElementById('targetFraction').innerHTML =
+                `<div class="fraction-large font-extrabold text-purple-600 pop-in">
+                   <div>${num}</div><hr class="border-4 border-current my-2"><div>${den}</div>
+                 </div>`;
+
+            setTimeout(() => {
+                generateChoices();
+                const area = document.getElementById('choicesArea');
+                area.classList.remove('hidden');
+                area.classList.add('bounce-in');
+            }, 1000);
+        }
+
+        function generateChoices() {
+            const questionData = gameState.currentQuestionData;
+            gameState.selectedAnswers = [];
+            
+            // 選択肢をシャッフル
+            const shuffledChoices = [...questionData.choices];
+            const shuffleMap = [];
+            
+            // シャッフルのマッピングを作成
+            for (let i = 0; i < shuffledChoices.length; i++) {
+                shuffleMap.push(i);
+            }
+            
+            // Fisher-Yates シャッフル
+            for (let i = shuffleMap.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffleMap[i], shuffleMap[j]] = [shuffleMap[j], shuffleMap[i]];
+                [shuffledChoices[i], shuffledChoices[j]] = [shuffledChoices[j], shuffledChoices[i]];
+            }
+            
+            // 正解のインデックスを新しい位置に更新
+            gameState.correctAnswers = questionData.answers.map(oldIndex => 
+                shuffleMap.indexOf(oldIndex)
+            );
+            
+            // 現在の選択肢を保存
+            gameState.currentChoices = shuffledChoices;
+            
+            if (gameState.mode === 'single') {
+                createSinglePlayerChoices(shuffledChoices);
+            } else {
+                createTwoPlayerChoices(shuffledChoices);
+                document.getElementById('player1Header').textContent = gameState.player1Name;
+                document.getElementById('player2Header').textContent = gameState.player2Name;
+            }
+        }
+
+        function createSinglePlayerChoices(choices) {
+            const container = document.getElementById('singlePlayerChoices');
+            container.innerHTML = '';
+            container.className = 'grid grid-cols-1 md:grid-cols-3 gap-6 mb-8';
+            document.getElementById('singlePlayerChoices').classList.remove('hidden');
+            document.getElementById('twoPlayerChoices').classList.add('hidden');
+            document.getElementById('singleSubmitButton').classList.remove('hidden');
+            document.getElementById('twoPlayerSubmitButtons').classList.add('hidden');
+            
+            choices.forEach((fractionStr, index) => {
+                const button = document.createElement('button');
+                button.className = 'bg-white hover:bg-blue-100 border-[3px] border-blue-300 text-blue-600 font-bold py-4 px-3 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200';
+                const [num, den] = fractionStr.split('/');
+                button.innerHTML = fracHTML(num, den, 'text-2xl');
+                button.onclick = () => toggleChoice(index, button);
+                button.setAttribute('aria-pressed', 'false');
+                container.appendChild(button);
+            });
+        }
+
+        function createTwoPlayerChoices(choices) {
+            document.getElementById('singlePlayerChoices').classList.add('hidden');
+            document.getElementById('twoPlayerChoices').classList.remove('hidden');
+            document.getElementById('singleSubmitButton').classList.add('hidden');
+            document.getElementById('twoPlayerSubmitButtons').classList.remove('hidden');
+            
+            const player1Container = document.getElementById('player1Choices');
+            const player2Container = document.getElementById('player2Choices');
+            player1Container.innerHTML = '';
+            player2Container.innerHTML = '';
+            player1Container.className = 'grid grid-cols-1 md:grid-cols-3 gap-4';
+            player2Container.className = 'grid grid-cols-1 md:grid-cols-3 gap-4';
+            
+            choices.forEach((fractionStr, index) => {
+                const [num, den] = fractionStr.split('/');
+                
+                // プレイヤー1用
+                const button1 = document.createElement('button');
+                button1.className = 'bg-white hover:bg-blue-100 border-[3px] border-blue-300 text-blue-600 font-bold py-3 px-2 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200';
+                button1.innerHTML = fracHTML(num, den, 'text-xl');
+                button1.onclick = () => toggleChoice(index, button1, 1);
+                button1.setAttribute('aria-pressed', 'false');
+                player1Container.appendChild(button1);
+                
+                // プレイヤー2用
+                const button2 = document.createElement('button');
+                button2.className = 'bg-white hover:bg-pink-100 border-[3px] border-pink-300 text-pink-600 font-bold py-3 px-2 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200';
+                button2.innerHTML = fracHTML(num, den, 'text-xl');
+                button2.onclick = () => toggleChoice(index, button2, 2);
+                button2.setAttribute('aria-pressed', 'false');
+                player2Container.appendChild(button2);
+            });
+        }
+
+        function toggleChoice(index, button, player = null) {
+            const key = player ? `player${player}` : 'selected';
+            
+            if (!gameState.selectedAnswers[key]) {
+                gameState.selectedAnswers[key] = [];
+            }
+            
+            const selectedArray = gameState.selectedAnswers[key];
+            const selectedIndex = selectedArray.indexOf(index);
+            
+            if (selectedIndex > -1) {
+                selectedArray.splice(selectedIndex, 1);
+                button.classList.remove('bg-yellow-200', 'border-yellow-500');
+                button.setAttribute('aria-pressed', 'false');
+                if (player === 1) {
+                    button.classList.add('bg-white', 'hover:bg-blue-100', 'border-blue-300');
+                } else if (player === 2) {
+                    button.classList.add('bg-white', 'hover:bg-pink-100', 'border-pink-300');
+                } else {
+                    button.classList.add('bg-white', 'hover:bg-blue-100', 'border-blue-300');
+                }
+            } else {
+                selectedArray.push(index);
+                button.classList.remove('bg-white', 'hover:bg-blue-100', 'hover:bg-pink-100', 'border-blue-300', 'border-pink-300');
+                button.classList.add('bg-yellow-200', 'border-yellow-500');
+                button.setAttribute('aria-pressed', 'true');
+            }
+        }
+
+        function submitAnswer() {
+            const submitBtn = document.getElementById('singleSubmitButton');
+            submitBtn.disabled = true;
+
+            const selected = (gameState.selectedAnswers.selected || []).slice().sort();
+            const correct = gameState.correctAnswers.slice().sort();
+            const isCorrect = arraysEqual(selected, correct);
+            
+            if (!isCorrect) {
+                gameState.startTime -= 10000;
+            }
+
+            const correctFracs = gameState.correctAnswers.map(i => gameState.currentChoices[i]);
+            showAnswerResult(isCorrect, correctFracs);
+
+            const proceed = () => {
+                if (isCorrect) {
+                    gameState.currentQuestion++;
+                    if (gameState.currentQuestion > 5) {
+                        showSinglePlayerResult();
+                        return;
+                    }
+                }
+                updateGameHeader();
+                startQuestion();
+                submitBtn.disabled = false;
+            };
+            setTimeout(proceed, 2000);
+        }
+
+        function submitPlayerAnswer(player) {
+            const submitBtn = document.getElementById(`player${player}Submit`);
+            submitBtn.disabled = true;
+            
+            const playerSelected = gameState.selectedAnswers[`player${player}`] || [];
+            const correct = arraysEqual(playerSelected.sort(), gameState.correctAnswers.sort());
+            
+            // 解答権を失う処理
+            if (!correct) {
+                submitBtn.textContent = '❌ 不正解';
+                submitBtn.classList.add('bg-gray-400');
+                submitBtn.classList.remove(player === 1 ? 'bg-blue-400' : 'bg-pink-400');
+                
+                // 両方のプレイヤーが不正解かチェック
+                const player1Disabled = document.getElementById('player1Submit').disabled;
+                const player2Disabled = document.getElementById('player2Submit').disabled;
+                
+                if (player1Disabled && player2Disabled) {
+                    // 両方不正解の場合、正解を表示して次の問題へ
+                    const correctFracs = gameState.correctAnswers.map(i => gameState.currentChoices[i]);
+                    showTwoPlayerAnswerResult(false, false, correctFracs);
+                    gameState.currentQuestion++;
+                    setTimeout(() => {
+                        updateGameHeader();
+                        startQuestion();
+                    }, 2000);
+                }
+                return;
+            }
+            
+            // 正解の場合
+            if (player === 1) gameState.player1Score++;
+            if (player === 2) gameState.player2Score++;
+            
+            const correctFracs = gameState.correctAnswers.map(i => gameState.currentChoices[i]);
+            showTwoPlayerAnswerResult(player === 1 && correct, player === 2 && correct, correctFracs);
+            
+            if (gameState.player1Score >= gameState.targetScore || gameState.player2Score >= gameState.targetScore) {
+                setTimeout(() => showTwoPlayerResult(), 2000);
+                return;
+            }
+            
+            gameState.currentQuestion++;
+            setTimeout(() => {
+                updateGameHeader();
+                startQuestion();
+            }, 2000);
+        }
+
+        function showAnswerResult(isCorrect, correctAnswers) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            resultDiv.innerHTML = `
+                <div class="bg-white rounded-3xl p-12 text-center max-w-2xl mx-4 bounce-in">
+                    <div class="text-6xl mb-6">${isCorrect ? '🎉' : '😅'}</div>
+                    <h2 class="text-4xl font-bold mb-6 ${isCorrect ? 'text-green-600' : 'text-red-600'}">
+                        ${isCorrect ? '正解！' : '不正解...'}
+                    </h2>
+                    ${!isCorrect ? '<p class="text-lg text-red-500 font-bold mb-4">⏰ +10秒ペナルティ</p>' : ''}
+                    <div class="text-xl text-gray-600 mb-4">正解は:</div>
+                    <div class="flex flex-wrap justify-center gap-4">
+                        ${correctAnswers.map(answer => {
+                            const [num, den] = answer.split('/');
+                            return `<div class="bg-green-100 border-2 border-green-400 rounded-xl p-4">
+                                ${fracHTML(num, den, 'text-green-600 font-bold')}
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(resultDiv);
+            
+            setTimeout(() => {
+                document.body.removeChild(resultDiv);
+            }, 2000);
+        }
+
+        function showTwoPlayerAnswerResult(player1Correct, player2Correct, correctAnswers) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            resultDiv.innerHTML = `
+                <div class="bg-white rounded-3xl p-12 text-center max-w-3xl mx-4 bounce-in">
+                    <div class="grid grid-cols-2 gap-8 mb-6">
+                        <div class="text-center">
+                            <div class="text-4xl mb-2">${player1Correct ? '🎉' : '😅'}</div>
+                            <h3 class="text-2xl font-bold ${player1Correct ? 'text-green-600' : 'text-red-600'}">
+                                ${gameState.player1Name}
+                            </h3>
+                            <p class="text-lg">${player1Correct ? '正解！' : '不正解...'}</p>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-4xl mb-2">${player2Correct ? '🎉' : '😅'}</div>
+                            <h3 class="text-2xl font-bold ${player2Correct ? 'text-green-600' : 'text-red-600'}">
+                                ${gameState.player2Name}
+                            </h3>
+                            <p class="text-lg">${player2Correct ? '正解！' : '不正解...'}</p>
+                        </div>
+                    </div>
+                    <div class="text-xl text-gray-600 mb-4">正解は:</div>
+                    <div class="flex flex-wrap justify-center gap-4">
+                        ${correctAnswers.map(answer => {
+                            const [num, den] = answer.split('/');
+                            return `<div class="bg-green-100 border-2 border-green-400 rounded-xl p-4">
+                                ${fracHTML(num, den, 'text-green-600 font-bold')}
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(resultDiv);
+            
+            setTimeout(() => {
+                document.body.removeChild(resultDiv);
+            }, 2000);
+        }
+
+        function arraysEqual(a, b) {
+            return a.length === b.length && a.every((val, i) => val === b[i]);
+        }
+
+        function showSinglePlayerResult() {
+            const totalTime = Math.floor((Date.now() - gameState.startTime) / 1000);
+            const minutes = Math.floor(totalTime / 60);
+            const seconds = totalTime % 60;
+            const isNewRecord = saveHighScore(totalTime);
+            
+            document.getElementById('resultContent').innerHTML = `
+                <div class="text-6xl mb-6">${isNewRecord ? '🏆' : '🎉'}</div>
+                <h2 class="text-4xl font-bold text-green-600 mb-4">${isNewRecord ? '新記録！' : 'おめでとう！'}</h2>
+                <p class="text-2xl text-gray-600 mb-4">5問すべて正解しました！</p>
+                <div class="text-3xl font-bold text-purple-600 mb-4">
+                    タイム: ${minutes}分${seconds}秒
+                </div>
+                ${isNewRecord ? '<p class="text-xl text-yellow-600 font-bold">🌟 ベストタイム更新！</p>' : ''}
+            `;
+            showScreen('resultScreen');
+        }
+
+        function showTwoPlayerResult() {
+            let winner, emoji;
+            if (gameState.player1Score > gameState.player2Score) {
+                winner = gameState.player1Name;
+                emoji = '🏆';
+            } else if (gameState.player2Score > gameState.player1Score) {
+                winner = gameState.player2Name;
+                emoji = '🏆';
+            } else {
+                winner = '引き分け';
+                emoji = '🤝';
+            }
+            
+            document.getElementById('resultContent').innerHTML = `
+                <div class="text-6xl mb-6">${emoji}</div>
+                <h2 class="text-4xl font-bold text-green-600 mb-4">${winner === '引き分け' ? '引き分け！' : winner + 'の勝利！'}</h2>
+                <div class="text-xl text-gray-600 mb-4">
+                    ${gameState.player1Name}: ${gameState.player1Score}点<br>
+                    ${gameState.player2Name}: ${gameState.player2Score}点
+                </div>
+            `;
+            showScreen('resultScreen');
+        }
+
+        function restartGame() {
+            if (gameState.mode === 'single') {
+                startSinglePlayer();
+            } else {
+                startTwoPlayer();
+            }
+        }
+
+        function backToMain() {
+            showScreen('mainScreen');
+        }
+
+        // タイマー更新（1人モード用）
+        setInterval(() => {
+            if (gameState.mode === 'single' && gameState.startTime && document.getElementById('gameScreen').classList.contains('hidden') === false) {
+                updateGameHeader();
+            }
+        }, 1000);
+
+        // 名前入力フィールドの全選択
+        document.getElementById('player1Name').addEventListener('focus', function() {
+            this.select();
+        });
+        document.getElementById('player2Name').addEventListener('focus', function() {
+            this.select();
+        });
+
+        // ページ読み込み時にハイスコアを表示
+        document.addEventListener('DOMContentLoaded', function() {
+            loadHighScore();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97ca3fa41151fcbd',t:'MTc1NzQ1ODI2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
 
