@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="ja">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>漢字テスト勉強アプリ</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
+      height: 100%;
+    }
+    html {
+      height: 100%;
+    }
+    .app-wrapper {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100%;
+      width: 100%;
+      padding: 2rem;
+      overflow-auto;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: white;
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .selection-screen {
+      background: white;
+      border-radius: 20px;
+      padding: 3rem;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+      text-align: center;
+    }
+    .selection-screen h2 {
+      color: #1f2937;
+      font-size: 1.8rem;
+      margin-bottom: 2rem;
+    }
+    .number-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    .number-button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 2rem 1.5rem;
+      border-radius: 16px;
+      font-size: 2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    .number-button:hover {
+      background: #5568d3;
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+    .number-button:active {
+      transform: translateY(-2px);
+    }
+    .number-button span {
+      display: block;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      opacity: 0.9;
+    }
+    .quiz-screen {
+      display: none;
+    }
+    .quiz-screen.active {
+      display: block;
+    }
+    .progress-bar {
+      background: rgba(255,255,255,0.3);
+      border-radius: 20px;
+      height: 12px;
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+    .progress-fill {
+      background: white;
+      height: 100%;
+      border-radius: 20px;
+      transition: width 0.3s ease;
+      box-shadow: 0 2px 8px rgba(255,255,255,0.3);
+    }
+    .progress-text {
+      color: white;
+      text-align: center;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+    .question-card {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .question-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+    .question-number {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+    .question-type {
+      display: inline-block;
+      background: #fbbf24;
+      color: #78350f;
+      padding: 0.3rem 0.8rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      margin-left: 0.5rem;
+      font-weight: 600;
+    }
+    .question-text {
+      font-size: 1.5rem;
+      line-height: 2;
+      margin: 1.5rem 0;
+      color: #1f2937;
+    }
+    .hiragana {
+      color: #ef4444;
+      font-weight: bold;
+      text-decoration: underline;
+      text-decoration-style: wavy;
+      text-decoration-color: #fca5a5;
+    }
+    .answer-section {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 2px dashed #e5e7eb;
+    }
+    .answer-content {
+      display: none;
+      background: #f0fdf4;
+      border-left: 4px solid #10b981;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+    }
+    .answer-content.show {
+      display: block;
+      animation: slideDown 0.3s ease-out;
+    }
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .answer-label {
+      color: #059669;
+      font-weight: bold;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    .answer-text {
+      font-size: 1.8rem;
+      color: #065f46;
+      font-weight: bold;
+      margin: 0.5rem 0;
+    }
+    .reading {
+      font-size: 1rem;
+      color: #6b7280;
+      margin-top: 0.3rem;
+    }
+    .check-button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+    }
+    .check-button:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+    }
+    .check-button:active {
+      transform: translateY(0);
+    }
+    .note-hint {
+      background: #fef3c7;
+      border-left: 4px solid #fbbf24;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      color: #78350f;
+    }
+    .note-hint strong {
+      color: #92400e;
+    }
+    .reset-button {
+      background: white;
+      color: #667eea;
+      border: 2px solid white;
+      padding: 0.75rem 2rem;
+      border-radius: 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: block;
+      margin: 2rem auto 0;
+      box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+    }
+    .reset-button:hover {
+      background: rgba(255,255,255,0.9);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255,255,255,0.4);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="app-wrapper">
+   <div class="container">
+    <h1 id="app-title">漢字テスト勉強アプリ</h1>
+    <div id="selection-screen" class="selection-screen">
+     <h2>何問解きますか？</h2>
+     <div class="number-buttons"><button class="number-button" onclick="startQuiz(5)"> 5<span>問</span> </button> <button class="number-button" onclick="startQuiz(10)"> 10<span>問</span> </button> <button class="number-button" onclick="startQuiz(15)"> 15<span>問</span> </button> <button class="number-button" onclick="startQuiz(20)"> 20<span>問</span> </button>
+     </div>
+    </div>
+    <div id="quiz-screen" class="quiz-screen">
+     <div class="progress-text" id="progress-text">
+      確認済み 0 / 5
+     </div>
+     <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+     </div>
+     <div id="questions-container"></div><button class="reset-button" onclick="resetQuiz()">最初に戻る</button>
+    </div>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      app_title: "漢字テスト勉強アプリ",
+      check_button_text: "正解を見る",
+      primary_color: "#667eea",
+      secondary_color: "#764ba2",
+      accent_color: "#fbbf24",
+      text_color: "#1f2937",
+      success_color: "#10b981"
+    };
+
+    // 問題データベース（125問）
+    const questionBank = [
+      { type: "例文", hiragana: "える", kanji: "得る", reading: "える", before: "努力して信頼を", after: "。" },
+      { type: "熟語", hiragana: "とくい", kanji: "得意", reading: "とくい", before: "彼は算数が", after: "だ。" },
+      { type: "熟語", hiragana: "かくとく", kanji: "獲得", reading: "かくとく", before: "目標を", after: "する。" },
+      { type: "例文", hiragana: "くらべる", kanji: "比べる", reading: "くらべる", before: "兄と自分を", after: "。" },
+      { type: "熟語", hiragana: "ひかく", kanji: "比較", reading: "ひかく", before: "二つの意見を", after: "する。" },
+      { type: "熟語", hiragana: "たいひ", kanji: "対比", reading: "たいひ", before: "二つの文章を", after: "して読む。" },
+      { type: "熟語", hiragana: "せいじ", kanji: "政治", reading: "せいじ", before: "", after: "に関心をもつ。" },
+      { type: "熟語", hiragana: "こくせい", kanji: "国政", reading: "こくせい", before: "国の", after: "を支える仕事。" },
+      { type: "熟語", hiragana: "せいさく", kanji: "政策", reading: "せいさく", before: "新しい", after: "を考える。" },
+      { type: "熟語", hiragana: "きょうみ", kanji: "興味", reading: "きょうみ", before: "その話に", after: "がわいた。" },
+      { type: "熟語", hiragana: "ふっこう", kanji: "復興", reading: "ふっこう", before: "町は災害から少しずつ", after: "している。" },
+      { type: "例文", hiragana: "おこる", kanji: "興る", reading: "おこる", before: "新しい文化が", after: "。" },
+      { type: "例文", hiragana: "しめす", kanji: "示す", reading: "しめす", before: "例を", after: "。" },
+      { type: "熟語", hiragana: "しじ", kanji: "指示", reading: "しじ", before: "先生の", after: "をよく聞く。" },
+      { type: "熟語", hiragana: "ひょうじ", kanji: "表示", reading: "ひょうじ", before: "画面に結果を", after: "する。" },
+      { type: "例文", hiragana: "はる", kanji: "張る", reading: "はる", before: "風船を強く", after: "。" },
+      { type: "熟語", hiragana: "しゅちょう", kanji: "主張", reading: "しゅちょう", before: "自分の考えを", after: "する。" },
+      { type: "例文", hiragana: "はる", kanji: "張る", reading: "はる", before: "緊張で体がこわばり、肩が", after: "。" },
+      { type: "例文", hiragana: "ささえる", kanji: "支える", reading: "ささえる", before: "体を", after: "力が必要だ。" },
+      { type: "熟語", hiragana: "しえん", kanji: "支援", reading: "しえん", before: "家族の生活を", after: "する。" },
+      { type: "例文", hiragana: "ささえる", kanji: "支える", reading: "ささえる", before: "木の枝が雪の重さを", after: "。" },
+      { type: "熟語", hiragana: "こじん", kanji: "個人", reading: "こじん", before: "これは", after: "の意見です。" },
+      { type: "熟語", hiragana: "こたい", kanji: "個体", reading: "こたい", before: "動物の", after: "を観察する。" },
+      { type: "熟語", hiragana: "いっこ", kanji: "一個", reading: "いっこ", before: "りんごを一", after: "食べた。" },
+      { type: "例文", hiragana: "まよう", kanji: "迷う", reading: "まよう", before: "どちらにするか", after: "。" },
+      { type: "熟語", hiragana: "まいご", kanji: "迷子", reading: "まいご", before: "道に", after: "がいた。" },
+      { type: "例文", hiragana: "まよう", kanji: "迷う", reading: "まよう", before: "進む道を", after: "こともある。" },
+      { type: "熟語", hiragana: "そんざい", kanji: "存在", reading: "そんざい", before: "その考えは社会に", after: "する。" },
+      { type: "熟語", hiragana: "ざいせき", kanji: "在籍", reading: "ざいせき", before: "名簿で", after: "を確認する。" },
+      { type: "熟語", hiragana: "ざいせき", kanji: "在籍", reading: "ざいせき", before: "彼は今も会に", after: "している。" },
+      { type: "熟語", hiragana: "どくじ", kanji: "独自", reading: "どくじ", before: "これは", after: "の方法だ。" },
+      { type: "熟語", hiragana: "どくりつ", kanji: "独立", reading: "どくりつ", before: "将来は一人で", after: "したい。" },
+      { type: "熟語", hiragana: "どくりつ", kanji: "独立", reading: "どくりつ", before: "会社から", after: "して店を出す。" },
+      { type: "熟語", hiragana: "べんとう", kanji: "弁当", reading: "べんとう", before: "新しい", after: "ばこを買った。" },
+      { type: "熟語", hiragana: "べんとう", kanji: "弁当", reading: "べんとう", before: "お昼は", after: "を食べる。" },
+      { type: "熟語", hiragana: "べんかい", kanji: "弁解", reading: "べんかい", before: "その説明は", after: "だと思う。" },
+      { type: "熟語", hiragana: "てんけん", kanji: "点検", reading: "てんけん", before: "自転車を", after: "する。" },
+      { type: "熟語", hiragana: "けんさ", kanji: "検査", reading: "けんさ", before: "安全のために", after: "を受ける。" },
+      { type: "熟語", hiragana: "てんけん", kanji: "点検", reading: "てんけん", before: "事前に機械を", after: "した。" },
+      { type: "熟語", hiragana: "ていしゅつ", kanji: "提出", reading: "ていしゅつ", before: "宿題を", after: "する。" },
+      { type: "熟語", hiragana: "ていあん", kanji: "提案", reading: "ていあん", before: "新しい案を", after: "する。" },
+      { type: "熟語", hiragana: "ていきょう", kanji: "提供", reading: "ていきょう", before: "資料を", after: "する。" },
+      { type: "熟語", hiragana: "きふ", kanji: "寄付", reading: "きふ", before: "本を図書館に", after: "した。" },
+      { type: "例文", hiragana: "よる", kanji: "寄る", reading: "よる", before: "そばに", after: "。" },
+      { type: "熟語", hiragana: "さんか", kanji: "参加", reading: "さんか", before: "ごみ拾いに", after: "して協力する。" },
+      { type: "例文", hiragana: "あまる", kanji: "余る", reading: "あまる", before: "料理が少し", after: "。" },
+      { type: "例文", hiragana: "ほとけ", kanji: "仏", reading: "ほとけ", before: "", after: "の教えを学ぶ。" },
+      { type: "熟語", hiragana: "だいぶつ", kanji: "大仏", reading: "だいぶつ", before: "奈良の", after: "を見に行く。" },
+      { type: "熟語", hiragana: "ぶっきょう", kanji: "仏教", reading: "ぶっきょう", before: "", after: "について調べる。" },
+      { type: "例文", hiragana: "かす", kanji: "貸す", reading: "かす", before: "友だちに本を", after: "。" },
+      { type: "熟語", hiragana: "かしだし", kanji: "貸出", reading: "かしだし", before: "図書室で本を", after: "する。" },
+      { type: "例文", hiragana: "かす", kanji: "貸す", reading: "かす", before: "お金を", after: "ときは約束を決める。" },
+      { type: "例文", hiragana: "きく", kanji: "効く", reading: "きく", before: "この薬はよく", after: "。" },
+      { type: "熟語", hiragana: "ゆうこう", kanji: "有効", reading: "ゆうこう", before: "その方法は安全に", after: "だ。" },
+      { type: "熟語", hiragana: "こうか", kanji: "効果", reading: "こうか", before: "風邪に", after: "がある。" },
+      { type: "熟語", hiragana: "じょうけん", kanji: "条件", reading: "じょうけん", before: "参加の", after: "を確かめる。" },
+      { type: "熟語", hiragana: "じょうけん", kanji: "条件", reading: "じょうけん", before: "この仕事の", after: "は二つある。" },
+      { type: "熟語", hiragana: "じょうけん", kanji: "条件", reading: "じょうけん", before: "", after: "を満たす人だけが参加できる。" },
+      { type: "例文", hiragana: "たもつ", kanji: "保つ", reading: "たもつ", before: "健康を", after: "。" },
+      { type: "熟語", hiragana: "ほぞん", kanji: "保存", reading: "ほぞん", before: "大切な資料を", after: "する。" },
+      { type: "熟語", hiragana: "ほおん", kanji: "保温", reading: "ほおん", before: "体温が下がらないように", after: "する。" },
+      { type: "熟語", hiragana: "ひょうか", kanji: "評価", reading: "ひょうか", before: "作品の価値を", after: "する。" },
+      { type: "熟語", hiragana: "ひょうか", kanji: "評価", reading: "ひょうか", before: "自分の考えを", after: "し直す。" },
+      { type: "熟語", hiragana: "ひょうか", kanji: "評価", reading: "ひょうか", before: "テストの結果を正しく", after: "する。" },
+      { type: "熟語", hiragana: "さんせい", kanji: "賛成", reading: "さんせい", before: "その意見に", after: "する。" },
+      { type: "熟語", hiragana: "しょうさん", kanji: "賞賛", reading: "しょうさん", before: "みんなの努力を", after: "する。" },
+      { type: "熟語", hiragana: "さんどう", kanji: "賛同", reading: "さんどう", before: "新しい考えに", after: "が集まった。" },
+      { type: "熟語", hiragana: "つま", kanji: "妻", reading: "つま", before: "彼の", after: "と会った。" },
+      { type: "熟語", hiragana: "ふうふ", kanji: "夫婦", reading: "ふうふ", before: "", after: "が買い物に来た。" },
+      { type: "熟語", hiragana: "つま", kanji: "妻", reading: "つま", before: "", after: "に感謝の言葉を伝える。" },
+      { type: "熟語", hiragana: "こんざつ", kanji: "混雑", reading: "こんざつ", before: "駅前が", after: "している。" },
+      { type: "熟語", hiragana: "こんざつ", kanji: "混雑", reading: "こんざつ", before: "朝の電車はとても", after: "する。" },
+      { type: "熟語", hiragana: "こんざつ", kanji: "混雑", reading: "こんざつ", before: "道が", after: "しない時間に出かける。" },
+      { type: "熟語", hiragana: "しょうりゃく", kanji: "省略", reading: "しょうりゃく", before: "長い説明を", after: "する。" },
+      { type: "例文", hiragana: "りゃくす", kanji: "略す", reading: "りゃくす", before: "例文を短く", after: "。" },
+      { type: "熟語", hiragana: "りゃくず", kanji: "略図", reading: "りゃくず", before: "地図を", after: "で表す。" },
+      { type: "熟語", hiragana: "さいしゅう", kanji: "採集", reading: "さいしゅう", before: "植物を", after: "する。" },
+      { type: "熟語", hiragana: "さいよう", kanji: "採用", reading: "さいよう", before: "新しい人を", after: "する。" },
+      { type: "熟語", hiragana: "さいしゅう", kanji: "採集", reading: "さいしゅう", before: "海の生き物を", after: "して調べる。" },
+      { type: "熟語", hiragana: "きんし", kanji: "禁止", reading: "きんし", before: "ここは立ち入り", after: "です。" },
+      { type: "熟語", hiragana: "きんし", kanji: "禁止", reading: "きんし", before: "撮影", after: "の場所。" },
+      { type: "熟語", hiragana: "きんし", kanji: "禁止", reading: "きんし", before: "危険なので使用を", after: "する。" },
+      { type: "熟語", hiragana: "のうりょく", kanji: "能力", reading: "のうりょく", before: "自分の", after: "をのばす。" },
+      { type: "熟語", hiragana: "かのう", kanji: "可能", reading: "かのう", before: "その計画は実行", after: "だ。" },
+      { type: "熟語", hiragana: "きのう", kanji: "機能", reading: "きのう", before: "機械の", after: "を調べる。" },
+      { type: "熟語", hiragana: "ゆうのう", kanji: "有能", reading: "ゆうのう", before: "彼はとても", after: "だ。" },
+      { type: "熟語", hiragana: "ようけん", kanji: "用件", reading: "ようけん", before: "先生に", after: "を伝える。" },
+      { type: "熟語", hiragana: "じけん", kanji: "事件", reading: "じけん", before: "その", after: "はニュースになった。" },
+      { type: "熟語", hiragana: "けんめい", kanji: "件名", reading: "けんめい", before: "メールの", after: "を分かりやすくする。" },
+      { type: "例文", hiragana: "けん", kanji: "件", reading: "けん", before: "この仕事は一", after: "落着だ。" },
+      { type: "熟語", hiragana: "たいりつ", kanji: "対立", reading: "たいりつ", before: "意見が", after: "してくる。" },
+      { type: "熟語", hiragana: "たいしょう", kanji: "対象", reading: "たいしょう", before: "話し合いの", after: "を決める。" },
+      { type: "熟語", hiragana: "たいひ", kanji: "対比", reading: "たいひ", before: "二つの考えを", after: "する。" },
+      { type: "熟語", hiragana: "ようす", kanji: "様子", reading: "ようす", before: "けが人の", after: "を見る。" },
+      { type: "熟語", hiragana: "ようしき", kanji: "様式", reading: "ようしき", before: "式の", after: "を整える。" },
+      { type: "例文", hiragana: "あらそう", kanji: "争う", reading: "あらそう", before: "友だちと", after: "ことがある。" },
+      { type: "熟語", hiragana: "あらそい", kanji: "争い", reading: "あらそい", before: "小さな", after: "でも早く止める。" },
+      { type: "熟語", hiragana: "はんえい", kanji: "繁栄", reading: "はんえい", before: "町がもっと", after: "するとよい。" },
+      { type: "熟語", hiragana: "えいよう", kanji: "栄養", reading: "えいよう", before: "朝食で", after: "をとる。" },
+      { type: "熟語", hiragana: "えいこう", kanji: "栄光", reading: "えいこう", before: "勝利の", after: "をたたえる。" },
+      { type: "例文", hiragana: "さかえる", kanji: "栄える", reading: "さかえる", before: "町がさらに", after: "。" },
+      { type: "熟語", hiragana: "へいわ", kanji: "平和", reading: "へいわ", before: "世界の", after: "を願う。" },
+      { type: "例文", hiragana: "わ", kanji: "和", reading: "わ", before: "友だちとの", after: "を大切にする。" },
+      { type: "熟語", hiragana: "なごやか", kanji: "和やか", reading: "なごやか", before: "教室が", after: "な雰囲気になった。" },
+      { type: "熟語", hiragana: "わしょく", kanji: "和食", reading: "わしょく", before: "給食に", after: "が出た。" },
+      { type: "熟語", hiragana: "わしつ", kanji: "和室", reading: "わしつ", before: "旅館の", after: "で休む。" },
+      { type: "熟語", hiragana: "しじ", kanji: "指示", reading: "しじ", before: "先生の", after: "にしたがう。" },
+      { type: "熟語", hiragana: "ひょうじ", kanji: "表示", reading: "ひょうじ", before: "画面に結果を", after: "する。" },
+      { type: "例文", hiragana: "しめす", kanji: "示す", reading: "しめす", before: "例を", after: "と分かりやすい。" },
+      { type: "例文", hiragana: "はる", kanji: "張る", reading: "はる", before: "風船を強く", after: "。" },
+      { type: "熟語", hiragana: "しゅちょう", kanji: "主張", reading: "しゅちょう", before: "自分の考えを", after: "する。" },
+      { type: "例文", hiragana: "ささえる", kanji: "支える", reading: "ささえる", before: "体を", after: "筋肉。" },
+      { type: "熟語", hiragana: "しえん", kanji: "支援", reading: "しえん", before: "困っている人を", after: "する。" },
+      { type: "熟語", hiragana: "こじん", kanji: "個人", reading: "こじん", before: "これは", after: "の考えだ。" },
+      { type: "熟語", hiragana: "こたい", kanji: "個体", reading: "こたい", before: "動物の", after: "数を調べる。" },
+      { type: "例文", hiragana: "こ", kanji: "個", reading: "こ", before: "みかんを三", after: "買った。" },
+      { type: "例文", hiragana: "まよう", kanji: "迷う", reading: "まよう", before: "どちらにするか", after: "。" },
+      { type: "熟語", hiragana: "ひょうか", kanji: "評価", reading: "ひょうか", before: "その考えが正しいか", after: "する。" },
+    ];
+
+    let selectedQuestions = [];
+    let totalQuestions = 0;
+
+    function shuffleArray(array) {
+      const newArray = [...array];
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+      return newArray;
+    }
+
+    function startQuiz(numQuestions) {
+      totalQuestions = numQuestions;
+      selectedQuestions = shuffleArray(questionBank).slice(0, numQuestions);
+      
+      document.getElementById('selection-screen').style.display = 'none';
+      document.getElementById('quiz-screen').classList.add('active');
+      
+      renderQuestions();
+      updateProgress();
+    }
+
+    function renderQuestions() {
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
+
+      selectedQuestions.forEach((q, index) => {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        
+        const questionText = `${q.before}<span class="hiragana">${q.hiragana}</span>${q.after}`;
+
+        card.innerHTML = `
+          <span class="question-number">問題${index + 1}</span>
+          <span class="question-type">${q.type}問題</span>
+          <div class="question-text">${questionText}</div>
+          <div class="note-hint">
+            <strong>📝 ノートに書いてみよう！</strong>
+          </div>
+          <div class="answer-section">
+            <button class="check-button" onclick="toggleAnswer('answer${index}')">
+              <span class="check-button-text">${defaultConfig.check_button_text}</span>
+            </button>
+            <div id="answer${index}" class="answer-content">
+              <div class="answer-label">✓ 正解</div>
+              <div class="answer-text">${q.kanji}</div>
+              <div class="reading">${q.reading}</div>
+            </div>
+          </div>
+        `;
+        
+        container.appendChild(card);
+      });
+
+      updateConfigStyles();
+    }
+
+    function toggleAnswer(answerId) {
+      const answerElement = document.getElementById(answerId);
+      answerElement.classList.toggle('show');
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const answeredCount = document.querySelectorAll('.answer-content.show').length;
+      const percentage = (answeredCount / totalQuestions) * 100;
+      
+      document.getElementById('progress-text').textContent = `確認済み ${answeredCount} / ${totalQuestions}`;
+      document.getElementById('progress-fill').style.width = `${percentage}%`;
+    }
+
+    function resetQuiz() {
+      document.getElementById('selection-screen').style.display = 'block';
+      document.getElementById('quiz-screen').classList.remove('active');
+      document.getElementById('questions-container').innerHTML = '';
+      selectedQuestions = [];
+      totalQuestions = 0;
+    }
+
+    function updateConfigStyles() {
+      if (!window.elementSdk || !window.elementSdk.config) return;
+      
+      const config = window.elementSdk.config;
+      const primaryColor = config.primary_color || defaultConfig.primary_color;
+      const accentColor = config.accent_color || defaultConfig.accent_color;
+      const textColor = config.text_color || defaultConfig.text_color;
+      const successColor = config.success_color || defaultConfig.success_color;
+      const checkButtonText = config.check_button_text || defaultConfig.check_button_text;
+
+      const questionNumbers = document.querySelectorAll('.question-number');
+      questionNumbers.forEach(el => {
+        el.style.background = primaryColor;
+      });
+
+      const questionTypes = document.querySelectorAll('.question-type');
+      questionTypes.forEach(el => {
+        el.style.background = accentColor;
+      });
+
+      const checkButtons = document.querySelectorAll('.check-button');
+      checkButtons.forEach(el => {
+        el.style.background = primaryColor;
+        el.style.boxShadow = `0 4px 6px ${primaryColor}4D`;
+      });
+
+      const checkButtonTexts = document.querySelectorAll('.check-button-text');
+      checkButtonTexts.forEach(el => {
+        el.textContent = checkButtonText;
+      });
+
+      const questionTexts = document.querySelectorAll('.question-text');
+      questionTexts.forEach(el => {
+        el.style.color = textColor;
+      });
+
+      const answerContents = document.querySelectorAll('.answer-content');
+      answerContents.forEach(el => {
+        el.style.borderLeftColor = successColor;
+      });
+
+      const answerLabels = document.querySelectorAll('.answer-label');
+      answerLabels.forEach(el => {
+        el.style.color = successColor;
+      });
+    }
+
+    async function onConfigChange(config) {
+      const appTitle = config.app_title || defaultConfig.app_title;
+      const checkButtonText = config.check_button_text || defaultConfig.check_button_text;
+      const primaryColor = config.primary_color || defaultConfig.primary_color;
+      const secondaryColor = config.secondary_color || defaultConfig.secondary_color;
+      const accentColor = config.accent_color || defaultConfig.accent_color;
+      const textColor = config.text_color || defaultConfig.text_color;
+      const successColor = config.success_color || defaultConfig.success_color;
+
+      document.getElementById('app-title').textContent = appTitle;
+      
+      document.querySelector('.app-wrapper').style.background = `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`;
+      
+      const numberButtons = document.querySelectorAll('.number-button');
+      numberButtons.forEach(el => {
+        el.style.background = primaryColor;
+        el.style.boxShadow = `0 4px 12px ${primaryColor}4D`;
+      });
+
+      updateConfigStyles();
+    }
+
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [
+          {
+            get: () => config.primary_color || defaultConfig.primary_color,
+            set: (value) => {
+              config.primary_color = value;
+              window.elementSdk.setConfig({ primary_color: value });
+            }
+          },
+          {
+            get: () => config.secondary_color || defaultConfig.secondary_color,
+            set: (value) => {
+              config.secondary_color = value;
+              window.elementSdk.setConfig({ secondary_color: value });
+            }
+          },
+          {
+            get: () => config.accent_color || defaultConfig.accent_color,
+            set: (value) => {
+              config.accent_color = value;
+              window.elementSdk.setConfig({ accent_color: value });
+            }
+          },
+          {
+            get: () => config.text_color || defaultConfig.text_color,
+            set: (value) => {
+              config.text_color = value;
+              window.elementSdk.setConfig({ text_color: value });
+            }
+          },
+          {
+            get: () => config.success_color || defaultConfig.success_color,
+            set: (value) => {
+              config.success_color = value;
+              window.elementSdk.setConfig({ success_color: value });
+            }
+          }
+        ],
+        borderables: [],
+        fontEditable: undefined,
+        fontSizeable: undefined
+      };
+    }
+
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ["app_title", config.app_title || defaultConfig.app_title],
+        ["check_button_text", config.check_button_text || defaultConfig.check_button_text]
+      ]);
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ab5fe1a54feb118',t:'MTc2NTI5ODkzMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
