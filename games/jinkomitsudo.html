@@ -1,22 +1,27 @@
 <!doctype html>
 <html lang="ja" class="h-full">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>都道府県ランダム割り振り</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>人口密度チャレンジ（ランダム割り当て＆結果発表）</title>
+
   <script src="/_sdk/element_sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+
   <style>
-    body {
-      box-sizing: border-box;
-    }
+    body { box-sizing: border-box; }
   </style>
   <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
- </head>
- <body class="h-full">
+</head>
+
+<body class="h-full">
   <div id="app" class="w-full h-full overflow-auto"></div>
+
   <script>
+    // =========================
+    // 1) 授業用デフォルト設定
+    // =========================
     const defaultConfig = {
       background_color: "#f0f9ff",
       surface_color: "#ffffff",
@@ -25,14 +30,28 @@
       secondary_action_color: "#64748b",
       font_family: "Noto Sans JP",
       font_size: 16,
-      app_title: "都道府県ランダム割り振り",
-      data_list_title: "都道府県データ一覧",
-      result_section_title: "割り振り結果",
-      start_button_text: "スタート",
-      assign_button_text: "割り振りを実行",
-      show_density_button_text: "人口密度を表示"
+
+      app_title: "人口密度チャレンジ",
+      data_list_title: "都道府県データ（人口と面積）",
+      result_section_title: "ランダム割り振り結果",
+
+      start_button_text: "授業をはじめる",
+      assign_button_text: "ランダム割り振りを実行",
+      show_density_button_text: "結果発表（並び替え）へ"
     };
 
+    // 24人×2県
+    const STUDENT_COUNT = 24;
+
+    // =========================
+    // 2) 結果発表パスワード
+    // =========================
+    const RESULTS_PASSWORD = "パスワード";
+    let resultsUnlocked = false;
+
+    // =========================
+    // 3) データ
+    // =========================
     const prefectureData = {
       "北海道": { area: 83422, population: 4979000, code: 1 },
       "青森県": { area: 9645, population: 1177000, code: 2 },
@@ -94,16 +113,22 @@
       "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県", "日本"
     ];
 
-    let currentScreen = 'data'; // 'data' | 'assignment' | 'density'
+    // =========================
+    // 4) 画面状態
+    // =========================
+    let currentScreen = "data"; // 'data' | 'assignment' | 'results'
     let assignments = [];
-    let densitySortMode = 'code'; // 'code' | 'area' | 'population' | 'density'
+    let densitySortMode = "code"; // 'code' | 'area' | 'population' | 'density'
 
+    // =========================
+    // 5) ユーティリティ
+    // =========================
     function formatNumber(num) {
-      return num.toLocaleString('ja-JP');
+      return num.toLocaleString("ja-JP");
     }
 
     function calculateDensity(population, area) {
-      return Math.round(population / area * 100) / 100;
+      return Math.round((population / area) * 100) / 100;
     }
 
     function shuffleArray(array) {
@@ -115,38 +140,70 @@
       return shuffled;
     }
 
-    function startAssignment() {
-      currentScreen = 'assignment';
+    // =========================
+    // 6) 結果発表アクセス制御
+    // =========================
+    function requestResultsAccess() {
+      if (resultsUnlocked) {
+        currentScreen = "results";
+        densitySortMode = "code";
+        render();
+        return;
+      }
+
+      const input = prompt("結果発表に入るにはパスワードを入力してください");
+      if (input === null) return;
+
+      if (input === RESULTS_PASSWORD) {
+        resultsUnlocked = true;
+        currentScreen = "results";
+        densitySortMode = "code";
+        render();
+      } else {
+        alert("パスワードが違います");
+      }
+    }
+
+    // =========================
+    // 7) 画面遷移
+    // =========================
+    function goTo(screen) {
+      if (screen === "results") {
+        requestResultsAccess();
+        return;
+      }
+      currentScreen = screen;
       render();
+    }
+
+    function startAssignment() {
+      goTo("assignment");
     }
 
     function assignPrefectures() {
       const shuffled = shuffleArray(prefectures);
-      assignments = Array.from({length: 24}, (_, index) => ({
-        number: index + 1,
-        prefecture1: shuffled[index * 2],
-        prefecture2: shuffled[index * 2 + 1],
-        data1: prefectureData[shuffled[index * 2]],
-        data2: prefectureData[shuffled[index * 2 + 1]]
-      }));
+
+      const needed = STUDENT_COUNT * 2; // 48
+      const picked = shuffled.slice(0, needed);
+
+      assignments = Array.from({ length: STUDENT_COUNT }, (_, index) => {
+        const p1 = picked[index * 2];
+        const p2 = picked[index * 2 + 1];
+
+        return {
+          number: index + 1,
+          prefecture1: p1,
+          prefecture2: p2,
+          data1: prefectureData[p1],
+          data2: prefectureData[p2]
+        };
+      });
+
       render();
     }
 
-    function showDensityScreen() {
-      currentScreen = 'density';
-      densitySortMode = 'code';
-      render();
-    }
-
-    function backToAssignment() {
-      currentScreen = 'assignment';
-      render();
-    }
-
-    function backToData() {
-      currentScreen = 'data';
-      assignments = [];
-      render();
+    function showResultsScreen() {
+      requestResultsAccess();
     }
 
     function changeSortMode(mode) {
@@ -155,16 +212,16 @@
     }
 
     function getSortedPrefectures() {
-      const prefList = prefectures.slice(0, -1); // 日本を除く
+      const prefList = prefectures.filter(p => p !== "日本");
 
       switch (densitySortMode) {
-        case 'code':
+        case "code":
           return prefList.sort((a, b) => prefectureData[a].code - prefectureData[b].code);
-        case 'area':
+        case "area":
           return prefList.sort((a, b) => prefectureData[b].area - prefectureData[a].area);
-        case 'population':
+        case "population":
           return prefList.sort((a, b) => prefectureData[b].population - prefectureData[a].population);
-        case 'density':
+        case "density":
           return prefList.sort((a, b) => {
             const da = calculateDensity(prefectureData[a].population, prefectureData[a].area);
             const db = calculateDensity(prefectureData[b].population, prefectureData[b].area);
@@ -175,16 +232,35 @@
       }
     }
 
+    // =========================
+    // 8) 共通：授業ナビのイベント付与
+    // =========================
+    function attachNavEvents() {
+      const navData = document.getElementById("nav-data");
+      const navAssign = document.getElementById("nav-assign");
+      const navResults = document.getElementById("nav-results");
+
+      if (navData) navData.onclick = () => goTo("data");
+      if (navAssign) navAssign.onclick = () => goTo("assignment");
+      if (navResults) navResults.onclick = () => goTo("results");
+    }
+
+    // =========================
+    // 9) レンダリング
+    // =========================
     function render() {
       const config = window.elementSdk?.config || defaultConfig;
+
       const customFont = config.font_family || defaultConfig.font_family;
       const baseFontStack = "'Noto Sans JP', sans-serif";
       const baseSize = config.font_size || defaultConfig.font_size;
+
       const bgColor = config.background_color || defaultConfig.background_color;
       const surfaceColor = config.surface_color || defaultConfig.surface_color;
       const textColor = config.text_color || defaultConfig.text_color;
       const primaryColor = config.primary_action_color || defaultConfig.primary_action_color;
       const secondaryColor = config.secondary_action_color || defaultConfig.secondary_action_color;
+
       const appTitle = config.app_title || defaultConfig.app_title;
       const dataListTitle = config.data_list_title || defaultConfig.data_list_title;
       const resultSectionTitle = config.result_section_title || defaultConfig.result_section_title;
@@ -192,176 +268,252 @@
       const assignButtonText = config.assign_button_text || defaultConfig.assign_button_text;
       const showDensityButtonText = config.show_density_button_text || defaultConfig.show_density_button_text;
 
-      const app = document.getElementById('app');
+      const app = document.getElementById("app");
       app.style.backgroundColor = bgColor;
       app.style.fontFamily = `${customFont}, ${baseFontStack}`;
 
-      if (currentScreen === 'data') {
-        app.innerHTML = `
-          <div style="max-width: 1200px; margin: 0 auto; padding: ${baseSize * 2}px;">
-            <h1 style="font-size: ${baseSize * 2}px; font-weight: bold; text-align: center; margin-bottom: ${baseSize * 2}px; color: ${textColor};">${appTitle}</h1>
+      // --- ナビボタンスタイル ---
+      const navBtnStyle = (active) => `
+        background-color: ${active ? primaryColor : secondaryColor};
+        color: white;
+        padding: ${baseSize * 0.5}px ${baseSize * 1.1}px;
+        border-radius: ${baseSize * 0.375}px;
+        font-size: ${baseSize * 0.875}px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        font-family: ${customFont}, ${baseFontStack};
+        transition: opacity .15s ease;
+      `;
 
-            <div style="background-color: ${surfaceColor}; padding: ${baseSize * 1.5}px; border-radius: ${baseSize * 0.5}px; margin-bottom: ${baseSize * 2}px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-              <h2 style="font-size: ${baseSize * 1.5}px; font-weight: 600; margin-bottom: ${baseSize * 1.5}px; color: ${textColor};">${dataListTitle}</h2>
-              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: ${baseSize}px; margin-bottom: ${baseSize * 1.5}px;">
+      // --- 共通ヘッダー ---
+      const headerHtml = `
+        <div style="max-width: 1200px; margin: 0 auto; padding: ${baseSize * 1.25}px ${baseSize * 2}px 0;">
+          <div style="display:flex; flex-wrap:wrap; gap:${baseSize * 0.75}px; align-items:center; justify-content:space-between;">
+            <div style="font-size:${baseSize * 1.6}px; font-weight:800; color:${textColor};">
+              ${appTitle}
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:${baseSize * 0.5}px; justify-content:flex-end;">
+              <button id="nav-data" style="${navBtnStyle(currentScreen === "data")}"
+                onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                ① 準備（データ）
+              </button>
+              <button id="nav-assign" style="${navBtnStyle(currentScreen === "assignment")}"
+                onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                ② ランダム割り振り
+              </button>
+              <button id="nav-results" style="${navBtnStyle(currentScreen === "results")}"
+                onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                ③ 結果発表
+              </button>
+            </div>
+          </div>
+
+          <div style="margin-top:${baseSize * 0.75}px; padding:${baseSize * 0.9}px ${baseSize}px;
+              background:${surfaceColor}; border-radius:${baseSize * 0.5}px;
+              box-shadow: 0 1px 6px rgba(0,0,0,0.06);">
+            <div style="color:${textColor}; font-size:${baseSize * 0.95}px; font-weight:700;">
+              人口密度 ＝ 人口 ÷ 面積
+            </div>
+            <div style="color:${textColor}; font-size:${baseSize * 0.85}px; opacity:0.85; margin-top:${baseSize * 0.25}px;">
+              予想 → 割り振り → 計算 → 共同入力 → 並び替えで確認 → 予想的中チャレンジ
+            </div>
+          </div>
+        </div>
+      `;
+
+      // =========================
+      // A) データ画面
+      // =========================
+      if (currentScreen === "data") {
+        app.innerHTML = `
+          ${headerHtml}
+          <div style="max-width: 1200px; margin: 0 auto; padding: ${baseSize * 1.5}px ${baseSize * 2}px ${baseSize * 2.5}px;">
+            <div style="background-color: ${surfaceColor}; padding: ${baseSize * 1.5}px; border-radius: ${baseSize * 0.5}px; margin-top: ${baseSize * 1.25}px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+
+              <h2 style="font-size: ${baseSize * 1.25}px; font-weight: 800; margin-bottom: ${baseSize}px; color: ${textColor};">
+                ${dataListTitle}
+              </h2>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: ${baseSize}px; margin-bottom: ${baseSize * 1.25}px;">
                 ${prefectures.map(pref => `
                   <div style="border: 1px solid #e2e8f0; padding: ${baseSize}px; border-radius: ${baseSize * 0.375}px;">
-                    <div style="font-weight: 600; color: ${primaryColor}; font-size: ${baseSize * 1.125}px; margin-bottom: ${baseSize * 0.5}px;">
-                      ${prefectureData[pref].code <= 47 ? String(prefectureData[pref].code).padStart(2, '0') + ' ' : ''}${pref}
+                    <div style="font-weight: 800; color: ${primaryColor}; font-size: ${baseSize * 1.05}px; margin-bottom: ${baseSize * 0.5}px;">
+                      ${prefectureData[pref].code <= 47 ? String(prefectureData[pref].code).padStart(2, "0") + " " : ""}${pref}
                     </div>
-                    <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px;">
+                    <div style="color: ${textColor}; font-size: ${baseSize * 0.85}px;">
                       面積: ${formatNumber(prefectureData[pref].area)} km²
                     </div>
-                    <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px;">
+                    <div style="color: ${textColor}; font-size: ${baseSize * 0.85}px;">
                       人口: ${formatNumber(prefectureData[pref].population)} 人
                     </div>
                   </div>
-                `).join('')}
+                `).join("")}
               </div>
-              <div style="text-align: center;">
+
+              <div style="display:flex; gap:${baseSize * 0.75}px; justify-content:center; flex-wrap:wrap;">
                 <button 
                   id="start-btn"
-                  style="background-color: ${primaryColor}; color: white; padding: ${baseSize * 0.75}px ${baseSize * 2.5}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 1.125}px; font-weight: 600; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
-                  onmouseover="this.style.opacity='0.9'"
-                  onmouseout="this.style.opacity='1'"
-                >
+                  style="background-color: ${primaryColor}; color: white; padding: ${baseSize * 0.75}px ${baseSize * 2.2}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 1.05}px; font-weight: 800; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
+                  onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                   ${startButtonText}
+                </button>
+
+                <button 
+                  id="jump-results-btn"
+                  style="background-color: ${secondaryColor}; color: white; padding: ${baseSize * 0.75}px ${baseSize * 2.2}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 1.05}px; font-weight: 800; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
+                  onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                  結果発表へ
                 </button>
               </div>
             </div>
           </div>
         `;
-        document.getElementById('start-btn').addEventListener('click', startAssignment);
 
-      } else if (currentScreen === 'assignment') {
+        document.getElementById("start-btn").addEventListener("click", startAssignment);
+        document.getElementById("jump-results-btn").addEventListener("click", () => goTo("results"));
+
+        attachNavEvents();
+        return;
+      }
+
+      // =========================
+      // B) 割り振り画面
+      // =========================
+      if (currentScreen === "assignment") {
         app.innerHTML = `
-          <div style="max-width: 1200px; margin: 0 auto; padding: ${baseSize * 2}px;">
-            <h1 style="font-size: ${baseSize * 2}px; font-weight: bold; text-align: center; margin-bottom: ${baseSize * 2}px; color: ${textColor};">${appTitle}</h1>
-
-            <div style="text-align: center; margin-bottom: ${baseSize * 2}px;">
-              <button 
-                id="back-btn"
-                style="background-color: ${secondaryColor}; color: white; padding: ${baseSize * 0.625}px ${baseSize * 1.5}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 0.875}px; font-weight: 600; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
-                onmouseover="this.style.opacity='0.9'"
-                onmouseout="this.style.opacity='1'"
-              >
-                ← データ一覧に戻る
-              </button>
-            </div>
+          ${headerHtml}
+          <div style="max-width: 1200px; margin: 0 auto; padding: ${baseSize * 1.5}px ${baseSize * 2}px ${baseSize * 2.5}px;">
 
             ${assignments.length === 0 ? `
-              <div style="background-color: ${surfaceColor}; padding: ${baseSize * 3}px; border-radius: ${baseSize * 0.5}px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <div style="background-color: ${surfaceColor}; padding: ${baseSize * 2.5}px; border-radius: ${baseSize * 0.5}px; text-align: center; margin-top:${baseSize * 1.25}px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                <div style="color:${textColor}; font-size:${baseSize}px; margin-bottom:${baseSize * 1.25}px; font-weight:600;">
+                  ${STUDENT_COUNT}人 × 2県 をランダムで決めます（重複なし）
+                </div>
                 <button 
                   id="assign-btn"
-                  style="background-color: ${primaryColor}; color: white; padding: ${baseSize}px ${baseSize * 3}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 1.25}px; font-weight: 600; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
-                  onmouseover="this.style.opacity='0.9'"
-                  onmouseout="this.style.opacity='1'"
-                >
+                  style="background-color: ${primaryColor}; color: white; padding: ${baseSize}px ${baseSize * 3}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 1.2}px; font-weight: 800; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
+                  onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                   ${assignButtonText}
                 </button>
               </div>
             ` : `
-              <div style="background-color: ${surfaceColor}; padding: ${baseSize * 1.5}px; border-radius: ${baseSize * 0.5}px; margin-bottom: ${baseSize * 2}px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <h2 style="font-size: ${baseSize * 1.5}px; font-weight: 600; margin-bottom: ${baseSize * 1.5}px; color: ${textColor};">${resultSectionTitle}</h2>
+              <div style="background-color: ${surfaceColor}; padding: ${baseSize * 1.5}px; border-radius: ${baseSize * 0.5}px; margin-top:${baseSize * 1.25}px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+
+                <div style="display:flex; flex-wrap:wrap; gap:${baseSize * 0.75}px; justify-content:space-between; align-items:center; margin-bottom:${baseSize * 1.25}px;">
+                  <h2 style="font-size: ${baseSize * 1.25}px; font-weight: 800; color: ${textColor};">
+                    ${resultSectionTitle}
+                  </h2>
+                  <div style="display:flex; flex-wrap:wrap; gap:${baseSize * 0.5}px;">
+                    <button 
+                      id="reassign-btn"
+                      style="background-color: ${secondaryColor}; color: white; padding: ${baseSize * 0.5}px ${baseSize * 1.25}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 0.9}px; font-weight: 800; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
+                      onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                      もう一回割り振り
+                    </button>
+                    <button 
+                      id="to-results-btn"
+                      style="background-color: ${primaryColor}; color: white; padding: ${baseSize * 0.5}px ${baseSize * 1.25}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 0.9}px; font-weight: 800; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
+                      onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                      ${showDensityButtonText}
+                    </button>
+                  </div>
+                </div>
+
                 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: ${baseSize}px;">
                   ${assignments.map(a => `
                     <div style="border: 1px solid #e2e8f0; padding: ${baseSize}px; border-radius: ${baseSize * 0.375}px;">
-                      <div style="font-weight: 600; margin-bottom: ${baseSize * 0.75}px; color: ${textColor}; font-size: ${baseSize * 1.125}px;">
+                      <div style="font-weight: 800; margin-bottom: ${baseSize * 0.75}px; color: ${textColor}; font-size: ${baseSize * 1.05}px;">
                         ${a.number}番
                       </div>
+
                       <div style="margin-bottom: ${baseSize * 0.5}px; padding: ${baseSize * 0.5}px; background-color: ${bgColor}; border-radius: ${baseSize * 0.25}px;">
-                        <div style="color: ${primaryColor}; font-size: ${baseSize}px; font-weight: 600; margin-bottom: ${baseSize * 0.25}px;">
+                        <div style="color: ${primaryColor}; font-size: ${baseSize}px; font-weight: 800; margin-bottom: ${baseSize * 0.25}px;">
                           ① ${a.prefecture1}
                         </div>
-                        <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px; margin-left: ${baseSize}px;">
+                        <div style="color: ${textColor}; font-size: ${baseSize * 0.85}px; margin-left: ${baseSize}px;">
                           面積: ${formatNumber(a.data1.area)} km²
                         </div>
-                        <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px; margin-left: ${baseSize}px;">
+                        <div style="color: ${textColor}; font-size: ${baseSize * 0.85}px; margin-left: ${baseSize}px;">
                           人口: ${formatNumber(a.data1.population)} 人
                         </div>
                       </div>
+
                       <div style="padding: ${baseSize * 0.5}px; background-color: ${bgColor}; border-radius: ${baseSize * 0.25}px;">
-                        <div style="color: ${primaryColor}; font-size: ${baseSize}px; font-weight: 600; margin-bottom: ${baseSize * 0.25}px;">
+                        <div style="color: ${primaryColor}; font-size: ${baseSize}px; font-weight: 800; margin-bottom: ${baseSize * 0.25}px;">
                           ② ${a.prefecture2}
                         </div>
-                        <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px; margin-left: ${baseSize}px;">
+                        <div style="color: ${textColor}; font-size: ${baseSize * 0.85}px; margin-left: ${baseSize}px;">
                           面積: ${formatNumber(a.data2.area)} km²
                         </div>
-                        <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px; margin-left: ${baseSize}px;">
+                        <div style="color: ${textColor}; font-size: ${baseSize * 0.85}px; margin-left: ${baseSize}px;">
                           人口: ${formatNumber(a.data2.population)} 人
                         </div>
                       </div>
                     </div>
-                  `).join('')}
-                </div>
-                <div style="text-align: center; margin-top: ${baseSize * 2}px;">
-                  <button 
-                    id="density-btn"
-                    style="background-color: ${primaryColor}; color: white; padding: ${baseSize * 0.75}px ${baseSize * 2}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize}px; font-weight: 600; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
-                    onmouseover="this.style.opacity='0.9'"
-                    onmouseout="this.style.opacity='1'"
-                  >
-                    ${showDensityButtonText}
-                  </button>
+                  `).join("")}
                 </div>
               </div>
             `}
           </div>
         `;
 
-        if (assignments.length === 0) {
-          document.getElementById('assign-btn').addEventListener('click', assignPrefectures);
-        } else {
-          document.getElementById('density-btn').addEventListener('click', showDensityScreen);
-        }
-        document.getElementById('back-btn').addEventListener('click', backToData);
+        attachNavEvents();
 
-      } else if (currentScreen === 'density') {
+        if (assignments.length === 0) {
+          document.getElementById("assign-btn").addEventListener("click", assignPrefectures);
+        } else {
+          document.getElementById("reassign-btn").addEventListener("click", assignPrefectures);
+          document.getElementById("to-results-btn").addEventListener("click", showResultsScreen);
+        }
+
+        return;
+      }
+
+      // =========================
+      // C) 結果発表（並び替え）画面
+      // =========================
+      if (currentScreen === "results") {
         const sortedPrefs = getSortedPrefectures();
 
         const sortButtonStyle = (isActive) => `
           background-color: ${isActive ? primaryColor : secondaryColor};
           color: white;
-          padding: ${baseSize * 0.625}px ${baseSize * 1.25}px;
+          padding: ${baseSize * 0.55}px ${baseSize * 1.2}px;
           border-radius: ${baseSize * 0.375}px;
           font-size: ${baseSize * 0.875}px;
-          font-weight: 600;
+          font-weight: 800;
           cursor: pointer;
           border: none;
           font-family: ${customFont}, ${baseFontStack};
+          transition: opacity .15s ease;
         `;
 
         app.innerHTML = `
-          <div style="max-width: 1200px; margin: 0 auto; padding: ${baseSize * 2}px;">
-            <h1 style="font-size: ${baseSize * 2}px; font-weight: bold; text-align: center; margin-bottom: ${baseSize * 2}px; color: ${textColor};">${appTitle}</h1>
+          ${headerHtml}
+          <div style="max-width: 1200px; margin: 0 auto; padding: ${baseSize * 1.5}px ${baseSize * 2}px ${baseSize * 2.5}px;">
+            <div style="background-color: ${surfaceColor}; padding: ${baseSize * 1.5}px; border-radius: ${baseSize * 0.5}px; margin-top:${baseSize * 1.25}px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
 
-            <div style="text-align: center; margin-bottom: ${baseSize * 2}px;">
-              <button 
-                id="back-to-assignment-btn"
-                style="background-color: ${secondaryColor}; color: white; padding: ${baseSize * 0.625}px ${baseSize * 1.5}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 0.875}px; font-weight: 600; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
-                onmouseover="this.style.opacity='0.9'"
-                onmouseout="this.style.opacity='1'"
-              >
-                ← 割り振り結果に戻る
-              </button>
-            </div>
+              <div style="display:flex; flex-wrap:wrap; gap:${baseSize * 0.75}px; justify-content:space-between; align-items:center; margin-bottom:${baseSize * 1.25}px;">
+                <h2 style="font-size: ${baseSize * 1.25}px; font-weight: 800; color: ${textColor};">
+                  結果発表：並び替えて確認
+                </h2>
+                <div style="color:${textColor}; font-size:${baseSize * 0.9}px; opacity:0.85;">
+                  予想が当たっていたかチェックしよう
+                </div>
+              </div>
 
-            <div style="background-color: ${surfaceColor}; padding: ${baseSize * 1.5}px; border-radius: ${baseSize * 0.5}px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-              <h2 style="font-size: ${baseSize * 1.5}px; font-weight: 600; margin-bottom: ${baseSize * 1.25}px; color: ${textColor};">
-                都道府県データ一覧
-              </h2>
-
-              <div style="display: flex; gap: ${baseSize * 0.75}px; margin-bottom: ${baseSize * 1.5}px; flex-wrap: wrap; justify-content: center;">
-                <button id="sort-code-btn" style="${sortButtonStyle(densitySortMode === 'code')}" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+              <div style="display: flex; gap: ${baseSize * 0.75}px; margin-bottom: ${baseSize * 1.25}px; flex-wrap: wrap; justify-content: center;">
+                <button id="sort-code-btn" style="${sortButtonStyle(densitySortMode === "code")}" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                   都道府県番号順
                 </button>
-                <button id="sort-area-btn" style="${sortButtonStyle(densitySortMode === 'area')}" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                <button id="sort-area-btn" style="${sortButtonStyle(densitySortMode === "area")}" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                   面積順
                 </button>
-                <button id="sort-population-btn" style="${sortButtonStyle(densitySortMode === 'population')}" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                <button id="sort-population-btn" style="${sortButtonStyle(densitySortMode === "population")}" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                   人口順
                 </button>
-                <button id="sort-density-btn" style="${sortButtonStyle(densitySortMode === 'density')}" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                <button id="sort-density-btn" style="${sortButtonStyle(densitySortMode === "density")}" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                   人口密度順
                 </button>
               </div>
@@ -372,34 +524,34 @@
                   const density = calculateDensity(data.population, data.area);
                   return `
                     <div style="border: 1px solid #e2e8f0; padding: ${baseSize * 0.75}px; border-radius: ${baseSize * 0.375}px;">
-                      <div style="font-weight: 600; color: ${primaryColor}; font-size: ${baseSize}px; margin-bottom: ${baseSize * 0.5}px;">
-                        ${String(data.code).padStart(2, '0')} ${pref}
+                      <div style="font-weight: 800; color: ${primaryColor}; font-size: ${baseSize}px; margin-bottom: ${baseSize * 0.5}px;">
+                        ${String(data.code).padStart(2, "0")} ${pref}
                       </div>
-                      <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px;">
+                      <div style="color: ${textColor}; font-size: ${baseSize * 0.85}px;">
                         面積: ${formatNumber(data.area)} km²
                       </div>
-                      <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px;">
+                      <div style="color: ${textColor}; font-size: ${baseSize * 0.85}px;">
                         人口: ${formatNumber(data.population)} 人
                       </div>
-                      <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px; font-weight: 600; margin-top: ${baseSize * 0.25}px;">
+                      <div style="color: ${textColor}; font-size: ${baseSize * 0.9}px; font-weight: 800; margin-top: ${baseSize * 0.25}px;">
                         人口密度: ${formatNumber(density)} 人/km²
                       </div>
                     </div>
                   `;
-                }).join('')}
+                }).join("")}
 
                 <div style="border: 2px solid ${primaryColor}; padding: ${baseSize * 0.75}px; border-radius: ${baseSize * 0.375}px; background-color: ${bgColor};">
-                  <div style="font-weight: 600; color: ${primaryColor}; font-size: ${baseSize}px; margin-bottom: ${baseSize * 0.5}px;">
+                  <div style="font-weight: 800; color: ${primaryColor}; font-size: ${baseSize}px; margin-bottom: ${baseSize * 0.5}px;">
                     日本
                   </div>
-                  <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px;">
-                    面積: ${formatNumber(prefectureData['日本'].area)} km²
+                  <div style="color: ${textColor}; font-size: ${baseSize * 0.85}px;">
+                    面積: ${formatNumber(prefectureData["日本"].area)} km²
                   </div>
-                  <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px;">
-                    人口: ${formatNumber(prefectureData['日本'].population)} 人
+                  <div style="color: ${textColor}; font-size: ${baseSize * 0.85}px;">
+                    人口: ${formatNumber(prefectureData["日本"].population)} 人
                   </div>
-                  <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px; font-weight: 600; margin-top: ${baseSize * 0.25}px;">
-                    人口密度: ${formatNumber(calculateDensity(prefectureData['日本'].population, prefectureData['日本'].area))} 人/km²
+                  <div style="color: ${textColor}; font-size: ${baseSize * 0.9}px; font-weight: 800; margin-top: ${baseSize * 0.25}px;">
+                    人口密度: ${formatNumber(calculateDensity(prefectureData["日本"].population, prefectureData["日本"].area))} 人/km²
                   </div>
                 </div>
               </div>
@@ -407,14 +559,20 @@
           </div>
         `;
 
-        document.getElementById('back-to-assignment-btn').addEventListener('click', backToAssignment);
-        document.getElementById('sort-code-btn').addEventListener('click', () => changeSortMode('code'));
-        document.getElementById('sort-area-btn').addEventListener('click', () => changeSortMode('area'));
-        document.getElementById('sort-population-btn').addEventListener('click', () => changeSortMode('population'));
-        document.getElementById('sort-density-btn').addEventListener('click', () => changeSortMode('density'));
+        attachNavEvents();
+
+        document.getElementById("sort-code-btn").addEventListener("click", () => changeSortMode("code"));
+        document.getElementById("sort-area-btn").addEventListener("click", () => changeSortMode("area"));
+        document.getElementById("sort-population-btn").addEventListener("click", () => changeSortMode("population"));
+        document.getElementById("sort-density-btn").addEventListener("click", () => changeSortMode("density"));
+
+        return;
       }
     }
 
+    // =========================
+    // 10) Element SDK連携
+    // =========================
     async function onConfigChange(config) {
       render();
     }
@@ -499,6 +657,7 @@
     render();
   </script>
 
+  <!-- 元コードにあったCloudflare系のものはそのまま残してOK -->
   <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ab314bb8388d4a3',t:'MTc2NTI2ODQwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
- </body>
+</body>
 </html>
