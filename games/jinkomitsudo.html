@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="ja" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>都道府県ランダム割り振り</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div id="app" class="w-full h-full overflow-auto"></div>
+  <script>
+    const defaultConfig = {
+      background_color: "#f0f9ff",
+      surface_color: "#ffffff",
+      text_color: "#1e293b",
+      primary_action_color: "#3b82f6",
+      secondary_action_color: "#64748b",
+      font_family: "Noto Sans JP",
+      font_size: 16,
+      app_title: "都道府県ランダム割り振り",
+      data_list_title: "都道府県データ一覧",
+      result_section_title: "割り振り結果",
+      start_button_text: "スタート",
+      assign_button_text: "割り振りを実行",
+      show_density_button_text: "人口密度を表示"
+    };
+
+    const prefectureData = {
+      "北海道": { area: 83422, population: 4979000, code: 1 },
+      "青森県": { area: 9645, population: 1177000, code: 2 },
+      "岩手県": { area: 15275, population: 1143000, code: 3 },
+      "宮城県": { area: 7282, population: 2196000, code: 4 },
+      "秋田県": { area: 11637, population: 902000, code: 5 },
+      "山形県": { area: 9323, population: 1002000, code: 6 },
+      "福島県": { area: 13784, population: 1752000, code: 7 },
+      "茨城県": { area: 6098, population: 2748000, code: 8 },
+      "栃木県": { area: 6408, population: 1848000, code: 9 },
+      "群馬県": { area: 6362, population: 1827000, code: 10 },
+      "埼玉県": { area: 3798, population: 7117000, code: 11 },
+      "千葉県": { area: 5156, population: 6085000, code: 12 },
+      "東京都": { area: 2200, population: 13281000, code: 13 },
+      "神奈川県": { area: 2417, population: 8918000, code: 14 },
+      "新潟県": { area: 12584, population: 2087000, code: 15 },
+      "富山県": { area: 4248, population: 985000, code: 16 },
+      "石川県": { area: 4186, population: 1078000, code: 17 },
+      "福井県": { area: 4191, population: 728000, code: 18 },
+      "山梨県": { area: 4465, population: 778000, code: 19 },
+      "長野県": { area: 13562, population: 1967000, code: 20 },
+      "岐阜県": { area: 10621, population: 1879000, code: 21 },
+      "静岡県": { area: 7777, population: 3456000, code: 22 },
+      "愛知県": { area: 5173, population: 7162000, code: 23 },
+      "三重県": { area: 5774, population: 1674000, code: 24 },
+      "滋賀県": { area: 4017, population: 1364000, code: 25 },
+      "京都府": { area: 4612, population: 2389000, code: 26 },
+      "大阪府": { area: 1905, population: 8444000, code: 27 },
+      "兵庫県": { area: 8401, population: 5254000, code: 28 },
+      "奈良県": { area: 3691, population: 1285000, code: 29 },
+      "和歌山県": { area: 4725, population: 891000, code: 30 },
+      "鳥取県": { area: 3507, population: 528000, code: 31 },
+      "島根県": { area: 6708, population: 632000, code: 32 },
+      "岡山県": { area: 7114, population: 1797000, code: 33 },
+      "広島県": { area: 8478, population: 2663000, code: 34 },
+      "山口県": { area: 6113, population: 1272000, code: 35 },
+      "徳島県": { area: 4147, population: 692000, code: 36 },
+      "香川県": { area: 1877, population: 921000, code: 37 },
+      "愛媛県": { area: 5676, population: 1278000, code: 38 },
+      "高知県": { area: 7102, population: 658000, code: 39 },
+      "福岡県": { area: 4988, population: 4975000, code: 40 },
+      "佐賀県": { area: 2441, population: 783000, code: 41 },
+      "長崎県": { area: 4131, population: 1259000, code: 42 },
+      "熊本県": { area: 7409, population: 1687000, code: 43 },
+      "大分県": { area: 6341, population: 1082000, code: 44 },
+      "宮崎県": { area: 7734, population: 1037000, code: 45 },
+      "鹿児島県": { area: 9186, population: 1540000, code: 46 },
+      "沖縄県": { area: 2282, population: 1455000, code: 47 },
+      "日本": { area: 377975, population: 120653000, code: 48 }
+    };
+
+    const prefectures = [
+      "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
+      "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
+      "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県",
+      "静岡県", "愛知県", "三重県", "滋賀県", "京都府", "大阪府", "兵庫県",
+      "奈良県", "和歌山県", "鳥取県", "島根県", "岡山県", "広島県", "山口県",
+      "徳島県", "香川県", "愛媛県", "高知県", "福岡県", "佐賀県", "長崎県",
+      "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県", "日本"
+    ];
+
+    let currentScreen = 'data'; // 'data' | 'assignment' | 'density'
+    let assignments = [];
+    let densitySortMode = 'code'; // 'code' | 'area' | 'population' | 'density'
+
+    function formatNumber(num) {
+      return num.toLocaleString('ja-JP');
+    }
+
+    function calculateDensity(population, area) {
+      return Math.round(population / area * 100) / 100;
+    }
+
+    function shuffleArray(array) {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    function startAssignment() {
+      currentScreen = 'assignment';
+      render();
+    }
+
+    function assignPrefectures() {
+      const shuffled = shuffleArray(prefectures);
+      assignments = Array.from({length: 24}, (_, index) => ({
+        number: index + 1,
+        prefecture1: shuffled[index * 2],
+        prefecture2: shuffled[index * 2 + 1],
+        data1: prefectureData[shuffled[index * 2]],
+        data2: prefectureData[shuffled[index * 2 + 1]]
+      }));
+      render();
+    }
+
+    function showDensityScreen() {
+      currentScreen = 'density';
+      densitySortMode = 'code';
+      render();
+    }
+
+    function backToAssignment() {
+      currentScreen = 'assignment';
+      render();
+    }
+
+    function backToData() {
+      currentScreen = 'data';
+      assignments = [];
+      render();
+    }
+
+    function changeSortMode(mode) {
+      densitySortMode = mode;
+      render();
+    }
+
+    function getSortedPrefectures() {
+      const prefList = prefectures.slice(0, -1); // 日本を除く
+
+      switch (densitySortMode) {
+        case 'code':
+          return prefList.sort((a, b) => prefectureData[a].code - prefectureData[b].code);
+        case 'area':
+          return prefList.sort((a, b) => prefectureData[b].area - prefectureData[a].area);
+        case 'population':
+          return prefList.sort((a, b) => prefectureData[b].population - prefectureData[a].population);
+        case 'density':
+          return prefList.sort((a, b) => {
+            const da = calculateDensity(prefectureData[a].population, prefectureData[a].area);
+            const db = calculateDensity(prefectureData[b].population, prefectureData[b].area);
+            return db - da;
+          });
+        default:
+          return prefList;
+      }
+    }
+
+    function render() {
+      const config = window.elementSdk?.config || defaultConfig;
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = "'Noto Sans JP', sans-serif";
+      const baseSize = config.font_size || defaultConfig.font_size;
+      const bgColor = config.background_color || defaultConfig.background_color;
+      const surfaceColor = config.surface_color || defaultConfig.surface_color;
+      const textColor = config.text_color || defaultConfig.text_color;
+      const primaryColor = config.primary_action_color || defaultConfig.primary_action_color;
+      const secondaryColor = config.secondary_action_color || defaultConfig.secondary_action_color;
+      const appTitle = config.app_title || defaultConfig.app_title;
+      const dataListTitle = config.data_list_title || defaultConfig.data_list_title;
+      const resultSectionTitle = config.result_section_title || defaultConfig.result_section_title;
+      const startButtonText = config.start_button_text || defaultConfig.start_button_text;
+      const assignButtonText = config.assign_button_text || defaultConfig.assign_button_text;
+      const showDensityButtonText = config.show_density_button_text || defaultConfig.show_density_button_text;
+
+      const app = document.getElementById('app');
+      app.style.backgroundColor = bgColor;
+      app.style.fontFamily = `${customFont}, ${baseFontStack}`;
+
+      if (currentScreen === 'data') {
+        app.innerHTML = `
+          <div style="max-width: 1200px; margin: 0 auto; padding: ${baseSize * 2}px;">
+            <h1 style="font-size: ${baseSize * 2}px; font-weight: bold; text-align: center; margin-bottom: ${baseSize * 2}px; color: ${textColor};">${appTitle}</h1>
+
+            <div style="background-color: ${surfaceColor}; padding: ${baseSize * 1.5}px; border-radius: ${baseSize * 0.5}px; margin-bottom: ${baseSize * 2}px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <h2 style="font-size: ${baseSize * 1.5}px; font-weight: 600; margin-bottom: ${baseSize * 1.5}px; color: ${textColor};">${dataListTitle}</h2>
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: ${baseSize}px; margin-bottom: ${baseSize * 1.5}px;">
+                ${prefectures.map(pref => `
+                  <div style="border: 1px solid #e2e8f0; padding: ${baseSize}px; border-radius: ${baseSize * 0.375}px;">
+                    <div style="font-weight: 600; color: ${primaryColor}; font-size: ${baseSize * 1.125}px; margin-bottom: ${baseSize * 0.5}px;">
+                      ${prefectureData[pref].code <= 47 ? String(prefectureData[pref].code).padStart(2, '0') + ' ' : ''}${pref}
+                    </div>
+                    <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px;">
+                      面積: ${formatNumber(prefectureData[pref].area)} km²
+                    </div>
+                    <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px;">
+                      人口: ${formatNumber(prefectureData[pref].population)} 人
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+              <div style="text-align: center;">
+                <button 
+                  id="start-btn"
+                  style="background-color: ${primaryColor}; color: white; padding: ${baseSize * 0.75}px ${baseSize * 2.5}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 1.125}px; font-weight: 600; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
+                  onmouseover="this.style.opacity='0.9'"
+                  onmouseout="this.style.opacity='1'"
+                >
+                  ${startButtonText}
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.getElementById('start-btn').addEventListener('click', startAssignment);
+
+      } else if (currentScreen === 'assignment') {
+        app.innerHTML = `
+          <div style="max-width: 1200px; margin: 0 auto; padding: ${baseSize * 2}px;">
+            <h1 style="font-size: ${baseSize * 2}px; font-weight: bold; text-align: center; margin-bottom: ${baseSize * 2}px; color: ${textColor};">${appTitle}</h1>
+
+            <div style="text-align: center; margin-bottom: ${baseSize * 2}px;">
+              <button 
+                id="back-btn"
+                style="background-color: ${secondaryColor}; color: white; padding: ${baseSize * 0.625}px ${baseSize * 1.5}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 0.875}px; font-weight: 600; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
+                onmouseover="this.style.opacity='0.9'"
+                onmouseout="this.style.opacity='1'"
+              >
+                ← データ一覧に戻る
+              </button>
+            </div>
+
+            ${assignments.length === 0 ? `
+              <div style="background-color: ${surfaceColor}; padding: ${baseSize * 3}px; border-radius: ${baseSize * 0.5}px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <button 
+                  id="assign-btn"
+                  style="background-color: ${primaryColor}; color: white; padding: ${baseSize}px ${baseSize * 3}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 1.25}px; font-weight: 600; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
+                  onmouseover="this.style.opacity='0.9'"
+                  onmouseout="this.style.opacity='1'"
+                >
+                  ${assignButtonText}
+                </button>
+              </div>
+            ` : `
+              <div style="background-color: ${surfaceColor}; padding: ${baseSize * 1.5}px; border-radius: ${baseSize * 0.5}px; margin-bottom: ${baseSize * 2}px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h2 style="font-size: ${baseSize * 1.5}px; font-weight: 600; margin-bottom: ${baseSize * 1.5}px; color: ${textColor};">${resultSectionTitle}</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: ${baseSize}px;">
+                  ${assignments.map(a => `
+                    <div style="border: 1px solid #e2e8f0; padding: ${baseSize}px; border-radius: ${baseSize * 0.375}px;">
+                      <div style="font-weight: 600; margin-bottom: ${baseSize * 0.75}px; color: ${textColor}; font-size: ${baseSize * 1.125}px;">
+                        ${a.number}番
+                      </div>
+                      <div style="margin-bottom: ${baseSize * 0.5}px; padding: ${baseSize * 0.5}px; background-color: ${bgColor}; border-radius: ${baseSize * 0.25}px;">
+                        <div style="color: ${primaryColor}; font-size: ${baseSize}px; font-weight: 600; margin-bottom: ${baseSize * 0.25}px;">
+                          ① ${a.prefecture1}
+                        </div>
+                        <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px; margin-left: ${baseSize}px;">
+                          面積: ${formatNumber(a.data1.area)} km²
+                        </div>
+                        <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px; margin-left: ${baseSize}px;">
+                          人口: ${formatNumber(a.data1.population)} 人
+                        </div>
+                      </div>
+                      <div style="padding: ${baseSize * 0.5}px; background-color: ${bgColor}; border-radius: ${baseSize * 0.25}px;">
+                        <div style="color: ${primaryColor}; font-size: ${baseSize}px; font-weight: 600; margin-bottom: ${baseSize * 0.25}px;">
+                          ② ${a.prefecture2}
+                        </div>
+                        <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px; margin-left: ${baseSize}px;">
+                          面積: ${formatNumber(a.data2.area)} km²
+                        </div>
+                        <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px; margin-left: ${baseSize}px;">
+                          人口: ${formatNumber(a.data2.population)} 人
+                        </div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+                <div style="text-align: center; margin-top: ${baseSize * 2}px;">
+                  <button 
+                    id="density-btn"
+                    style="background-color: ${primaryColor}; color: white; padding: ${baseSize * 0.75}px ${baseSize * 2}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize}px; font-weight: 600; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
+                    onmouseover="this.style.opacity='0.9'"
+                    onmouseout="this.style.opacity='1'"
+                  >
+                    ${showDensityButtonText}
+                  </button>
+                </div>
+              </div>
+            `}
+          </div>
+        `;
+
+        if (assignments.length === 0) {
+          document.getElementById('assign-btn').addEventListener('click', assignPrefectures);
+        } else {
+          document.getElementById('density-btn').addEventListener('click', showDensityScreen);
+        }
+        document.getElementById('back-btn').addEventListener('click', backToData);
+
+      } else if (currentScreen === 'density') {
+        const sortedPrefs = getSortedPrefectures();
+
+        const sortButtonStyle = (isActive) => `
+          background-color: ${isActive ? primaryColor : secondaryColor};
+          color: white;
+          padding: ${baseSize * 0.625}px ${baseSize * 1.25}px;
+          border-radius: ${baseSize * 0.375}px;
+          font-size: ${baseSize * 0.875}px;
+          font-weight: 600;
+          cursor: pointer;
+          border: none;
+          font-family: ${customFont}, ${baseFontStack};
+        `;
+
+        app.innerHTML = `
+          <div style="max-width: 1200px; margin: 0 auto; padding: ${baseSize * 2}px;">
+            <h1 style="font-size: ${baseSize * 2}px; font-weight: bold; text-align: center; margin-bottom: ${baseSize * 2}px; color: ${textColor};">${appTitle}</h1>
+
+            <div style="text-align: center; margin-bottom: ${baseSize * 2}px;">
+              <button 
+                id="back-to-assignment-btn"
+                style="background-color: ${secondaryColor}; color: white; padding: ${baseSize * 0.625}px ${baseSize * 1.5}px; border-radius: ${baseSize * 0.375}px; font-size: ${baseSize * 0.875}px; font-weight: 600; cursor: pointer; border: none; font-family: ${customFont}, ${baseFontStack};"
+                onmouseover="this.style.opacity='0.9'"
+                onmouseout="this.style.opacity='1'"
+              >
+                ← 割り振り結果に戻る
+              </button>
+            </div>
+
+            <div style="background-color: ${surfaceColor}; padding: ${baseSize * 1.5}px; border-radius: ${baseSize * 0.5}px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+              <h2 style="font-size: ${baseSize * 1.5}px; font-weight: 600; margin-bottom: ${baseSize * 1.25}px; color: ${textColor};">
+                都道府県データ一覧
+              </h2>
+
+              <div style="display: flex; gap: ${baseSize * 0.75}px; margin-bottom: ${baseSize * 1.5}px; flex-wrap: wrap; justify-content: center;">
+                <button id="sort-code-btn" style="${sortButtonStyle(densitySortMode === 'code')}" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                  都道府県番号順
+                </button>
+                <button id="sort-area-btn" style="${sortButtonStyle(densitySortMode === 'area')}" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                  面積順
+                </button>
+                <button id="sort-population-btn" style="${sortButtonStyle(densitySortMode === 'population')}" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                  人口順
+                </button>
+                <button id="sort-density-btn" style="${sortButtonStyle(densitySortMode === 'density')}" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                  人口密度順
+                </button>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: ${baseSize}px;">
+                ${sortedPrefs.map(pref => {
+                  const data = prefectureData[pref];
+                  const density = calculateDensity(data.population, data.area);
+                  return `
+                    <div style="border: 1px solid #e2e8f0; padding: ${baseSize * 0.75}px; border-radius: ${baseSize * 0.375}px;">
+                      <div style="font-weight: 600; color: ${primaryColor}; font-size: ${baseSize}px; margin-bottom: ${baseSize * 0.5}px;">
+                        ${String(data.code).padStart(2, '0')} ${pref}
+                      </div>
+                      <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px;">
+                        面積: ${formatNumber(data.area)} km²
+                      </div>
+                      <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px;">
+                        人口: ${formatNumber(data.population)} 人
+                      </div>
+                      <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px; font-weight: 600; margin-top: ${baseSize * 0.25}px;">
+                        人口密度: ${formatNumber(density)} 人/km²
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+
+                <div style="border: 2px solid ${primaryColor}; padding: ${baseSize * 0.75}px; border-radius: ${baseSize * 0.375}px; background-color: ${bgColor};">
+                  <div style="font-weight: 600; color: ${primaryColor}; font-size: ${baseSize}px; margin-bottom: ${baseSize * 0.5}px;">
+                    日本
+                  </div>
+                  <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px;">
+                    面積: ${formatNumber(prefectureData['日本'].area)} km²
+                  </div>
+                  <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px;">
+                    人口: ${formatNumber(prefectureData['日本'].population)} 人
+                  </div>
+                  <div style="color: ${textColor}; font-size: ${baseSize * 0.875}px; font-weight: 600; margin-top: ${baseSize * 0.25}px;">
+                    人口密度: ${formatNumber(calculateDensity(prefectureData['日本'].population, prefectureData['日本'].area))} 人/km²
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('back-to-assignment-btn').addEventListener('click', backToAssignment);
+        document.getElementById('sort-code-btn').addEventListener('click', () => changeSortMode('code'));
+        document.getElementById('sort-area-btn').addEventListener('click', () => changeSortMode('area'));
+        document.getElementById('sort-population-btn').addEventListener('click', () => changeSortMode('population'));
+        document.getElementById('sort-density-btn').addEventListener('click', () => changeSortMode('density'));
+      }
+    }
+
+    async function onConfigChange(config) {
+      render();
+    }
+
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [
+          {
+            get: () => config.background_color || defaultConfig.background_color,
+            set: (value) => {
+              config.background_color = value;
+              window.elementSdk.setConfig({ background_color: value });
+            }
+          },
+          {
+            get: () => config.surface_color || defaultConfig.surface_color,
+            set: (value) => {
+              config.surface_color = value;
+              window.elementSdk.setConfig({ surface_color: value });
+            }
+          },
+          {
+            get: () => config.text_color || defaultConfig.text_color,
+            set: (value) => {
+              config.text_color = value;
+              window.elementSdk.setConfig({ text_color: value });
+            }
+          },
+          {
+            get: () => config.primary_action_color || defaultConfig.primary_action_color,
+            set: (value) => {
+              config.primary_action_color = value;
+              window.elementSdk.setConfig({ primary_action_color: value });
+            }
+          },
+          {
+            get: () => config.secondary_action_color || defaultConfig.secondary_action_color,
+            set: (value) => {
+              config.secondary_action_color = value;
+              window.elementSdk.setConfig({ secondary_action_color: value });
+            }
+          }
+        ],
+        borderables: [],
+        fontEditable: {
+          get: () => config.font_family || defaultConfig.font_family,
+          set: (value) => {
+            config.font_family = value;
+            window.elementSdk.setConfig({ font_family: value });
+          }
+        },
+        fontSizeable: {
+          get: () => config.font_size || defaultConfig.font_size,
+          set: (value) => {
+            config.font_size = value;
+            window.elementSdk.setConfig({ font_size: value });
+          }
+        }
+      };
+    }
+
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ["app_title", config.app_title || defaultConfig.app_title],
+        ["data_list_title", config.data_list_title || defaultConfig.data_list_title],
+        ["result_section_title", config.result_section_title || defaultConfig.result_section_title],
+        ["start_button_text", config.start_button_text || defaultConfig.start_button_text],
+        ["assign_button_text", config.assign_button_text || defaultConfig.assign_button_text],
+        ["show_density_button_text", config.show_density_button_text || defaultConfig.show_density_button_text]
+      ]);
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+    }
+
+    render();
+  </script>
+
+  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ab314bb8388d4a3',t:'MTc2NTI2ODQwMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+ </body>
+</html>
