@@ -1,1616 +1,617 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>数字で10を作ろう！</title>
-    <link href="https://fonts.googleapis.com/css2?family=BIZ+UDGothic:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #ff6b6b;
-            --secondary: #4ecdc4;
-            --accent: #45b7d1;
-            --success: #96ceb4;
-            --warning: #feca57;
-            --danger: #ff9ff3;
-            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --card-gradient: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
-            --text-dark: #2c3e50;
-            --text-light: #ffffff;
-            --shadow: 0 8px 32px rgba(0,0,0,0.1);
-            --shadow-hover: 0 12px 40px rgba(0,0,0,0.15);
-            --radius: 20px;
-            --radius-sm: 12px;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'BIZ UDGothic', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
-            background: var(--bg-gradient);
-            color: var(--text-dark);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* スタート画面 */
-        .start-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .game-title {
-            font-size: 4rem;
-            font-weight: bold;
-            background: linear-gradient(45deg, var(--primary), var(--secondary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .game-subtitle {
-            font-size: 1.5rem;
-            color: var(--text-light);
-            margin-bottom: 40px;
-            opacity: 0.9;
-        }
-
-        .rules-card {
-            background: rgba(255,255,255,0.95);
-            border-radius: var(--radius);
-            padding: 30px;
-            margin-bottom: 40px;
-            box-shadow: var(--shadow);
-            max-width: 600px;
-        }
-
-        .rules-title {
-            font-size: 1.8rem;
-            color: var(--primary);
-            margin-bottom: 20px;
-        }
-
-        .rules-list {
-            text-align: left;
-            font-size: 1.1rem;
-            line-height: 1.6;
-        }
-
-        .rules-list li {
-            margin-bottom: 10px;
-            padding-left: 10px;
-        }
-
-        .mode-buttons {
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .mode-btn {
-            background: var(--card-gradient);
-            border: none;
-            border-radius: var(--radius);
-            padding: 30px 40px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--text-dark);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow);
-            min-width: 200px;
-        }
-
-        .mode-btn:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        /* 2人モード設定 */
-        .two-player-setup {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            text-align: center;
-        }
-
-        .setup-card {
-            background: rgba(255,255,255,0.95);
-            border-radius: var(--radius);
-            padding: 40px;
-            box-shadow: var(--shadow);
-            max-width: 500px;
-        }
-
-        .setup-title {
-            font-size: 2rem;
-            color: var(--primary);
-            margin-bottom: 30px;
-        }
-
-        .score-selector {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .score-btn {
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 1.5rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .score-btn:hover {
-            transform: scale(1.1);
-        }
-
-        .score-display {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--primary);
-            min-width: 60px;
-        }
-
-        /* ゲーム画面 */
-        .game-screen {
-            display: none;
-            flex: 1;
-        }
-
-        .game-header {
-            display: none;
-        }
-
-        .current-numbers {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: var(--primary);
-            margin-bottom: 10px;
-        }
-
-        .game-mode-indicator {
-            font-size: 1.2rem;
-            color: var(--accent);
-        }
-
-        /* 1人モード */
-        .single-player {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .equation-display {
-            background: rgba(255,255,255,0.95);
-            border-radius: var(--radius);
-            padding: 30px;
-            text-align: center;
-            box-shadow: var(--shadow);
-        }
-
-        .equation-slots {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            padding: 10px;
-        }
-
-        .slot {
-            width: 80px;
-            height: 80px;
-            border: 3px dashed #ddd;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            font-weight: bold;
-            transition: all 0.2s ease;
-        }
-
-        .slot.filled {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-            box-shadow: var(--shadow);
-        }
-
-        .controls {
-            background: rgba(255,255,255,0.95);
-            border-radius: var(--radius);
-            padding: 30px;
-            box-shadow: var(--shadow);
-        }
-
-        .number-buttons, .operator-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .game-btn {
-            background: var(--card-gradient);
-            border: none;
-            border-radius: var(--radius-sm);
-            width: 70px;
-            height: 70px;
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: var(--text-dark);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: var(--shadow);
-        }
-
-        .game-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .game-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .operator-btn {
-            background: linear-gradient(135deg, var(--warning), #ff9ff3);
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .action-btn {
-            background: var(--success);
-            color: white;
-            border: none;
-            border-radius: var(--radius-sm);
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: var(--shadow);
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .action-btn.danger {
-            background: var(--danger);
-        }
-
-        .action-btn.primary {
-            background: var(--primary);
-        }
-
-        /* 2人モード */
-        .two-player {
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            gap: 20px;
-            align-items: start;
-        }
-
-        .player-area {
-            background: rgba(255,255,255,0.95);
-            border-radius: var(--radius);
-            padding: 20px;
-            box-shadow: var(--shadow);
-        }
-
-        .player-title {
-            text-align: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 20px;
-            padding: 10px;
-            border-radius: var(--radius-sm);
-        }
-
-        .player1 .player-title {
-            background: linear-gradient(135deg, var(--primary), #ff9ff3);
-            color: white;
-        }
-
-        .player2 .player-title {
-            background: linear-gradient(135deg, var(--secondary), var(--accent));
-            color: white;
-        }
-
-        .center-area {
-            background: rgba(255,255,255,0.95);
-            border-radius: var(--radius);
-            padding: 20px;
-            box-shadow: var(--shadow);
-            text-align: center;
-            min-width: 200px;
-        }
-
-        .score-display-game {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-
-        .player-equation {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            padding: 5px;
-        }
-
-        .player-slot {
-            width: 50px;
-            height: 50px;
-            border: 2px dashed #ddd;
-            border-radius: var(--radius-sm);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-
-        .player-slot.filled {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-
-        .player-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .player-numbers, .player-operators {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-
-        .player-btn {
-            background: var(--card-gradient);
-            border: none;
-            border-radius: var(--radius-sm);
-            height: 50px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--text-dark);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: var(--shadow);
-        }
-
-        .player-btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .player-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .player-operator-btn {
-            background: linear-gradient(135deg, var(--warning), #ff9ff3);
-        }
-
-        .player-submit {
-            background: var(--success);
-            color: white;
-            height: 60px;
-            font-size: 1.4rem;
-            flex: 1;
-            min-width: 80px;
-        }
-
-        .player-clear {
-            background: var(--danger);
-            color: white;
-            height: 60px;
-            font-size: 1.4rem;
-            flex: 1;
-            min-width: 80px;
-        }
-
-        .player-submit:disabled {
-            background: #ccc;
-        }
-
-        /* ポップアップ */
-        .popup-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .popup {
-            background: white;
-            border-radius: var(--radius);
-            padding: 40px;
-            text-align: center;
-            box-shadow: var(--shadow-hover);
-            max-width: 500px;
-            margin: 20px;
-        }
-
-        .popup-title {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: var(--primary);
-        }
-
-        .popup-content {
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-            line-height: 1.6;
-        }
-
-        .popup-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        /* アニメーション */
-        @keyframes bounce {
-            0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
-            40%, 43% { transform: translate3d(0,-10px,0); }
-            70% { transform: translate3d(0,-5px,0); }
-            90% { transform: translate3d(0,-2px,0); }
-        }
-
-        .bounce {
-            animation: bounce 1s ease-in-out;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        .pulse {
-            animation: pulse 0.5s ease-in-out;
-        }
-
-        /* アニメーション配慮 */
-        @media (prefers-reduced-motion: reduce) {
-            * {
-                animation: none !important;
-                transition: none !important;
-            }
-        }
-
-        /* 数字ピル */
-        .numbers-pill{
-            position: fixed;
-            right: max(16px, env(safe-area-inset-right));
-            bottom: max(16px, env(safe-area-inset-bottom));
-            z-index: 900;
-            background: rgba(255,255,255,0.95);
-            border-radius: 9999px;
-            padding: 10px 14px;
-            box-shadow: var(--shadow);
-            font-weight: 700;
-            color: var(--text-dark);
-            cursor: pointer;
-            user-select: none;
-        }
-        .numbers-pill:focus-visible{
-            outline: 3px solid var(--accent);
-            outline-offset: 3px;
-        }
-        .numbers-pill.compact{
-            width: 48px; height: 48px; padding: 0;
-            display: flex; align-items: center; justify-content: center;
-        }
-        @media (prefers-reduced-motion: reduce){
-            .numbers-pill{ transition: none !important; }
-        }
-
-        /* iPad横画面対応 */
-        @media (min-width: 768px) and (orientation: landscape) {
-            .container {
-                padding: 10px;
-                min-height: 100vh;
-                max-height: 100vh;
-                overflow-y: auto;
-            }
-            
-            .game-screen {
-                min-height: auto;
-                max-height: calc(100vh - 20px);
-            }
-            
-            .equation-display {
-                padding: 15px;
-            }
-            
-            .slot {
-                width: 60px;
-                height: 60px;
-                font-size: 1.6rem;
-            }
-            
-            .game-btn {
-                width: 55px;
-                height: 55px;
-                font-size: 1.4rem;
-            }
-            
-            .two-player {
-                gap: 10px;
-                max-height: calc(100vh - 20px);
-                overflow: hidden;
-            }
-            
-            .player-area {
-                padding: 12px;
-                max-height: calc(100vh - 40px);
-                overflow-y: auto;
-            }
-            
-            .player-slot {
-                width: 40px;
-                height: 40px;
-                font-size: 1rem;
-            }
-            
-            .player-btn {
-                height: 40px;
-                font-size: 1rem;
-            }
-            
-            .player-submit, .player-clear {
-                height: 50px;
-                font-size: 1.2rem;
-                flex: 1;
-                min-width: 70px;
-            }
-            
-            .center-area {
-                padding: 12px;
-                min-width: 150px;
-            }
-            
-            .score-display-game {
-                font-size: 1.2rem;
-                margin-bottom: 15px;
-            }
-            
-            .player-title {
-                font-size: 1.2rem;
-                margin-bottom: 15px;
-                padding: 8px;
-            }
-            
-            .player-equation {
-                gap: 8px;
-                margin-bottom: 12px;
-            }
-            
-            .player-controls {
-                gap: 10px;
-            }
-            
-            .player-numbers, .player-operators {
-                gap: 8px;
-            }
-        }
-
-        /* レスポンシブ */
-        @media (max-width: 768px) {
-            .game-title {
-                font-size: 2.5rem;
-            }
-            
-            .two-player {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto auto;
-            }
-            
-            .center-area {
-                order: -1;
-            }
-            
-            .mode-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .equation-slots {
-                gap: 10px;
-            }
-            
-            .slot {
-                width: 60px;
-                height: 60px;
-                font-size: 1.5rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- スタート画面 -->
-        <div class="start-screen" id="startScreen">
-            <h1 class="game-title">数字で10を作ろう！</h1>
-            <p class="game-subtitle">楽しい数学パズルゲーム</p>
-            
-            <div class="rules-card">
-                <h2 class="rules-title">🎯 ゲームのルール</h2>
-                <ul class="rules-list">
-                    <li>🔢 4つの数字を使って計算式を作ります</li>
-                    <li>➕ +、-、×、÷の演算子を使えます</li>
-                    <li>🎯 答えが10になるように式を完成させましょう</li>
-                    <li>⚡ 2人モードでは早い者勝ちで得点を競います</li>
-                    <li>🏆 先に設定した点数に到達した人の勝利です</li>
-                </ul>
-            </div>
-            
-            <div class="mode-buttons">
-                <button class="mode-btn" onclick="startSinglePlayer()">
-                    🎮 1人で練習
-                </button>
-                <button class="mode-btn" onclick="showTwoPlayerSetup()">
-                    👥 2人で対戦
-                </button>
-            </div>
-        </div>
-
-        <!-- 2人モード設定 -->
-        <div class="two-player-setup" id="twoPlayerSetup">
-            <div class="setup-card">
-                <h2 class="setup-title">🏆 対戦設定</h2>
-                <p style="margin-bottom: 20px;">何点先取で勝負しますか？</p>
-                
-                <div class="score-selector">
-                    <button class="score-btn" onclick="changeTargetScore(-1)">-</button>
-                    <div class="score-display" id="targetScore">3</div>
-                    <button class="score-btn" onclick="changeTargetScore(1)">+</button>
-                </div>
-                
-                <div class="action-buttons">
-                    <button class="action-btn" onclick="startTwoPlayer()">ゲーム開始！</button>
-                    <button class="action-btn danger" onclick="backToStart()">戻る</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ゲーム画面 -->
-        <div class="game-screen" id="gameScreen">
-
-            <!-- 1人モード -->
-            <div class="single-player" id="singlePlayerGame">
-                <div class="equation-display">
-                    <div class="equation-slots" id="equationSlots">
-                        <div class="slot" data-type="number" data-index="0">?</div>
-                        <div class="slot" data-type="operator" data-index="0">?</div>
-                        <div class="slot" data-type="number" data-index="1">?</div>
-                        <div class="slot" data-type="operator" data-index="1">?</div>
-                        <div class="slot" data-type="number" data-index="2">?</div>
-                        <div class="slot" data-type="operator" data-index="2">?</div>
-                        <div class="slot" data-type="number" data-index="3">?</div>
-                    </div>
-                </div>
-
-                <div class="controls">
-                    <div class="number-buttons" id="numberButtons"></div>
-                    <div class="operator-buttons">
-                        <button class="game-btn operator-btn" onclick="addOperator('+')">+</button>
-                        <button class="game-btn operator-btn" onclick="addOperator('-')">-</button>
-                        <button class="game-btn operator-btn" onclick="addOperator('*')">×</button>
-                        <button class="game-btn operator-btn" onclick="addOperator('/')">÷</button>
-                    </div>
-                    <div class="action-buttons">
-                        <button class="action-btn primary" id="submitBtn" onclick="submitAnswer()" disabled>送信</button>
-                        <button class="action-btn" onclick="showAnswer()">答えを見る</button>
-                        <button class="action-btn danger" onclick="resetEquation()">リセット</button>
-                        <button class="action-btn" onclick="backToStart()">メニューに戻る</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2人モード -->
-            <div class="two-player" id="twoPlayerGame" style="display: none;">
-                <!-- プレイヤー1 -->
-                <div class="player-area player1">
-                    <div class="player-title">プレイヤー1</div>
-                    <div class="player-equation" id="player1Equation">
-                        <div class="player-slot" data-type="number" data-index="0">?</div>
-                        <div class="player-slot" data-type="operator" data-index="0">?</div>
-                        <div class="player-slot" data-type="number" data-index="1">?</div>
-                        <div class="player-slot" data-type="operator" data-index="1">?</div>
-                        <div class="player-slot" data-type="number" data-index="2">?</div>
-                        <div class="player-slot" data-type="operator" data-index="2">?</div>
-                        <div class="player-slot" data-type="number" data-index="3">?</div>
-                    </div>
-                    <div class="player-controls">
-                        <div class="player-numbers" id="player1Numbers"></div>
-                        <div class="player-operators">
-                            <button class="player-btn player-operator-btn" onclick="addPlayerOperator(1, '+')">+</button>
-                            <button class="player-btn player-operator-btn" onclick="addPlayerOperator(1, '-')">-</button>
-                            <button class="player-btn player-operator-btn" onclick="addPlayerOperator(1, '*')">×</button>
-                            <button class="player-btn player-operator-btn" onclick="addPlayerOperator(1, '/')">÷</button>
-                        </div>
-                        <div style="display: flex; gap: 5px;">
-                            <button class="player-btn player-submit" id="player1Submit" onclick="submitPlayerAnswer(1)" disabled>送信</button>
-                            <button class="player-btn player-clear" onclick="clearPlayerEquation(1)">クリア</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 中央エリア -->
-                <div class="center-area">
-                    <div class="score-display-game">
-                        <div style="color: var(--primary);">P1: <span id="player1Score">0</span></div>
-                        <div style="margin: 10px 0;">vs</div>
-                        <div style="color: var(--secondary);">P2: <span id="player2Score">0</span></div>
-                    </div>
-                    <div style="font-size: 1rem; color: #666; margin-bottom: 20px;">
-                        <span id="targetScoreDisplay">3</span>点先取
-                    </div>
-                    <button class="action-btn danger" onclick="backToStart()">ゲーム終了</button>
-                </div>
-
-                <!-- プレイヤー2 -->
-                <div class="player-area player2">
-                    <div class="player-title">プレイヤー2</div>
-                    <div class="player-equation" id="player2Equation">
-                        <div class="player-slot" data-type="number" data-index="0">?</div>
-                        <div class="player-slot" data-type="operator" data-index="0">?</div>
-                        <div class="player-slot" data-type="number" data-index="1">?</div>
-                        <div class="player-slot" data-type="operator" data-index="1">?</div>
-                        <div class="player-slot" data-type="number" data-index="2">?</div>
-                        <div class="player-slot" data-type="operator" data-index="2">?</div>
-                        <div class="player-slot" data-type="number" data-index="3">?</div>
-                    </div>
-                    <div class="player-controls">
-                        <div class="player-numbers" id="player2Numbers"></div>
-                        <div class="player-operators">
-                            <button class="player-btn player-operator-btn" onclick="addPlayerOperator(2, '+')">+</button>
-                            <button class="player-btn player-operator-btn" onclick="addPlayerOperator(2, '-')">-</button>
-                            <button class="player-btn player-operator-btn" onclick="addPlayerOperator(2, '*')">×</button>
-                            <button class="player-btn player-operator-btn" onclick="addPlayerOperator(2, '/')">÷</button>
-                        </div>
-                        <div style="display: flex; gap: 5px;">
-                            <button class="player-btn player-submit" id="player2Submit" onclick="submitPlayerAnswer(2)" disabled>送信</button>
-                            <button class="player-btn player-clear" onclick="clearPlayerEquation(2)">クリア</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>漢字テスト勉強アプリ</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
+      height: 100%;
+    }
+    html {
+      height: 100%;
+    }
+    .app-wrapper {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100%;
+      width: 100%;
+      padding: 2rem;
+      overflow-auto;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: white;
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .selection-screen {
+      background: white;
+      border-radius: 20px;
+      padding: 3rem;
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+      text-align: center;
+    }
+    .selection-screen h2 {
+      color: #1f2937;
+      font-size: 1.8rem;
+      margin-bottom: 2rem;
+    }
+    .number-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+    .number-button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 2rem 1.5rem;
+      border-radius: 16px;
+      font-size: 2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    .number-button:hover {
+      background: #5568d3;
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+    .number-button:active {
+      transform: translateY(-2px);
+    }
+    .number-button span {
+      display: block;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      opacity: 0.9;
+    }
+    .quiz-screen {
+      display: none;
+    }
+    .quiz-screen.active {
+      display: block;
+    }
+    .progress-bar {
+      background: rgba(255,255,255,0.3);
+      border-radius: 20px;
+      height: 12px;
+      margin-bottom: 2rem;
+      overflow: hidden;
+    }
+    .progress-fill {
+      background: white;
+      height: 100%;
+      border-radius: 20px;
+      transition: width 0.3s ease;
+      box-shadow: 0 2px 8px rgba(255,255,255,0.3);
+    }
+    .progress-text {
+      color: white;
+      text-align: center;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+    .question-card {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .question-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    }
+    .question-number {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+    .question-type {
+      display: inline-block;
+      background: #fbbf24;
+      color: #78350f;
+      padding: 0.3rem 0.8rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      margin-left: 0.5rem;
+      font-weight: 600;
+    }
+    .question-text {
+      font-size: 1.5rem;
+      line-height: 2;
+      margin: 1.5rem 0;
+      color: #1f2937;
+    }
+    .hiragana {
+      color: #ef4444;
+      font-weight: bold;
+      text-decoration: underline;
+      text-decoration-style: wavy;
+      text-decoration-color: #fca5a5;
+    }
+    .answer-section {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 2px dashed #e5e7eb;
+    }
+    .answer-content {
+      display: none;
+      background: #f0fdf4;
+      border-left: 4px solid #10b981;
+      padding: 1rem 1.5rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+    }
+    .answer-content.show {
+      display: block;
+      animation: slideDown 0.3s ease-out;
+    }
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .answer-label {
+      color: #059669;
+      font-weight: bold;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    .answer-text {
+      font-size: 1.8rem;
+      color: #065f46;
+      font-weight: bold;
+      margin: 0.5rem 0;
+    }
+    .reading {
+      font-size: 1rem;
+      color: #6b7280;
+      margin-top: 0.3rem;
+    }
+    .check-button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+    }
+    .check-button:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+    }
+    .check-button:active {
+      transform: translateY(0);
+    }
+    .note-hint {
+      background: #fef3c7;
+      border-left: 4px solid #fbbf24;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      color: #78350f;
+    }
+    .note-hint strong {
+      color: #92400e;
+    }
+    .reset-button {
+      background: white;
+      color: #667eea;
+      border: 2px solid white;
+      padding: 0.75rem 2rem;
+      border-radius: 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: block;
+      margin: 2rem auto 0;
+      box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+    }
+    .reset-button:hover {
+      background: rgba(255,255,255,0.9);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255,255,255,0.4);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="app-wrapper">
+   <div class="container">
+    <h1 id="app-title">漢字テスト勉強アプリ</h1>
+    <div id="selection-screen" class="selection-screen">
+     <h2>何問解きますか？</h2>
+     <div class="number-buttons"><button class="number-button" onclick="startQuiz(5)"> 5<span>問</span> </button> <button class="number-button" onclick="startQuiz(10)"> 10<span>問</span> </button> <button class="number-button" onclick="startQuiz(15)"> 15<span>問</span> </button> <button class="number-button" onclick="startQuiz(20)"> 20<span>問</span> </button>
+     </div>
     </div>
-
-    <!-- ポップアップ -->
-    <div class="popup-overlay" id="popupOverlay">
-        <div class="popup">
-            <div class="popup-title" id="popupTitle">タイトル</div>
-            <div class="popup-content" id="popupContent">内容</div>
-            <div class="popup-buttons" id="popupButtons"></div>
-        </div>
+    <div id="quiz-screen" class="quiz-screen">
+     <div class="progress-text" id="progress-text">
+      確認済み 0 / 5
+     </div>
+     <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+     </div>
+     <div id="questions-container"></div><button class="reset-button" onclick="resetQuiz()">最初に戻る</button>
     </div>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      app_title: "漢字テスト勉強アプリ",
+      check_button_text: "正解を見る",
+      primary_color: "#667eea",
+      secondary_color: "#764ba2",
+      accent_color: "#fbbf24",
+      text_color: "#1f2937",
+      success_color: "#10b981"
+    };
 
-    <!-- 数字ピル -->
-    <div id="numbersPill" class="numbers-pill" role="button" aria-label="出題中の数字（タップで展開）" tabindex="0">🔢</div>
+    // 問題データベース（125問）
+    const questionBank = [
+      { type: "例文", hiragana: "える", kanji: "得る", reading: "える", before: "努力して信頼を", after: "。" },
+      { type: "熟語", hiragana: "とくい", kanji: "得意", reading: "とくい", before: "彼は算数が", after: "だ。" },
+      { type: "熟語", hiragana: "かくとく", kanji: "獲得", reading: "かくとく", before: "目標を", after: "する。" },
+      { type: "例文", hiragana: "くらべる", kanji: "比べる", reading: "くらべる", before: "兄と自分を", after: "。" },
+      { type: "熟語", hiragana: "ひかく", kanji: "比較", reading: "ひかく", before: "二つの意見を", after: "する。" },
+      { type: "熟語", hiragana: "たいひ", kanji: "対比", reading: "たいひ", before: "二つの文章を", after: "して読む。" },
+      { type: "熟語", hiragana: "せいじ", kanji: "政治", reading: "せいじ", before: "", after: "に関心をもつ。" },
+      { type: "熟語", hiragana: "こくせい", kanji: "国政", reading: "こくせい", before: "国の", after: "を支える仕事。" },
+      { type: "熟語", hiragana: "せいさく", kanji: "政策", reading: "せいさく", before: "新しい", after: "を考える。" },
+      { type: "熟語", hiragana: "きょうみ", kanji: "興味", reading: "きょうみ", before: "その話に", after: "がわいた。" },
+      { type: "熟語", hiragana: "ふっこう", kanji: "復興", reading: "ふっこう", before: "町は災害から少しずつ", after: "している。" },
+      { type: "例文", hiragana: "おこる", kanji: "興る", reading: "おこる", before: "新しい文化が", after: "。" },
+      { type: "例文", hiragana: "しめす", kanji: "示す", reading: "しめす", before: "例を", after: "。" },
+      { type: "熟語", hiragana: "しじ", kanji: "指示", reading: "しじ", before: "先生の", after: "をよく聞く。" },
+      { type: "熟語", hiragana: "ひょうじ", kanji: "表示", reading: "ひょうじ", before: "画面に結果を", after: "する。" },
+      { type: "例文", hiragana: "はる", kanji: "張る", reading: "はる", before: "風船を強く", after: "。" },
+      { type: "熟語", hiragana: "しゅちょう", kanji: "主張", reading: "しゅちょう", before: "自分の考えを", after: "する。" },
+      { type: "例文", hiragana: "はる", kanji: "張る", reading: "はる", before: "緊張で体がこわばり、肩が", after: "。" },
+      { type: "例文", hiragana: "ささえる", kanji: "支える", reading: "ささえる", before: "体を", after: "力が必要だ。" },
+      { type: "熟語", hiragana: "しえん", kanji: "支援", reading: "しえん", before: "家族の生活を", after: "する。" },
+      { type: "例文", hiragana: "ささえる", kanji: "支える", reading: "ささえる", before: "木の枝が雪の重さを", after: "。" },
+      { type: "熟語", hiragana: "こじん", kanji: "個人", reading: "こじん", before: "これは", after: "の意見です。" },
+      { type: "熟語", hiragana: "こたい", kanji: "個体", reading: "こたい", before: "動物の", after: "を観察する。" },
+      { type: "熟語", hiragana: "いっこ", kanji: "一個", reading: "いっこ", before: "りんごを一", after: "食べた。" },
+      { type: "例文", hiragana: "まよう", kanji: "迷う", reading: "まよう", before: "どちらにするか", after: "。" },
+      { type: "熟語", hiragana: "まいご", kanji: "迷子", reading: "まいご", before: "道に", after: "がいた。" },
+      { type: "例文", hiragana: "まよう", kanji: "迷う", reading: "まよう", before: "進む道を", after: "こともある。" },
+      { type: "熟語", hiragana: "そんざい", kanji: "存在", reading: "そんざい", before: "その考えは社会に", after: "する。" },
+      { type: "熟語", hiragana: "ざいせき", kanji: "在籍", reading: "ざいせき", before: "名簿で", after: "を確認する。" },
+      { type: "熟語", hiragana: "ざいせき", kanji: "在籍", reading: "ざいせき", before: "彼は今も会に", after: "している。" },
+      { type: "熟語", hiragana: "どくじ", kanji: "独自", reading: "どくじ", before: "これは", after: "の方法だ。" },
+      { type: "熟語", hiragana: "どくりつ", kanji: "独立", reading: "どくりつ", before: "将来は一人で", after: "したい。" },
+      { type: "熟語", hiragana: "どくりつ", kanji: "独立", reading: "どくりつ", before: "会社から", after: "して店を出す。" },
+      { type: "熟語", hiragana: "べんとう", kanji: "弁当", reading: "べんとう", before: "新しい", after: "ばこを買った。" },
+      { type: "熟語", hiragana: "べんとう", kanji: "弁当", reading: "べんとう", before: "お昼は", after: "を食べる。" },
+      { type: "熟語", hiragana: "べんかい", kanji: "弁解", reading: "べんかい", before: "その説明は", after: "だと思う。" },
+      { type: "熟語", hiragana: "てんけん", kanji: "点検", reading: "てんけん", before: "自転車を", after: "する。" },
+      { type: "熟語", hiragana: "けんさ", kanji: "検査", reading: "けんさ", before: "安全のために", after: "を受ける。" },
+      { type: "熟語", hiragana: "てんけん", kanji: "点検", reading: "てんけん", before: "事前に機械を", after: "した。" },
+      { type: "熟語", hiragana: "ていしゅつ", kanji: "提出", reading: "ていしゅつ", before: "宿題を", after: "する。" },
+      { type: "熟語", hiragana: "ていあん", kanji: "提案", reading: "ていあん", before: "新しい案を", after: "する。" },
+      { type: "熟語", hiragana: "ていきょう", kanji: "提供", reading: "ていきょう", before: "資料を", after: "する。" },
+      { type: "熟語", hiragana: "きふ", kanji: "寄付", reading: "きふ", before: "本を図書館に", after: "した。" },
+      { type: "例文", hiragana: "よる", kanji: "寄る", reading: "よる", before: "そばに", after: "。" },
+      { type: "熟語", hiragana: "さんか", kanji: "参加", reading: "さんか", before: "ごみ拾いに", after: "して協力する。" },
+      { type: "例文", hiragana: "あまる", kanji: "余る", reading: "あまる", before: "料理が少し", after: "。" },
+      { type: "例文", hiragana: "ほとけ", kanji: "仏", reading: "ほとけ", before: "", after: "の教えを学ぶ。" },
+      { type: "熟語", hiragana: "だいぶつ", kanji: "大仏", reading: "だいぶつ", before: "奈良の", after: "を見に行く。" },
+      { type: "熟語", hiragana: "ぶっきょう", kanji: "仏教", reading: "ぶっきょう", before: "", after: "について調べる。" },
+      { type: "例文", hiragana: "かす", kanji: "貸す", reading: "かす", before: "友だちに本を", after: "。" },
+      { type: "熟語", hiragana: "かしだし", kanji: "貸出", reading: "かしだし", before: "図書室で本を", after: "する。" },
+      { type: "例文", hiragana: "かす", kanji: "貸す", reading: "かす", before: "お金を", after: "ときは約束を決める。" },
+      { type: "例文", hiragana: "きく", kanji: "効く", reading: "きく", before: "この薬はよく", after: "。" },
+      { type: "熟語", hiragana: "ゆうこう", kanji: "有効", reading: "ゆうこう", before: "その方法は安全に", after: "だ。" },
+      { type: "熟語", hiragana: "こうか", kanji: "効果", reading: "こうか", before: "風邪に", after: "がある。" },
+      { type: "熟語", hiragana: "じょうけん", kanji: "条件", reading: "じょうけん", before: "参加の", after: "を確かめる。" },
+      { type: "熟語", hiragana: "じょうけん", kanji: "条件", reading: "じょうけん", before: "この仕事の", after: "は二つある。" },
+      { type: "熟語", hiragana: "じょうけん", kanji: "条件", reading: "じょうけん", before: "", after: "を満たす人だけが参加できる。" },
+      { type: "例文", hiragana: "たもつ", kanji: "保つ", reading: "たもつ", before: "健康を", after: "。" },
+      { type: "熟語", hiragana: "ほぞん", kanji: "保存", reading: "ほぞん", before: "大切な資料を", after: "する。" },
+      { type: "熟語", hiragana: "ほおん", kanji: "保温", reading: "ほおん", before: "体温が下がらないように", after: "する。" },
+      { type: "熟語", hiragana: "ひょうか", kanji: "評価", reading: "ひょうか", before: "作品の価値を", after: "する。" },
+      { type: "熟語", hiragana: "ひょうか", kanji: "評価", reading: "ひょうか", before: "自分の考えを", after: "し直す。" },
+      { type: "熟語", hiragana: "ひょうか", kanji: "評価", reading: "ひょうか", before: "テストの結果を正しく", after: "する。" },
+      { type: "熟語", hiragana: "さんせい", kanji: "賛成", reading: "さんせい", before: "その意見に", after: "する。" },
+      { type: "熟語", hiragana: "しょうさん", kanji: "賞賛", reading: "しょうさん", before: "みんなの努力を", after: "する。" },
+      { type: "熟語", hiragana: "さんどう", kanji: "賛同", reading: "さんどう", before: "新しい考えに", after: "が集まった。" },
+      { type: "熟語", hiragana: "つま", kanji: "妻", reading: "つま", before: "彼の", after: "と会った。" },
+      { type: "熟語", hiragana: "ふうふ", kanji: "夫婦", reading: "ふうふ", before: "", after: "が買い物に来た。" },
+      { type: "熟語", hiragana: "つま", kanji: "妻", reading: "つま", before: "", after: "に感謝の言葉を伝える。" },
+      { type: "熟語", hiragana: "こんざつ", kanji: "混雑", reading: "こんざつ", before: "駅前が", after: "している。" },
+      { type: "熟語", hiragana: "こんざつ", kanji: "混雑", reading: "こんざつ", before: "朝の電車はとても", after: "する。" },
+      { type: "熟語", hiragana: "こんざつ", kanji: "混雑", reading: "こんざつ", before: "道が", after: "しない時間に出かける。" },
+      { type: "熟語", hiragana: "しょうりゃく", kanji: "省略", reading: "しょうりゃく", before: "長い説明を", after: "する。" },
+      { type: "例文", hiragana: "りゃくす", kanji: "略す", reading: "りゃくす", before: "例文を短く", after: "。" },
+      { type: "熟語", hiragana: "りゃくず", kanji: "略図", reading: "りゃくず", before: "地図を", after: "で表す。" },
+      { type: "熟語", hiragana: "さいしゅう", kanji: "採集", reading: "さいしゅう", before: "植物を", after: "する。" },
+      { type: "熟語", hiragana: "さいよう", kanji: "採用", reading: "さいよう", before: "新しい人を", after: "する。" },
+      { type: "熟語", hiragana: "さいしゅう", kanji: "採集", reading: "さいしゅう", before: "海の生き物を", after: "して調べる。" },
+      { type: "熟語", hiragana: "きんし", kanji: "禁止", reading: "きんし", before: "ここは立ち入り", after: "です。" },
+      { type: "熟語", hiragana: "きんし", kanji: "禁止", reading: "きんし", before: "撮影", after: "の場所。" },
+      { type: "熟語", hiragana: "きんし", kanji: "禁止", reading: "きんし", before: "危険なので使用を", after: "する。" },
+      { type: "熟語", hiragana: "のうりょく", kanji: "能力", reading: "のうりょく", before: "自分の", after: "をのばす。" },
+      { type: "熟語", hiragana: "かのう", kanji: "可能", reading: "かのう", before: "その計画は実行", after: "だ。" },
+      { type: "熟語", hiragana: "きのう", kanji: "機能", reading: "きのう", before: "機械の", after: "を調べる。" },
+      { type: "熟語", hiragana: "ゆうのう", kanji: "有能", reading: "ゆうのう", before: "彼はとても", after: "だ。" },
+      { type: "熟語", hiragana: "ようけん", kanji: "用件", reading: "ようけん", before: "先生に", after: "を伝える。" },
+      { type: "熟語", hiragana: "じけん", kanji: "事件", reading: "じけん", before: "その", after: "はニュースになった。" },
+      { type: "熟語", hiragana: "けんめい", kanji: "件名", reading: "けんめい", before: "メールの", after: "を分かりやすくする。" },
+      { type: "例文", hiragana: "けん", kanji: "件", reading: "けん", before: "この仕事は一", after: "落着だ。" },
+      { type: "熟語", hiragana: "たいりつ", kanji: "対立", reading: "たいりつ", before: "意見が", after: "してくる。" },
+      { type: "熟語", hiragana: "たいしょう", kanji: "対象", reading: "たいしょう", before: "話し合いの", after: "を決める。" },
+      { type: "熟語", hiragana: "たいひ", kanji: "対比", reading: "たいひ", before: "二つの考えを", after: "する。" },
+      { type: "熟語", hiragana: "ようす", kanji: "様子", reading: "ようす", before: "けが人の", after: "を見る。" },
+      { type: "熟語", hiragana: "ようしき", kanji: "様式", reading: "ようしき", before: "式の", after: "を整える。" },
+      { type: "例文", hiragana: "あらそう", kanji: "争う", reading: "あらそう", before: "友だちと", after: "ことがある。" },
+      { type: "熟語", hiragana: "あらそい", kanji: "争い", reading: "あらそい", before: "小さな", after: "でも早く止める。" },
+      { type: "熟語", hiragana: "はんえい", kanji: "繁栄", reading: "はんえい", before: "町がもっと", after: "するとよい。" },
+      { type: "熟語", hiragana: "えいよう", kanji: "栄養", reading: "えいよう", before: "朝食で", after: "をとる。" },
+      { type: "熟語", hiragana: "えいこう", kanji: "栄光", reading: "えいこう", before: "勝利の", after: "をたたえる。" },
+      { type: "例文", hiragana: "さかえる", kanji: "栄える", reading: "さかえる", before: "町がさらに", after: "。" },
+      { type: "熟語", hiragana: "へいわ", kanji: "平和", reading: "へいわ", before: "世界の", after: "を願う。" },
+      { type: "例文", hiragana: "わ", kanji: "和", reading: "わ", before: "友だちとの", after: "を大切にする。" },
+      { type: "熟語", hiragana: "なごやか", kanji: "和やか", reading: "なごやか", before: "教室が", after: "な雰囲気になった。" },
+      { type: "熟語", hiragana: "わしょく", kanji: "和食", reading: "わしょく", before: "給食に", after: "が出た。" },
+      { type: "熟語", hiragana: "わしつ", kanji: "和室", reading: "わしつ", before: "旅館の", after: "で休む。" },
+      { type: "熟語", hiragana: "しじ", kanji: "指示", reading: "しじ", before: "先生の", after: "にしたがう。" },
+      { type: "熟語", hiragana: "ひょうじ", kanji: "表示", reading: "ひょうじ", before: "画面に結果を", after: "する。" },
+      { type: "例文", hiragana: "しめす", kanji: "示す", reading: "しめす", before: "例を", after: "と分かりやすい。" },
+      { type: "例文", hiragana: "はる", kanji: "張る", reading: "はる", before: "風船を強く", after: "。" },
+      { type: "熟語", hiragana: "しゅちょう", kanji: "主張", reading: "しゅちょう", before: "自分の考えを", after: "する。" },
+      { type: "例文", hiragana: "ささえる", kanji: "支える", reading: "ささえる", before: "体を", after: "筋肉。" },
+      { type: "熟語", hiragana: "しえん", kanji: "支援", reading: "しえん", before: "困っている人を", after: "する。" },
+      { type: "熟語", hiragana: "こじん", kanji: "個人", reading: "こじん", before: "これは", after: "の考えだ。" },
+      { type: "熟語", hiragana: "こたい", kanji: "個体", reading: "こたい", before: "動物の", after: "数を調べる。" },
+      { type: "例文", hiragana: "こ", kanji: "個", reading: "こ", before: "みかんを三", after: "買った。" },
+      { type: "例文", hiragana: "まよう", kanji: "迷う", reading: "まよう", before: "どちらにするか", after: "。" },
+      { type: "熟語", hiragana: "ひょうか", kanji: "評価", reading: "ひょうか", before: "その考えが正しいか", after: "する。" },
+    ];
 
-    <script>
-        // ゲーム状態
-        let gameMode = 'single'; // 'single' or 'two'
-        let currentNumbers = [];
-        let currentSolution = null; // 現在の問題の解をキャッシュ
-        let targetScore = 3;
-        let player1Score = 0;
-        let player2Score = 0;
-        let numbersPillCompact = true;
+    let selectedQuestions = [];
+    let totalQuestions = 0;
 
-        // 1人モード用
-        let singleEquation = {
-            numbers: [null, null, null, null],
-            operators: [null, null, null],
-            availableNumbers: [],
-            usedIndices: [null, null, null, null], // 元ボタン位置を記録
-            expectingNumber: true // 次に数字を期待するかどうか
-        };
+    function shuffleArray(array) {
+      const newArray = [...array];
+      for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+      }
+      return newArray;
+    }
 
-        // 2人モード用
-        let player1Equation = {
-            numbers: [null, null, null, null],
-            operators: [null, null, null],
-            availableNumbers: [],
-            usedIndices: [null, null, null, null], // 元ボタン位置を記録
-            expectingNumber: true
-        };
+    function startQuiz(numQuestions) {
+      totalQuestions = numQuestions;
+      selectedQuestions = shuffleArray(questionBank).slice(0, numQuestions);
+      
+      document.getElementById('selection-screen').style.display = 'none';
+      document.getElementById('quiz-screen').classList.add('active');
+      
+      renderQuestions();
+      updateProgress();
+    }
 
-        let player2Equation = {
-            numbers: [null, null, null, null],
-            operators: [null, null, null],
-            availableNumbers: [],
-            usedIndices: [null, null, null, null], // 元ボタン位置を記録
-            expectingNumber: true
-        };
+    function renderQuestions() {
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
 
-        // 共通：並びから expectingNumber を決定
-        function recomputeExpecting(eq) {
-            for (let i = 0; i < 4; i++) {
-                if (eq.numbers[i] === null) { 
-                    eq.expectingNumber = true; 
-                    return; 
-                }
-                if (i < 3 && eq.operators[i] === null) { 
-                    eq.expectingNumber = false; 
-                    return; 
-                }
+      selectedQuestions.forEach((q, index) => {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        
+        const questionText = `${q.before}<span class="hiragana">${q.hiragana}</span>${q.after}`;
+
+        card.innerHTML = `
+          <span class="question-number">問題${index + 1}</span>
+          <span class="question-type">${q.type}問題</span>
+          <div class="question-text">${questionText}</div>
+          <div class="note-hint">
+            <strong>📝 ノートに書いてみよう！</strong>
+          </div>
+          <div class="answer-section">
+            <button class="check-button" onclick="toggleAnswer('answer${index}')">
+              <span class="check-button-text">${defaultConfig.check_button_text}</span>
+            </button>
+            <div id="answer${index}" class="answer-content">
+              <div class="answer-label">✓ 正解</div>
+              <div class="answer-text">${q.kanji}</div>
+              <div class="reading">${q.reading}</div>
+            </div>
+          </div>
+        `;
+        
+        container.appendChild(card);
+      });
+
+      updateConfigStyles();
+    }
+
+    function toggleAnswer(answerId) {
+      const answerElement = document.getElementById(answerId);
+      answerElement.classList.toggle('show');
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const answeredCount = document.querySelectorAll('.answer-content.show').length;
+      const percentage = (answeredCount / totalQuestions) * 100;
+      
+      document.getElementById('progress-text').textContent = `確認済み ${answeredCount} / ${totalQuestions}`;
+      document.getElementById('progress-fill').style.width = `${percentage}%`;
+    }
+
+    function resetQuiz() {
+      document.getElementById('selection-screen').style.display = 'block';
+      document.getElementById('quiz-screen').classList.remove('active');
+      document.getElementById('questions-container').innerHTML = '';
+      selectedQuestions = [];
+      totalQuestions = 0;
+    }
+
+    function updateConfigStyles() {
+      if (!window.elementSdk || !window.elementSdk.config) return;
+      
+      const config = window.elementSdk.config;
+      const primaryColor = config.primary_color || defaultConfig.primary_color;
+      const accentColor = config.accent_color || defaultConfig.accent_color;
+      const textColor = config.text_color || defaultConfig.text_color;
+      const successColor = config.success_color || defaultConfig.success_color;
+      const checkButtonText = config.check_button_text || defaultConfig.check_button_text;
+
+      const questionNumbers = document.querySelectorAll('.question-number');
+      questionNumbers.forEach(el => {
+        el.style.background = primaryColor;
+      });
+
+      const questionTypes = document.querySelectorAll('.question-type');
+      questionTypes.forEach(el => {
+        el.style.background = accentColor;
+      });
+
+      const checkButtons = document.querySelectorAll('.check-button');
+      checkButtons.forEach(el => {
+        el.style.background = primaryColor;
+        el.style.boxShadow = `0 4px 6px ${primaryColor}4D`;
+      });
+
+      const checkButtonTexts = document.querySelectorAll('.check-button-text');
+      checkButtonTexts.forEach(el => {
+        el.textContent = checkButtonText;
+      });
+
+      const questionTexts = document.querySelectorAll('.question-text');
+      questionTexts.forEach(el => {
+        el.style.color = textColor;
+      });
+
+      const answerContents = document.querySelectorAll('.answer-content');
+      answerContents.forEach(el => {
+        el.style.borderLeftColor = successColor;
+      });
+
+      const answerLabels = document.querySelectorAll('.answer-label');
+      answerLabels.forEach(el => {
+        el.style.color = successColor;
+      });
+    }
+
+    async function onConfigChange(config) {
+      const appTitle = config.app_title || defaultConfig.app_title;
+      const checkButtonText = config.check_button_text || defaultConfig.check_button_text;
+      const primaryColor = config.primary_color || defaultConfig.primary_color;
+      const secondaryColor = config.secondary_color || defaultConfig.secondary_color;
+      const accentColor = config.accent_color || defaultConfig.accent_color;
+      const textColor = config.text_color || defaultConfig.text_color;
+      const successColor = config.success_color || defaultConfig.success_color;
+
+      document.getElementById('app-title').textContent = appTitle;
+      
+      document.querySelector('.app-wrapper').style.background = `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`;
+      
+      const numberButtons = document.querySelectorAll('.number-button');
+      numberButtons.forEach(el => {
+        el.style.background = primaryColor;
+        el.style.boxShadow = `0 4px 12px ${primaryColor}4D`;
+      });
+
+      updateConfigStyles();
+    }
+
+    function mapToCapabilities(config) {
+      return {
+        recolorables: [
+          {
+            get: () => config.primary_color || defaultConfig.primary_color,
+            set: (value) => {
+              config.primary_color = value;
+              window.elementSdk.setConfig({ primary_color: value });
             }
-            // 4つの数字と3演算子が埋まっている → 送信待ち
-            eq.expectingNumber = true;
-        }
-
-        // 数字ピル表示
-        function renderNumbersPill(){
-            const pill = document.getElementById('numbersPill');
-            if(!pill) return;
-            if(numbersPillCompact){
-                pill.classList.add('compact');
-                pill.textContent = '🔢';
-                pill.setAttribute('aria-label','出題中の数字（タップで展開）');
-            }else{
-                pill.classList.remove('compact');
-                pill.textContent = '🔢 出題: ' + currentNumbers.join(', ');
-                pill.setAttribute('aria-label','出題: ' + currentNumbers.join(', '));
+          },
+          {
+            get: () => config.secondary_color || defaultConfig.secondary_color,
+            set: (value) => {
+              config.secondary_color = value;
+              window.elementSdk.setConfig({ secondary_color: value });
             }
-        }
-
-        // 分数計算クラス
-        class Fraction {
-            constructor(numerator, denominator = 1) {
-                if (denominator === 0) throw new Error("Division by zero");
-                
-                const g = this.gcd(Math.abs(numerator), Math.abs(denominator));
-                this.num = numerator / g;
-                this.den = denominator / g;
-                
-                if (this.den < 0) {
-                    this.num = -this.num;
-                    this.den = -this.den;
-                }
+          },
+          {
+            get: () => config.accent_color || defaultConfig.accent_color,
+            set: (value) => {
+              config.accent_color = value;
+              window.elementSdk.setConfig({ accent_color: value });
             }
-
-            gcd(a, b) {
-                return b === 0 ? a : this.gcd(b, a % b);
+          },
+          {
+            get: () => config.text_color || defaultConfig.text_color,
+            set: (value) => {
+              config.text_color = value;
+              window.elementSdk.setConfig({ text_color: value });
             }
-
-            add(other) {
-                return new Fraction(
-                    this.num * other.den + other.num * this.den,
-                    this.den * other.den
-                );
+          },
+          {
+            get: () => config.success_color || defaultConfig.success_color,
+            set: (value) => {
+              config.success_color = value;
+              window.elementSdk.setConfig({ success_color: value });
             }
+          }
+        ],
+        borderables: [],
+        fontEditable: undefined,
+        fontSizeable: undefined
+      };
+    }
 
-            subtract(other) {
-                return new Fraction(
-                    this.num * other.den - other.num * this.den,
-                    this.den * other.den
-                );
-            }
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ["app_title", config.app_title || defaultConfig.app_title],
+        ["check_button_text", config.check_button_text || defaultConfig.check_button_text]
+      ]);
+    }
 
-            multiply(other) {
-                return new Fraction(this.num * other.num, this.den * other.den);
-            }
-
-            divide(other) {
-                if (other.num === 0) throw new Error("Division by zero");
-                return new Fraction(this.num * other.den, this.den * other.num);
-            }
-
-            toDecimal() {
-                return this.num / this.den;
-            }
-
-            equals(other) {
-                return this.num === other.num && this.den === other.den;
-            }
-        }
-
-        // 新しい問題を生成
-        function generateProblem() {
-            let attempts = 0;
-            const maxAttempts = 200;
-            
-            do {
-                currentNumbers = Array.from({length: 4}, () => Math.floor(Math.random() * 9) + 1);
-                currentSolution = findSolution(currentNumbers);
-                attempts++;
-            } while (!currentSolution && attempts < maxAttempts);
-            
-            // フォールバック：解が見つからない場合は既知の可解問題を使用
-            if (!currentSolution) {
-                currentNumbers = [1, 2, 3, 4];
-                currentSolution = { numbers: [1, 2, 3, 4], operators: ['+', '+', '+'] };
-            }
-            
-            const baseEquation = {
-                numbers: [null, null, null, null],
-                operators: [null, null, null],
-                availableNumbers: [...currentNumbers],
-                usedIndices: [null, null, null, null],
-                expectingNumber: true
-            };
-            
-            if (gameMode === 'single') {
-                singleEquation = {...baseEquation};
-                renderSinglePlayer();
-            } else {
-                player1Equation = {...baseEquation};
-                player2Equation = {...baseEquation};
-                renderTwoPlayer();
-            }
-            
-            renderNumbersPill();
-        }
-
-        // 解を探す
-        function findSolution(nums) {
-            const operators = ['+', '-', '*', '/'];
-            const permutations = getPermutations(nums);
-            
-            for (const perm of permutations) {
-                for (const op1 of operators) {
-                    for (const op2 of operators) {
-                        for (const op3 of operators) {
-                            try {
-                                const result = evaluateExpression(perm, [op1, op2, op3]);
-                                if (result && Math.abs(result.toDecimal() - 10) < 1e-10) {
-                                    return { numbers: perm, operators: [op1, op2, op3] };
-                                }
-                            } catch (e) {
-                                // エラーは無視
-                            }
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
-        // 順列生成
-        function getPermutations(arr) {
-            if (arr.length <= 1) return [arr];
-            const result = [];
-            for (let i = 0; i < arr.length; i++) {
-                const rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
-                const perms = getPermutations(rest);
-                for (const perm of perms) {
-                    result.push([arr[i], ...perm]);
-                }
-            }
-            return result;
-        }
-
-        // 式を評価
-        function evaluateExpression(nums, ops) {
-            if (nums.length !== 4 || ops.length !== 3) return null;
-            
-            try {
-                let values = nums.map(n => new Fraction(n));
-                let operators = [...ops];
-                
-                // 乗除を先に処理
-                for (let i = 0; i < operators.length; i++) {
-                    if (operators[i] === '*') {
-                        values[i] = values[i].multiply(values[i + 1]);
-                        values.splice(i + 1, 1);
-                        operators.splice(i, 1);
-                        i--;
-                    } else if (operators[i] === '/') {
-                        values[i] = values[i].divide(values[i + 1]);
-                        values.splice(i + 1, 1);
-                        operators.splice(i, 1);
-                        i--;
-                    }
-                }
-                
-                // 加減を処理
-                for (let i = 0; i < operators.length; i++) {
-                    if (operators[i] === '+') {
-                        values[i] = values[i].add(values[i + 1]);
-                        values.splice(i + 1, 1);
-                        operators.splice(i, 1);
-                        i--;
-                    } else if (operators[i] === '-') {
-                        values[i] = values[i].subtract(values[i + 1]);
-                        values.splice(i + 1, 1);
-                        operators.splice(i, 1);
-                        i--;
-                    }
-                }
-                
-                return values[0];
-            } catch (e) {
-                return null;
-            }
-        }
-
-        // 画面切り替え
-        function showScreen(screenId) {
-            document.querySelectorAll('.start-screen, .two-player-setup, .game-screen')
-                .forEach(s => s.style.display = 'none');
-            document.getElementById(screenId).style.display = 'flex';
-            
-            // ピルの表示制御
-            const pill = document.getElementById('numbersPill');
-            if (pill) pill.style.display = (screenId === 'gameScreen') ? 'block' : 'none';
-        }
-
-        function startSinglePlayer() {
-            gameMode = 'single';
-            document.getElementById('singlePlayerGame').style.display = 'flex';
-            document.getElementById('twoPlayerGame').style.display = 'none';
-            
-            singleEquation = {
-                numbers: [null, null, null, null],
-                operators: [null, null, null],
-                availableNumbers: [],
-                usedIndices: [null, null, null, null],
-                expectingNumber: true
-            };
-            
-            showScreen('gameScreen');
-            generateProblem();
-        }
-
-        function showTwoPlayerSetup() {
-            showScreen('twoPlayerSetup');
-        }
-
-        function changeTargetScore(delta) {
-            targetScore = Math.max(1, Math.min(10, targetScore + delta));
-            document.getElementById('targetScore').textContent = targetScore;
-        }
-
-        function startTwoPlayer() {
-            gameMode = 'two';
-            document.getElementById('singlePlayerGame').style.display = 'none';
-            document.getElementById('twoPlayerGame').style.display = 'grid';
-            document.getElementById('targetScoreDisplay').textContent = targetScore;
-            
-            // スコアリセット
-            player1Score = 0;
-            player2Score = 0;
-            document.getElementById('player1Score').textContent = '0';
-            document.getElementById('player2Score').textContent = '0';
-            
-            showScreen('gameScreen');
-            generateProblem();
-        }
-
-        function backToStart() {
-            showScreen('startScreen');
-        }
-
-        // 1人モード用関数
-        function renderSinglePlayer() {
-            // 数字ボタンを更新
-            const numberButtons = document.getElementById('numberButtons');
-            numberButtons.innerHTML = '';
-            
-            // 4つの数字ボタンを作成（使用済みは空白）
-            for (let i = 0; i < 4; i++) {
-                const btn = document.createElement('button');
-                btn.className = 'game-btn';
-                
-                if (singleEquation.availableNumbers[i] !== undefined) {
-                    btn.textContent = singleEquation.availableNumbers[i];
-                    btn.onclick = () => addNumber(singleEquation.availableNumbers[i], i);
-                    btn.disabled = !singleEquation.expectingNumber;
-                } else {
-                    btn.textContent = '';
-                    btn.disabled = true;
-                    btn.style.opacity = '0.3';
-                }
-                
-                numberButtons.appendChild(btn);
-            }
-            
-            // 演算子ボタンを更新
-            const operatorButtons = document.querySelectorAll('.operator-btn');
-            operatorButtons.forEach(btn => {
-                btn.disabled = singleEquation.expectingNumber;
-            });
-            
-            // スロットを更新
-            updateSinglePlayerSlots();
-            updateSubmitButton();
-        }
-
-        function updateSinglePlayerSlots() {
-            const slots = document.querySelectorAll('#equationSlots .slot');
-            
-            // 数字スロット
-            for (let i = 0; i < 4; i++) {
-                const slot = slots[i * 2];
-                if (singleEquation.numbers[i] !== null) {
-                    slot.textContent = singleEquation.numbers[i];
-                    slot.classList.add('filled');
-                    slot.onclick = () => removeNumber(i);
-                } else {
-                    slot.textContent = '?';
-                    slot.classList.remove('filled');
-                    slot.onclick = null;
-                }
-            }
-            
-            // 演算子スロット
-            for (let i = 0; i < 3; i++) {
-                const slot = slots[i * 2 + 1];
-                if (singleEquation.operators[i] !== null) {
-                    let op = singleEquation.operators[i];
-                    if (op === '*') op = '×';
-                    if (op === '/') op = '÷';
-                    slot.textContent = op;
-                    slot.classList.add('filled');
-                    slot.onclick = () => removeOperator(i);
-                } else {
-                    slot.textContent = '?';
-                    slot.classList.remove('filled');
-                    slot.onclick = null;
-                }
-            }
-            
-            // 結果を計算
-            updateEquationResult();
-        }
-
-        function updateEquationResult() {
-            // 答えは表示しない
-        }
-
-        function addNumber(num, index) {
-            const eq = singleEquation;
-            if (!eq.expectingNumber) return;
-            
-            // 最初の空きスロットに追加
-            for (let i = 0; i < 4; i++) {
-                if (eq.numbers[i] === null) {
-                    eq.numbers[i] = num;
-                    eq.usedIndices[i] = index;
-                    eq.availableNumbers[index] = undefined;
-                    recomputeExpecting(eq);
-                    renderSinglePlayer();
-                    break;
-                }
-            }
-        }
-
-        function removeNumber(slotIndex) {
-            const eq = singleEquation;
-            if (eq.numbers[slotIndex] !== null) {
-                const orig = eq.usedIndices[slotIndex];
-                if (orig !== null) {
-                    eq.availableNumbers[orig] = eq.numbers[slotIndex];
-                }
-                eq.numbers[slotIndex] = null;
-                eq.usedIndices[slotIndex] = null;
-                recomputeExpecting(eq);
-                renderSinglePlayer();
-            }
-        }
-
-        function addOperator(op) {
-            const eq = singleEquation;
-            if (eq.expectingNumber) return;
-            
-            // 最初の空きスロットに追加
-            for (let i = 0; i < 3; i++) {
-                if (eq.operators[i] === null) {
-                    eq.operators[i] = op;
-                    recomputeExpecting(eq);
-                    renderSinglePlayer();
-                    break;
-                }
-            }
-        }
-
-        function removeOperator(slotIndex) {
-            const eq = singleEquation;
-            if (eq.operators[slotIndex] !== null) {
-                eq.operators[slotIndex] = null;
-                recomputeExpecting(eq);
-                renderSinglePlayer();
-            }
-        }
-
-        function updateSubmitButton() {
-            const submitBtn = document.getElementById('submitBtn');
-            const isComplete = singleEquation.numbers.every(n => n !== null) && 
-                             singleEquation.operators.every(o => o !== null);
-            submitBtn.disabled = !isComplete;
-        }
-
-        function submitAnswer() {
-            try {
-                const result = evaluateExpression(singleEquation.numbers, singleEquation.operators);
-                if (!result) {
-                    showPopup('❌ エラー', '式が未完成または無効です。もう一度確認してね。', [
-                        { text: 'OK', action: hidePopup }
-                    ]);
-                    return;
-                }
-                const val = result.toDecimal();
-                if (Math.abs(val - 10) < 1e-10) {
-                    showPopup('🎉 正解！', '素晴らしい！10を作ることができました！', [
-                        { text: '次の問題', action: () => { hidePopup(); generateProblem(); } },
-                        { text: 'メニューに戻る', action: () => { hidePopup(); backToStart(); } }
-                    ]);
-                } else {
-                    showPopup('😅 惜しい！', `答えは ${Number.isInteger(val) ? val : val.toFixed(2)} でした。もう一度挑戦してみましょう！`, [
-                        { text: 'もう一度', action: hidePopup }
-                    ]);
-                }
-            } catch (e) {
-                showPopup('❌ エラー', '計算でエラーが発生しました。式を確認してください。', [
-                    { text: 'OK', action: hidePopup }
-                ]);
-            }
-        }
-
-        function showAnswer() {
-            const solution = currentSolution || findSolution(currentNumbers);
-            if (solution) {
-                const displayOperator = (op) => op === '*' ? '×' : op === '/' ? '÷' : op;
-                const equationStr = `${solution.numbers[0]} ${displayOperator(solution.operators[0])} ${solution.numbers[1]} ${displayOperator(solution.operators[1])} ${solution.numbers[2]} ${displayOperator(solution.operators[2])} ${solution.numbers[3]} = 10`;
-                
-                showPopup('💡 答え', `解答例: ${equationStr}`, [
-                    { text: '次の問題', action: () => { hidePopup(); generateProblem(); } },
-                    { text: 'メニューに戻る', action: () => { hidePopup(); backToStart(); } }
-                ]);
-            } else {
-                showPopup('😓 申し訳ありません', 'この問題の解答が見つかりませんでした。', [
-                    { text: '次の問題', action: () => { hidePopup(); generateProblem(); } }
-                ]);
-            }
-        }
-
-        function resetEquation() {
-            singleEquation.numbers = [null, null, null, null];
-            singleEquation.operators = [null, null, null];
-            singleEquation.availableNumbers = [...currentNumbers];
-            singleEquation.usedIndices = [null, null, null, null];
-            singleEquation.expectingNumber = true;
-            renderSinglePlayer();
-        }
-
-        // 2人モード用関数
-        function renderTwoPlayer() {
-            renderPlayer(1);
-            renderPlayer(2);
-        }
-
-        function renderPlayer(playerNum) {
-            const equation = playerNum === 1 ? player1Equation : player2Equation;
-            
-            // 数字ボタンを更新
-            const numberButtons = document.getElementById(`player${playerNum}Numbers`);
-            numberButtons.innerHTML = '';
-            
-            // 4つの数字ボタンを作成（使用済みは空白）
-            for (let i = 0; i < 4; i++) {
-                const btn = document.createElement('button');
-                btn.className = 'player-btn';
-                
-                if (equation.availableNumbers[i] !== undefined) {
-                    btn.textContent = equation.availableNumbers[i];
-                    btn.onclick = () => addPlayerNumber(playerNum, equation.availableNumbers[i], i);
-                    btn.disabled = !equation.expectingNumber;
-                } else {
-                    btn.textContent = '';
-                    btn.disabled = true;
-                    btn.style.opacity = '0.3';
-                }
-                
-                numberButtons.appendChild(btn);
-            }
-            
-            // 演算子ボタンを更新
-            const playerArea = document.getElementById(`player${playerNum}Equation`).closest('.player-area');
-            const operatorButtons = playerArea.querySelectorAll('.player-operator-btn');
-            operatorButtons.forEach(btn => {
-                btn.disabled = equation.expectingNumber;
-            });
-            
-            // スロットを更新
-            updatePlayerSlots(playerNum);
-            updatePlayerSubmitButton(playerNum);
-        }
-
-        function updatePlayerSlots(playerNum) {
-            const equation = playerNum === 1 ? player1Equation : player2Equation;
-            const slots = document.querySelectorAll(`#player${playerNum}Equation .player-slot`);
-            
-            // 数字スロット
-            for (let i = 0; i < 4; i++) {
-                const slot = slots[i * 2];
-                if (equation.numbers[i] !== null) {
-                    slot.textContent = equation.numbers[i];
-                    slot.classList.add('filled');
-                    slot.onclick = () => removePlayerNumber(playerNum, i);
-                } else {
-                    slot.textContent = '?';
-                    slot.classList.remove('filled');
-                    slot.onclick = null;
-                }
-            }
-            
-            // 演算子スロット
-            for (let i = 0; i < 3; i++) {
-                const slot = slots[i * 2 + 1];
-                if (equation.operators[i] !== null) {
-                    let op = equation.operators[i];
-                    if (op === '*') op = '×';
-                    if (op === '/') op = '÷';
-                    slot.textContent = op;
-                    slot.classList.add('filled');
-                    slot.onclick = () => removePlayerOperator(playerNum, i);
-                } else {
-                    slot.textContent = '?';
-                    slot.classList.remove('filled');
-                    slot.onclick = null;
-                }
-            }
-        }
-
-        function addPlayerNumber(playerNum, num, index) {
-            const eq = playerNum === 1 ? player1Equation : player2Equation;
-            if (!eq.expectingNumber) return;
-            if (!eq.usedIndices) eq.usedIndices = [null, null, null, null];
-            
-            // 最初の空きスロットに追加
-            for (let i = 0; i < 4; i++) {
-                if (eq.numbers[i] === null) {
-                    eq.numbers[i] = num;
-                    eq.usedIndices[i] = index;
-                    eq.availableNumbers[index] = undefined;
-                    recomputeExpecting(eq);
-                    renderPlayer(playerNum);
-                    break;
-                }
-            }
-        }
-
-        function removePlayerNumber(playerNum, slotIndex) {
-            const eq = playerNum === 1 ? player1Equation : player2Equation;
-            
-            if (eq.numbers[slotIndex] !== null) {
-                const orig = eq.usedIndices ? eq.usedIndices[slotIndex] : null;
-                if (orig !== null) {
-                    eq.availableNumbers[orig] = eq.numbers[slotIndex];
-                }
-                eq.numbers[slotIndex] = null;
-                if (eq.usedIndices) eq.usedIndices[slotIndex] = null;
-                recomputeExpecting(eq);
-                renderPlayer(playerNum);
-            }
-        }
-
-        function addPlayerOperator(playerNum, op) {
-            const eq = playerNum === 1 ? player1Equation : player2Equation;
-            if (eq.expectingNumber) return;
-            
-            // 最初の空きスロットに追加
-            for (let i = 0; i < 3; i++) {
-                if (eq.operators[i] === null) {
-                    eq.operators[i] = op;
-                    recomputeExpecting(eq);
-                    renderPlayer(playerNum);
-                    break;
-                }
-            }
-        }
-
-        function removePlayerOperator(playerNum, slotIndex) {
-            const eq = playerNum === 1 ? player1Equation : player2Equation;
-            
-            if (eq.operators[slotIndex] !== null) {
-                eq.operators[slotIndex] = null;
-                recomputeExpecting(eq);
-                renderPlayer(playerNum);
-            }
-        }
-
-        function updatePlayerSubmitButton(playerNum) {
-            const equation = playerNum === 1 ? player1Equation : player2Equation;
-            const submitBtn = document.getElementById(`player${playerNum}Submit`);
-            const isComplete = equation.numbers.every(n => n !== null) && 
-                             equation.operators.every(o => o !== null);
-            submitBtn.disabled = !isComplete;
-        }
-
-        function clearPlayerEquation(playerNum) {
-            const equation = playerNum === 1 ? player1Equation : player2Equation;
-            
-            // 式をリセット
-            equation.numbers = [null, null, null, null];
-            equation.operators = [null, null, null];
-            equation.availableNumbers = [...currentNumbers];
-            equation.usedIndices = [null, null, null, null];
-            equation.expectingNumber = true;
-            
-            // 表示を更新
-            renderPlayer(playerNum);
-        }
-
-        function submitPlayerAnswer(playerNum) {
-            const equation = playerNum === 1 ? player1Equation : player2Equation;
-            
-            try {
-                const result = evaluateExpression(equation.numbers, equation.operators);
-                if (!result) {
-                    showPopup('😅 不正解', `プレイヤー${playerNum}の式は無効でした。もう一度どうぞ。`, [
-                        { text: 'OK', action: hidePopup }
-                    ]);
-                    return;
-                }
-                const decimal = result.toDecimal();
-                if (Math.abs(decimal - 10) < 1e-10) {
-                    // 正解の式を作成
-                    const equationStr = equation.numbers.map((num, i) => {
-                        let str = num.toString();
-                        if (i < 3 && equation.operators[i]) {
-                            let op = equation.operators[i];
-                            if (op === '*') op = '×';
-                            if (op === '/') op = '÷';
-                            str += ` ${op} `;
-                        }
-                        return str;
-                    }).join('') + ' = 10';
-                    
-                    // 正解
-                    if (playerNum === 1) {
-                        player1Score++;
-                        document.getElementById('player1Score').textContent = player1Score;
-                    } else {
-                        player2Score++;
-                        document.getElementById('player2Score').textContent = player2Score;
-                    }
-                    
-                    // 勝利判定
-                    if (player1Score >= targetScore) {
-                        showPopup('🏆 ゲーム終了！', `プレイヤー1の勝利です！\n\n最後の答え: ${equationStr}`, [
-                            { text: 'もう一度', action: () => { hidePopup(); startTwoPlayer(); } },
-                            { text: 'メニューに戻る', action: () => { hidePopup(); backToStart(); } }
-                        ]);
-                    } else if (player2Score >= targetScore) {
-                        showPopup('🏆 ゲーム終了！', `プレイヤー2の勝利です！\n\n最後の答え: ${equationStr}`, [
-                            { text: 'もう一度', action: () => { hidePopup(); startTwoPlayer(); } },
-                            { text: 'メニューに戻る', action: () => { hidePopup(); backToStart(); } }
-                        ]);
-                    } else {
-                        showPopup('🎉 正解！', `プレイヤー${playerNum}が1点獲得！\n\n答え: ${equationStr}`, [
-                            { text: '次の問題', action: () => { hidePopup(); generateProblem(); } }
-                        ]);
-                    }
-                } else {
-                    showPopup('😅 不正解', `プレイヤー${playerNum}の答えは ${Number.isInteger(decimal) ? decimal : decimal.toFixed(2)} でした。`, [
-                        { text: 'OK', action: hidePopup }
-                    ]);
-                }
-            } catch (e) {
-                showPopup('❌ エラー', `プレイヤー${playerNum}の式でエラーが発生しました。`, [
-                    { text: 'OK', action: hidePopup }
-                ]);
-            }
-        }
-
-        // ポップアップ関数
-        function showPopup(title, content, buttons) {
-            document.getElementById('popupTitle').textContent = title;
-            document.getElementById('popupContent').textContent = content;
-            
-            const buttonContainer = document.getElementById('popupButtons');
-            buttonContainer.innerHTML = '';
-            
-            buttons.forEach(button => {
-                const btn = document.createElement('button');
-                btn.className = 'action-btn';
-                btn.textContent = button.text;
-                btn.onclick = button.action;
-                buttonContainer.appendChild(btn);
-            });
-            
-            document.getElementById('popupOverlay').style.display = 'flex';
-            
-            const pill = document.getElementById('numbersPill');
-            if (pill){ pill.style.pointerEvents = 'none'; pill.style.opacity = '0.6'; }
-        }
-
-        function hidePopup() {
-            document.getElementById('popupOverlay').style.display = 'none';
-            
-            const pill = document.getElementById('numbersPill');
-            if (pill){ pill.style.pointerEvents = 'auto'; pill.style.opacity = '1'; }
-        }
-
-        // 初期化
-        document.addEventListener('DOMContentLoaded', () => {
-            showScreen('startScreen');
-            
-            // ピルのイベント設定
-            const pill = document.getElementById('numbersPill');
-            if (pill){
-                pill.addEventListener('click', () => { 
-                    numbersPillCompact = !numbersPillCompact; 
-                    renderNumbersPill(); 
-                });
-                pill.addEventListener('keydown', (e) => {
-                    if(e.key === 'Enter' || e.key === ' '){ 
-                        e.preventDefault(); 
-                        numbersPillCompact = !numbersPillCompact; 
-                        renderNumbersPill(); 
-                    }
-                });
-            }
-        });
-    </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9772c3a2f5b3d003',t:'MTc1NjU0MDkyOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ab5fe1a54feb118',t:'MTc2NTI5ODkzMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
