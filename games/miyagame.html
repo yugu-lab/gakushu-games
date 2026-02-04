@@ -1,17 +1,18 @@
 <!doctype html>
 <html lang="ja" class="h-full">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>漢字勇者 - 読みの試練</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="/_sdk/element_sdk.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&amp;family=Yuji+Syuku&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Yuji+Syuku&display=swap" rel="stylesheet">
+
   <style>
-    body { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { box-sizing: border-box; margin: 0; }
     * { font-family: 'Zen Maru Gothic', sans-serif; }
     .title-font { font-family: 'Yuji Syuku', serif; }
-    
+
     @keyframes float {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-10px); }
@@ -44,7 +45,7 @@
     .damage-flash { animation: damage-flash 0.2s ease-out; }
     .victory-glow { animation: victory-glow 1s ease-in-out infinite; }
     .time-warning { animation: time-warning 0.4s ease-in-out infinite; }
-    
+
     .flick-key {
       width: 60px;
       height: 60px;
@@ -58,8 +59,10 @@
       color: #fff;
       cursor: pointer;
       user-select: none;
-      transition: all 0.15s;
+      transition: transform 0.15s, background 0.15s, box-shadow 0.15s, border-color 0.15s;
       position: relative;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: none; /* iPadでのスクロール干渉を減らす */
     }
     .flick-key:active {
       transform: scale(0.95);
@@ -69,7 +72,7 @@
       border-color: #ffd700;
       box-shadow: 0 0 15px rgba(255,215,0,0.5);
     }
-    
+
     .hp-bar {
       height: 24px;
       background: #1a1a2e;
@@ -84,7 +87,7 @@
     }
     .hp-fill.low { background: linear-gradient(90deg, #ef4444, #f87171); }
     .hp-fill.enemy { background: linear-gradient(90deg, #dc2626, #ef4444); }
-    
+
     .weapon-card {
       background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
       border: 2px solid;
@@ -97,16 +100,15 @@
     .weapon-card.rare { border-color: #3b82f6; }
     .weapon-card.epic { border-color: #a855f7; }
     .weapon-card.legendary { border-color: #ffd700; box-shadow: 0 0 30px rgba(255,215,0,0.3); }
-    
+
     .battle-screen {
       background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);
     }
-    
     .enemy-sprite {
       font-size: 4rem;
       filter: drop-shadow(0 0 20px rgba(255,0,0,0.3));
     }
-    
+
     .input-display {
       min-height: 48px;
       background: rgba(0,0,0,0.5);
@@ -133,13 +135,15 @@
       background: linear-gradient(90deg, #ef4444, #f87171);
     }
   </style>
-  <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
- </head>
- <body class="h-full bg-gray-900 text-white overflow-hidden">
+</head>
+
+<body class="h-full bg-gray-900 text-white overflow-hidden">
   <div id="app" class="h-full w-full"></div>
+
   <script>
+    // =========================
     // Game State
+    // =========================
     const gameState = {
       screen: 'title',
       playerName: '',
@@ -158,10 +162,8 @@
       defeatedCount: 0,
       totalDefeated: 0,
       clearedLevels: [],
-      canPlayLevelOre: false,
       combo: 0,
       message: '',
-      showWeaponDrop: false,
       droppedWeapon: null,
       isBossBattle: false,
       timeLimit: 10,
@@ -169,7 +171,9 @@
       timerInterval: null
     };
 
+    // =========================
     // Questions Database
+    // =========================
     const questions = {
       1: [
         {kanji: '剣', reading: 'つるぎ'}, {kanji: '鉄', reading: 'てつ'},
@@ -212,7 +216,9 @@
       ]
     };
 
-    // Weapons Database with Ranks
+    // =========================
+    // Weapons Database
+    // =========================
     const weapons = [
       // Common (40%)
       {id: 1, name: '黒鉄の筆', desc: '基本の武器。墨の跡で敵を切り裂く。', rank: 'common', atk: 5, emoji: '🖌️'},
@@ -251,7 +257,9 @@
       {id: 30, name: '究極の筆：天啓', desc: 'すべての漢字を統べる伝説の筆。', rank: 'legendary', atk: 50, def: 20, emoji: '✨'}
     ];
 
-    // Enemies
+    // =========================
+    // Enemies & Bosses
+    // =========================
     const enemies = {
       1: [
         {name: '墨汁スライム', emoji: '💧', hp: 30, atk: 5},
@@ -282,7 +290,9 @@
       ore: {name: '【究極】文字神カンジ', emoji: '🌟', hp: 500, atk: 40}
     };
 
+    // =========================
     // Flick Input Layout
+    // =========================
     const flickLayout = [
       ['あ', 'か', 'さ', 'た', 'な'],
       ['は', 'ま', 'や', 'ら', 'わ'],
@@ -319,7 +329,9 @@
       'や': 'ゃ', 'ゆ': 'ゅ', 'よ': 'ょ', 'つ': 'っ'
     };
 
-    // Helper Functions
+    // =========================
+    // Helpers
+    // =========================
     function getRandomItem(arr) {
       return arr[Math.floor(Math.random() * arr.length)];
     }
@@ -332,7 +344,6 @@
       else if (roll < 88) rank = 'rare';
       else if (roll < 98) rank = 'epic';
       else rank = 'legendary';
-      
       const rankWeapons = weapons.filter(w => w.rank === rank);
       return getRandomItem(rankWeapons);
     }
@@ -361,35 +372,29 @@
 
     function calculateDamage() {
       let baseDamage = gameState.playerATK;
-      if (gameState.equippedWeapon) {
-        baseDamage += gameState.equippedWeapon.atk || 0;
-      }
+      if (gameState.equippedWeapon) baseDamage += gameState.equippedWeapon.atk || 0;
       baseDamage += gameState.combo * 2;
       return baseDamage;
     }
 
     function getTimeLimitByDifficulty(difficulty) {
-      const timeLimits = {
-        1: 10,
-        2: 9,
-        3: 8,
-        ore: 7
-      };
+      const timeLimits = { 1: 10, 2: 9, 3: 8, ore: 7 };
       return timeLimits[difficulty] || 10;
     }
 
     function spawnEnemy() {
       const diffKey = gameState.difficulty === 'ore' ? 'ore' : gameState.difficulty;
       const enemyList = enemies[diffKey];
-      const enemy = {...getRandomItem(enemyList)};
+      const enemy = { ...getRandomItem(enemyList) };
       gameState.currentEnemy = enemy;
       gameState.enemyHP = enemy.hp;
       gameState.enemyMaxHP = enemy.hp;
+      gameState.isBossBattle = false;
     }
 
     function spawnBoss() {
       const diffKey = gameState.difficulty === 'ore' ? 'ore' : gameState.difficulty;
-      const boss = {...bosses[diffKey]};
+      const boss = { ...bosses[diffKey] };
       gameState.currentEnemy = boss;
       gameState.enemyHP = boss.hp;
       gameState.enemyMaxHP = boss.hp;
@@ -406,16 +411,16 @@
 
     function startTimer() {
       if (gameState.timerInterval) clearInterval(gameState.timerInterval);
-      
       gameState.timeLimit = getTimeLimitByDifficulty(gameState.difficulty);
       gameState.timeRemaining = gameState.timeLimit;
-      
+
       gameState.timerInterval = setInterval(() => {
         gameState.timeRemaining--;
         render();
-        
+
         if (gameState.timeRemaining <= 0) {
           clearInterval(gameState.timerInterval);
+          gameState.timerInterval = null;
           handleTimeOut();
         }
       }, 1000);
@@ -428,45 +433,31 @@
       }
     }
 
-    // Config for Element SDK
-    const defaultConfig = {
-      game_title: '漢字勇者',
-      primary_color: '#1e1e3f',
-      accent_color: '#ffd700',
-      text_color: '#ffffff'
-    };
+    function syncInputDisplay() {
+      const inputDisplay = document.getElementById('inputText');
+      if (inputDisplay) inputDisplay.textContent = gameState.inputText || '　';
+    }
 
-    let config = {...defaultConfig};
-
-    // Render Functions
+    // =========================
+    // Render
+    // =========================
     function render() {
+      // battle以外ではタイマー止める（事故防止）
+      if (gameState.screen !== 'battle') stopTimer();
+
       const app = document.getElementById('app');
-      
-      switch(gameState.screen) {
-        case 'title':
-          renderTitleScreen(app);
-          break;
-        case 'difficulty':
-          renderDifficultyScreen(app);
-          break;
-        case 'battle':
-          renderBattleScreen(app);
-          break;
-        case 'victory':
-          renderVictoryScreen(app);
-          break;
-        case 'gameOver':
-          renderGameOverScreen(app);
-          break;
-        case 'weaponDrop':
-          renderWeaponDropScreen(app);
-          break;
-        case 'inventory':
-          renderInventoryScreen(app);
-          break;
-        case 'levelClear':
-          renderLevelClearScreen(app);
-          break;
+      if (!app) return;
+
+      switch (gameState.screen) {
+        case 'title': renderTitleScreen(app); break;
+        case 'difficulty': renderDifficultyScreen(app); break;
+        case 'battle': renderBattleScreen(app); break;
+        case 'victory': renderVictoryScreen(app); break;
+        case 'gameOver': renderGameOverScreen(app); break;
+        case 'weaponDrop': renderWeaponDropScreen(app); break;
+        case 'inventory': renderInventoryScreen(app); break;
+        case 'levelClear': renderLevelClearScreen(app); break;
+        default: renderTitleScreen(app);
       }
     }
 
@@ -475,47 +466,44 @@
         <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
           <div class="text-center mb-8">
             <h1 class="title-font text-6xl font-bold mb-4 float-anim" style="color: #ffd700; text-shadow: 0 0 30px rgba(255,215,0,0.5);">
-              ${config.game_title || defaultConfig.game_title}
+              漢字勇者
             </h1>
             <p class="text-2xl text-gray-300">〜 読みの試練 〜</p>
           </div>
-          
+
           <div class="mb-8">
             <div class="text-8xl float-anim" style="animation-delay: 0.5s;">⚔️📖</div>
           </div>
-          
+
           <div class="w-full max-w-md mb-6">
             <label class="block text-lg mb-2 text-gray-300">勇者の名前を入力</label>
-            <input type="text" id="playerNameInput" 
+            <input type="text" id="playerNameInput"
               class="w-full px-4 py-3 text-xl rounded-xl bg-gray-800 border-2 border-gray-600 focus:border-yellow-500 focus:outline-none text-white"
               placeholder="名前を入力..."
-              value="${gameState.playerName}"
-            >
+              value="${gameState.playerName}">
           </div>
-          
-          <button onclick="startGame()" 
+
+          <button onclick="startGame()"
             class="px-12 py-4 text-2xl font-bold rounded-xl pulse-glow transition-transform hover:scale-105"
             style="background: linear-gradient(145deg, #ffd700, #ffaa00); color: #1a1a2e;">
             冒険を始める
           </button>
-          
+
           <p class="mt-8 text-gray-500 text-sm">漢字の読み方を答えて敵を倒そう！</p>
         </div>
       `;
     }
 
     function renderDifficultyScreen(container) {
-      const canPlayOre = gameState.clearedLevels.includes(1) && 
-                         gameState.clearedLevels.includes(2) && 
-                         gameState.clearedLevels.includes(3);
-      
+      const canPlayOre = [1,2,3].every(lv => gameState.clearedLevels.includes(lv));
+
       container.innerHTML = `
         <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
           <h2 class="title-font text-4xl font-bold mb-2" style="color: #ffd700;">難易度を選択</h2>
-          <p class="text-xl text-gray-400 mb-6">勇者 ${gameState.playerName} よ、挑戦する試練を選べ</p>
-          
+          <p class="text-xl text-gray-400 mb-6">勇者 ${gameState.playerName || '勇者'} よ、挑戦する試練を選べ</p>
+
           <div class="grid grid-cols-4 gap-4 w-full max-w-4xl">
-            <button onclick="selectDifficulty(1)" 
+            <button onclick="selectDifficulty(1)"
               class="p-6 rounded-2xl border-2 border-green-500 bg-green-900/30 hover:bg-green-800/50 transition-all hover:scale-105 ${gameState.clearedLevels.includes(1) ? 'ring-2 ring-yellow-400' : ''}">
               <div class="text-4xl mb-2">🌱</div>
               <div class="text-2xl font-bold text-green-400">レベル1</div>
@@ -523,8 +511,8 @@
               <div class="text-xs text-gray-500 mt-1">10秒</div>
               ${gameState.clearedLevels.includes(1) ? '<div class="text-yellow-400 mt-2">✓ クリア済</div>' : ''}
             </button>
-            
-            <button onclick="selectDifficulty(2)" 
+
+            <button onclick="selectDifficulty(2)"
               class="p-6 rounded-2xl border-2 border-blue-500 bg-blue-900/30 hover:bg-blue-800/50 transition-all hover:scale-105 ${gameState.clearedLevels.includes(2) ? 'ring-2 ring-yellow-400' : ''}">
               <div class="text-4xl mb-2">⚔️</div>
               <div class="text-2xl font-bold text-blue-400">レベル2</div>
@@ -532,8 +520,8 @@
               <div class="text-xs text-gray-500 mt-1">9秒</div>
               ${gameState.clearedLevels.includes(2) ? '<div class="text-yellow-400 mt-2">✓ クリア済</div>' : ''}
             </button>
-            
-            <button onclick="selectDifficulty(3)" 
+
+            <button onclick="selectDifficulty(3)"
               class="p-6 rounded-2xl border-2 border-purple-500 bg-purple-900/30 hover:bg-purple-800/50 transition-all hover:scale-105 ${gameState.clearedLevels.includes(3) ? 'ring-2 ring-yellow-400' : ''}">
               <div class="text-4xl mb-2">🔥</div>
               <div class="text-2xl font-bold text-purple-400">レベル3</div>
@@ -541,8 +529,8 @@
               <div class="text-xs text-gray-500 mt-1">8秒</div>
               ${gameState.clearedLevels.includes(3) ? '<div class="text-yellow-400 mt-2">✓ クリア済</div>' : ''}
             </button>
-            
-            <button onclick="${canPlayOre ? "selectDifficulty('ore')" : ''}" 
+
+            <button onclick="${canPlayOre ? "selectDifficulty('ore')" : ''}"
               class="p-6 rounded-2xl border-2 ${canPlayOre ? 'border-yellow-500 bg-yellow-900/30 hover:bg-yellow-800/50 hover:scale-105' : 'border-gray-600 bg-gray-900/30 opacity-50 cursor-not-allowed'} transition-all">
               <div class="text-4xl mb-2">${canPlayOre ? '👑' : '🔒'}</div>
               <div class="text-2xl font-bold ${canPlayOre ? 'text-yellow-400' : 'text-gray-500'}">レベル俺</div>
@@ -550,8 +538,8 @@
               <div class="text-xs text-gray-500 mt-1">${canPlayOre ? '7秒' : ''}</div>
             </button>
           </div>
-          
-          <button onclick="goToInventory()" 
+
+          <button onclick="goToInventory()"
             class="mt-6 px-8 py-3 text-lg rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
             🎒 武器一覧 (${gameState.weapons.length})
           </button>
@@ -564,12 +552,11 @@
       const enemyHpPercent = (gameState.enemyHP / gameState.enemyMaxHP) * 100;
       const isLowHP = hpPercent < 30;
       const isTimeWarning = gameState.timeRemaining <= 3;
-      
+
       container.innerHTML = `
         <div class="h-full w-full flex flex-row battle-screen">
-          <!-- Left Panel: Status & Enemy -->
+          <!-- Left Panel -->
           <div class="w-1/2 flex flex-col p-4">
-            <!-- Player Status -->
             <div class="bg-black/40 rounded-xl p-3 mb-3">
               <div class="flex justify-between items-center mb-2">
                 <span class="text-lg font-bold">${gameState.playerName}</span>
@@ -585,43 +572,39 @@
               ${gameState.equippedWeapon ? `
                 <div class="mt-2 text-sm text-yellow-400">
                   ${gameState.equippedWeapon.emoji} ${gameState.equippedWeapon.name}
-                </div>
-              ` : ''}
+                </div>` : ''}
             </div>
-            
-            <!-- Enemy Display -->
+
             <div class="flex-1 flex flex-col items-center justify-center">
               <div class="text-center mb-4">
                 <div class="enemy-sprite ${gameState.isBossBattle ? 'victory-glow' : 'float-anim'}" id="enemySprite">
                   ${gameState.currentEnemy.emoji}
                 </div>
-                <div class="text-2xl font-bold mt-2 ${gameState.isBossBattle ? 'text-red-400' : ''}">${gameState.currentEnemy.name}</div>
+                <div class="text-2xl font-bold mt-2 ${gameState.isBossBattle ? 'text-red-400' : ''}">
+                  ${gameState.currentEnemy.name}
+                </div>
                 ${gameState.isBossBattle ? '<div class="text-red-500 text-sm">【BOSS】</div>' : ''}
               </div>
-              
-              <!-- Enemy HP -->
+
               <div class="w-full max-w-xs">
                 <div class="hp-bar">
                   <div class="hp-fill enemy" style="width: ${enemyHpPercent}%"></div>
                 </div>
                 <div class="text-center text-sm mt-1">HP: ${gameState.enemyHP}/${gameState.enemyMaxHP}</div>
               </div>
-              
-              <!-- Battle Progress -->
+
               <div class="mt-4 text-gray-400 text-sm">
                 ${gameState.isBossBattle ? 'ボス戦！' : `撃破数: ${gameState.defeatedCount}/3`}
               </div>
             </div>
-            
-            <!-- Message -->
+
             <div class="bg-black/40 rounded-xl p-3 text-center min-h-[60px]" id="messageBox">
               ${gameState.message || '漢字の読み方を入力せよ！'}
             </div>
           </div>
-          
-          <!-- Right Panel: Question & Input -->
+
+          <!-- Right Panel -->
           <div class="w-1/2 flex flex-col p-4 bg-black/20">
-            <!-- Question -->
             <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 mb-3 text-center border-2 border-gray-700">
               <div class="flex justify-between items-center mb-2">
                 <div class="text-sm text-gray-400">この漢字の読み方は？</div>
@@ -636,29 +619,25 @@
                 <div class="time-bar-fill ${isTimeWarning ? 'warning' : ''}" style="width: ${(gameState.timeRemaining / gameState.timeLimit) * 100}%"></div>
               </div>
             </div>
-            
-            <!-- Input Display -->
+
             <div class="input-display flex items-center justify-between mb-3">
               <span id="inputText">${gameState.inputText || '　'}</span>
-              <button onclick="submitAnswer()" 
+              <button onclick="submitAnswer()"
                 class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold transition-all">
                 決定
               </button>
             </div>
-            
-            <!-- Flick Keyboard -->
+
             <div class="flex-1 flex flex-col justify-center">
-              ${flickLayout.map((row, ri) => `
+              ${flickLayout.map(row => `
                 <div class="flex justify-center gap-2 mb-2">
-                  ${row.map((key, ki) => `
-                    <div class="flick-key" 
+                  ${row.map(key => `
+                    <div class="flick-key"
                       data-key="${key}"
-                      onmousedown="startFlick(event, '${key}')"
-                      onmouseup="endFlick(event)"
-                      onmouseleave="endFlick(event)"
-                      ontouchstart="startFlick(event, '${key}')"
-                      ontouchend="endFlick(event)"
-                      ontouchmove="moveFlick(event)">
+                      onpointerdown="startFlick(event, '${key}')"
+                      onpointerup="endFlick(event)"
+                      onpointerleave="endFlick(event)"
+                      onpointermove="moveFlick(event)">
                       ${key}
                     </div>
                   `).join('')}
@@ -668,6 +647,9 @@
           </div>
         </div>
       `;
+
+      // 描画直後に入力欄同期（まれに空になる事故防止）
+      syncInputDisplay();
     }
 
     function renderWeaponDropScreen(container) {
@@ -675,7 +657,7 @@
       container.innerHTML = `
         <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
           <h2 class="text-3xl font-bold mb-6 text-yellow-400">🎉 武器を獲得！</h2>
-          
+
           <div class="weapon-card ${weapon.rank} w-80 mb-6">
             <div class="text-6xl mb-4">${weapon.emoji}</div>
             <div class="text-sm mb-2" style="color: ${getRankColor(weapon.rank)}">${getRankName(weapon.rank)}</div>
@@ -686,13 +668,13 @@
               ${weapon.def ? `<span class="text-blue-400">DEF +${weapon.def}</span>` : ''}
             </div>
           </div>
-          
+
           <div class="flex gap-4">
-            <button onclick="equipNewWeapon()" 
+            <button onclick="equipNewWeapon()"
               class="px-8 py-3 text-lg font-bold rounded-xl bg-yellow-600 hover:bg-yellow-500 transition-all">
               装備する
             </button>
-            <button onclick="continueAfterDrop()" 
+            <button onclick="continueAfterDrop()"
               class="px-8 py-3 text-lg font-bold rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
               持ち物に入れる
             </button>
@@ -708,9 +690,8 @@
           <h2 class="title-font text-5xl font-bold mb-4 text-yellow-400">勝利！</h2>
           <p class="text-2xl text-gray-300 mb-2">${gameState.playerName} はボスを倒した！</p>
           <p class="text-xl text-gray-400 mb-8">レベル${gameState.difficulty === 'ore' ? '俺' : gameState.difficulty} クリア！</p>
-          
           <div class="flex gap-4">
-            <button onclick="goToDifficulty()" 
+            <button onclick="goToDifficulty()"
               class="px-8 py-4 text-xl font-bold rounded-xl bg-yellow-600 hover:bg-yellow-500 transition-all">
               難易度選択へ
             </button>
@@ -725,13 +706,12 @@
           <div class="text-8xl mb-6">💀</div>
           <h2 class="title-font text-5xl font-bold mb-4 text-red-400">敗北...</h2>
           <p class="text-2xl text-gray-300 mb-8">${gameState.playerName} は力尽きた...</p>
-          
           <div class="flex gap-4">
-            <button onclick="retryBattle()" 
+            <button onclick="retryBattle()"
               class="px-8 py-4 text-xl font-bold rounded-xl bg-red-600 hover:bg-red-500 transition-all">
               再挑戦
             </button>
-            <button onclick="goToDifficulty()" 
+            <button onclick="goToDifficulty()"
               class="px-8 py-4 text-xl font-bold rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
               難易度選択へ
             </button>
@@ -745,12 +725,12 @@
         <div class="h-full w-full flex flex-col p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-3xl font-bold text-yellow-400">🎒 武器一覧</h2>
-            <button onclick="goToDifficulty()" 
+            <button onclick="goToDifficulty()"
               class="px-6 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
               戻る
             </button>
           </div>
-          
+
           ${gameState.equippedWeapon ? `
             <div class="mb-4 p-4 rounded-xl bg-yellow-900/30 border-2 border-yellow-500">
               <div class="text-sm text-yellow-400 mb-2">装備中</div>
@@ -759,14 +739,14 @@
                 <div>
                   <div class="font-bold">${gameState.equippedWeapon.name}</div>
                   <div class="text-sm text-gray-400">
-                    ${gameState.equippedWeapon.atk ? `ATK +${gameState.equippedWeapon.atk}` : ''} 
+                    ${gameState.equippedWeapon.atk ? `ATK +${gameState.equippedWeapon.atk}` : ''}
                     ${gameState.equippedWeapon.def ? `DEF +${gameState.equippedWeapon.def}` : ''}
                   </div>
                 </div>
               </div>
             </div>
           ` : '<div class="mb-4 p-4 rounded-xl bg-gray-800 text-gray-400">武器未装備</div>'}
-          
+
           <div class="flex-1 overflow-auto">
             ${gameState.weapons.length === 0 ? `
               <div class="text-center text-gray-500 py-8">
@@ -798,8 +778,7 @@
           <div class="text-6xl mb-4">⭐</div>
           <h2 class="text-3xl font-bold mb-4 text-cyan-400">ステージクリア！</h2>
           <p class="text-xl text-gray-300 mb-6">3体の敵を撃破！ボスが現れる...</p>
-          
-          <button onclick="startBossBattle()" 
+          <button onclick="startBossBattle()"
             class="px-8 py-4 text-xl font-bold rounded-xl bg-red-600 hover:bg-red-500 transition-all pulse-glow">
             ボスに挑む！
           </button>
@@ -807,11 +786,13 @@
       `;
     }
 
+    // =========================
     // Game Logic
+    // =========================
     function startGame() {
       const nameInput = document.getElementById('playerNameInput');
-      gameState.playerName = nameInput?.value || '勇者';
-      if (!gameState.playerName.trim()) gameState.playerName = '勇者';
+      gameState.playerName = (nameInput?.value || '勇者').trim();
+      if (!gameState.playerName) gameState.playerName = '勇者';
       gameState.screen = 'difficulty';
       render();
     }
@@ -822,8 +803,9 @@
       gameState.maxHP = 100;
       gameState.defeatedCount = 0;
       gameState.combo = 0;
-      gameState.isBossBattle = false;
       gameState.message = '';
+      gameState.droppedWeapon = null;
+
       spawnEnemy();
       getNewQuestion();
       gameState.screen = 'battle';
@@ -837,6 +819,7 @@
     }
 
     function goToInventory() {
+      stopTimer();
       gameState.screen = 'inventory';
       render();
     }
@@ -847,7 +830,7 @@
     }
 
     function equipNewWeapon() {
-      if (!gameState.weapons.find(w => w.id === gameState.droppedWeapon.id)) {
+      if (gameState.droppedWeapon && !gameState.weapons.find(w => w.id === gameState.droppedWeapon.id)) {
         gameState.weapons.push(gameState.droppedWeapon);
       }
       gameState.equippedWeapon = gameState.droppedWeapon;
@@ -855,16 +838,16 @@
     }
 
     function continueAfterDrop() {
-      if (!gameState.weapons.find(w => w.id === gameState.droppedWeapon.id)) {
+      if (gameState.droppedWeapon && !gameState.weapons.find(w => w.id === gameState.droppedWeapon.id)) {
         gameState.weapons.push(gameState.droppedWeapon);
       }
-      gameState.showWeaponDrop = false;
       gameState.droppedWeapon = null;
-      
-      if (gameState.defeatedCount >= 3 && !gameState.isBossBattle) {
+
+      // 次へ
+      if (!gameState.isBossBattle && gameState.defeatedCount >= 3) {
         gameState.screen = 'levelClear';
       } else {
-        spawnEnemy();
+        if (!gameState.isBossBattle) spawnEnemy();
         getNewQuestion();
         gameState.screen = 'battle';
       }
@@ -884,22 +867,27 @@
       gameState.defeatedCount = 0;
       gameState.combo = 0;
       gameState.isBossBattle = false;
+      gameState.message = '';
+      gameState.droppedWeapon = null;
+
       spawnEnemy();
       getNewQuestion();
       gameState.screen = 'battle';
       render();
     }
 
-    // Flick Input Logic
+    // =========================
+    // Flick Input (Pointer Events)
+    // =========================
     let flickStartPos = null;
     let currentFlickKey = null;
 
     function startFlick(event, key) {
       event.preventDefault();
-      const touch = event.touches ? event.touches[0] : event;
-      flickStartPos = { x: touch.clientX, y: touch.clientY };
+      const p = event;
+      flickStartPos = { x: p.clientX, y: p.clientY };
       currentFlickKey = key;
-      
+
       const keyEl = event.target.closest('.flick-key');
       if (keyEl) keyEl.classList.add('active');
     }
@@ -915,26 +903,22 @@
         currentFlickKey = null;
         return;
       }
-      
+
       event.preventDefault();
-      const touch = event.changedTouches ? event.changedTouches[0] : event;
-      const endPos = { x: touch.clientX, y: touch.clientY };
-      
+      const endPos = { x: event.clientX, y: event.clientY };
+
       const dx = endPos.x - flickStartPos.x;
       const dy = endPos.y - flickStartPos.y;
       const threshold = 30;
-      
+
       let direction = 'center';
       if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
-        if (Math.abs(dx) > Math.abs(dy)) {
-          direction = dx > 0 ? 'right' : 'left';
-        } else {
-          direction = dy > 0 ? 'down' : 'up';
-        }
+        if (Math.abs(dx) > Math.abs(dy)) direction = dx > 0 ? 'right' : 'left';
+        else direction = dy > 0 ? 'down' : 'up';
       }
-      
+
       processFlickInput(currentFlickKey, direction);
-      
+
       document.querySelectorAll('.flick-key').forEach(el => el.classList.remove('active'));
       flickStartPos = null;
       currentFlickKey = null;
@@ -957,47 +941,37 @@
           gameState.inputText += char;
         }
       }
-      
-      const inputDisplay = document.getElementById('inputText');
-      if (inputDisplay) {
-        inputDisplay.textContent = gameState.inputText || '　';
-      }
+      syncInputDisplay();
     }
 
     function applyDakuten() {
-      if (gameState.inputText.length === 0) return;
+      if (!gameState.inputText) return;
       const lastChar = gameState.inputText.slice(-1);
-      if (dakutenMap[lastChar]) {
-        gameState.inputText = gameState.inputText.slice(0, -1) + dakutenMap[lastChar];
-      }
+      if (dakutenMap[lastChar]) gameState.inputText = gameState.inputText.slice(0, -1) + dakutenMap[lastChar];
     }
 
     function applyHandakuten() {
-      if (gameState.inputText.length === 0) return;
+      if (!gameState.inputText) return;
       const lastChar = gameState.inputText.slice(-1);
-      if (handakutenMap[lastChar]) {
-        gameState.inputText = gameState.inputText.slice(0, -1) + handakutenMap[lastChar];
-      }
+      if (handakutenMap[lastChar]) gameState.inputText = gameState.inputText.slice(0, -1) + handakutenMap[lastChar];
     }
 
     function applySmall() {
-      if (gameState.inputText.length === 0) return;
+      if (!gameState.inputText) return;
       const lastChar = gameState.inputText.slice(-1);
-      if (smallMap[lastChar]) {
-        gameState.inputText = gameState.inputText.slice(0, -1) + smallMap[lastChar];
-      }
+      if (smallMap[lastChar]) gameState.inputText = gameState.inputText.slice(0, -1) + smallMap[lastChar];
     }
 
+    // =========================
+    // Answer / Battle
+    // =========================
     function submitAnswer() {
       stopTimer();
-      const answer = gameState.inputText.toLowerCase();
-      const correct = gameState.currentQuestion.reading.toLowerCase();
-      
-      if (answer === correct) {
-        handleCorrectAnswer();
-      } else {
-        handleWrongAnswer();
-      }
+      const answer = (gameState.inputText || '').toLowerCase();
+      const correct = (gameState.currentQuestion.reading || '').toLowerCase();
+
+      if (answer === correct) handleCorrectAnswer();
+      else handleWrongAnswer();
     }
 
     function handleTimeOut() {
@@ -1005,7 +979,7 @@
       const enemyDamage = gameState.currentEnemy.atk;
       gameState.playerHP -= enemyDamage;
       gameState.message = `⏰ 時間切れ... 正解は「${gameState.currentQuestion.reading}」 ${enemyDamage}ダメージを受けた！`;
-      
+
       if (gameState.playerHP <= 0) {
         gameState.playerHP = 0;
         gameState.screen = 'gameOver';
@@ -1020,19 +994,15 @@
       const damage = calculateDamage();
       gameState.enemyHP -= damage;
       gameState.message = `✨ 正解！ ${damage}ダメージ！ コンボ${gameState.combo}x`;
-      
+
       const enemySprite = document.getElementById('enemySprite');
       if (enemySprite) {
         enemySprite.classList.add('damage-flash');
         setTimeout(() => enemySprite.classList.remove('damage-flash'), 200);
       }
-      
-      if (gameState.enemyHP <= 0) {
-        handleEnemyDefeat();
-      } else {
-        getNewQuestion();
-        render();
-      }
+
+      if (gameState.enemyHP <= 0) handleEnemyDefeat();
+      else { getNewQuestion(); render(); }
     }
 
     function handleWrongAnswer() {
@@ -1040,7 +1010,7 @@
       const enemyDamage = gameState.currentEnemy.atk;
       gameState.playerHP -= enemyDamage;
       gameState.message = `❌ 不正解... 正解は「${gameState.currentQuestion.reading}」 ${enemyDamage}ダメージを受けた！`;
-      
+
       if (gameState.playerHP <= 0) {
         gameState.playerHP = 0;
         gameState.screen = 'gameOver';
@@ -1052,56 +1022,49 @@
 
     function handleEnemyDefeat() {
       gameState.totalDefeated++;
-      
+
+      // ボス撃破
       if (gameState.isBossBattle) {
         const diffKey = gameState.difficulty === 'ore' ? 'ore' : gameState.difficulty;
-        if (!gameState.clearedLevels.includes(diffKey)) {
-          gameState.clearedLevels.push(diffKey);
-        }
-        
+        if (!gameState.clearedLevels.includes(diffKey)) gameState.clearedLevels.push(diffKey);
+
         gameState.droppedWeapon = getRandomWeapon();
         gameState.screen = 'weaponDrop';
+        render();
+
+        // ※勝手にvictoryへ飛ばさない（ボタン操作で進む）
+        // weapon獲得 → 次へボタンでdifficultyへ戻る想定
+        // ただし「勝利画面は見せたい」ので、武器取得後に難易度へ戻す前に表示したい場合は調整可
         setTimeout(() => {
-          gameState.screen = 'victory';
-          render();
-        }, 3000);
-      } else {
-        gameState.defeatedCount++;
-        
-        if (Math.random() < 0.7) {
-          gameState.droppedWeapon = getRandomWeapon();
-          gameState.screen = 'weaponDrop';
-        } else if (gameState.defeatedCount >= 3) {
-          gameState.screen = 'levelClear';
-        } else {
-          spawnEnemy();
-          getNewQuestion();
-          gameState.message = '敵を倒した！次の敵が現れた...';
-        }
+          // 武器画面のままでも良いが、表示演出だけ軽く入れるならここでmessageなど変える
+        }, 10);
+
+        return;
       }
+
+      // 通常敵撃破
+      gameState.defeatedCount++;
+
+      if (Math.random() < 0.7) {
+        gameState.droppedWeapon = getRandomWeapon();
+        gameState.screen = 'weaponDrop';
+      } else if (gameState.defeatedCount >= 3) {
+        gameState.screen = 'levelClear';
+      } else {
+        spawnEnemy();
+        getNewQuestion();
+        gameState.message = '敵を倒した！次の敵が現れた...';
+        gameState.screen = 'battle';
+      }
+
       render();
     }
 
-    // Element SDK Integration
-    window.elementSdk.init({
-      defaultConfig,
-      onConfigChange: async (newConfig) => {
-        config = {...config, ...newConfig};
-        render();
-      },
-      mapToCapabilities: (cfg) => ({
-        recolorables: [],
-        borderables: [],
-        fontEditable: undefined,
-        fontSizeable: undefined
-      }),
-      mapToEditPanelValues: (cfg) => new Map([
-        ['game_title', cfg.game_title || defaultConfig.game_title]
-      ])
-    });
-
-    // Initialize
+    // =========================
+    // 初期化
+    // =========================
+    // ここで必ず最初の画面を描画
     render();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c8a155ad4c7d415',t:'MTc3MDIwNzIyMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
