@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="ja" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>漢字勇者 - 読みの試練</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&amp;family=Yuji+Syuku&amp;display=swap" rel="stylesheet">
+  <style>
+    body { box-sizing: border-box; }
+    * { font-family: 'Zen Maru Gothic', sans-serif; }
+    .title-font { font-family: 'Yuji Syuku', serif; }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(255,215,0,0.3); }
+      50% { box-shadow: 0 0 40px rgba(255,215,0,0.6); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    @keyframes damage-flash {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(2) saturate(0); }
+    }
+    @keyframes victory-glow {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes time-warning {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    .float-anim { animation: float 3s ease-in-out infinite; }
+    .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+    .shake { animation: shake 0.3s ease-in-out; }
+    .damage-flash { animation: damage-flash 0.2s ease-out; }
+    .victory-glow { animation: victory-glow 1s ease-in-out infinite; }
+    .time-warning { animation: time-warning 0.4s ease-in-out infinite; }
+    
+    .flick-key {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
+      border: 2px solid #4a4a6e;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      color: #fff;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .flick-key:active {
+      transform: scale(0.95);
+      background: linear-gradient(145deg, #3a3a5e, #2a2a4e);
+    }
+    .flick-key.active {
+      border-color: #ffd700;
+      box-shadow: 0 0 15px rgba(255,215,0,0.5);
+    }
+    
+    .hp-bar {
+      height: 24px;
+      background: #1a1a2e;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #4a4a6e;
+    }
+    .hp-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #22c55e, #4ade80);
+      transition: width 0.3s ease;
+    }
+    .hp-fill.low { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .hp-fill.enemy { background: linear-gradient(90deg, #dc2626, #ef4444); }
+    
+    .weapon-card {
+      background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
+      border: 2px solid;
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+    }
+    .weapon-card.common { border-color: #9ca3af; }
+    .weapon-card.uncommon { border-color: #22c55e; }
+    .weapon-card.rare { border-color: #3b82f6; }
+    .weapon-card.epic { border-color: #a855f7; }
+    .weapon-card.legendary { border-color: #ffd700; box-shadow: 0 0 30px rgba(255,215,0,0.3); }
+    
+    .battle-screen {
+      background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);
+    }
+    
+    .enemy-sprite {
+      font-size: 4rem;
+      filter: drop-shadow(0 0 20px rgba(255,0,0,0.3));
+    }
+    
+    .input-display {
+      min-height: 48px;
+      background: rgba(0,0,0,0.5);
+      border: 2px solid #4a4a6e;
+      border-radius: 12px;
+      padding: 8px 16px;
+      font-size: 1.5rem;
+      color: #fff;
+    }
+
+    .time-bar {
+      height: 8px;
+      background: #1a1a2e;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid #4a4a6e;
+    }
+    .time-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #22c55e, #4ade80);
+      transition: width 0.1s linear, background 0.1s linear;
+    }
+    .time-bar-fill.warning {
+      background: linear-gradient(90deg, #ef4444, #f87171);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full bg-gray-900 text-white overflow-hidden">
+  <div id="app" class="h-full w-full"></div>
+  <script>
+    // Game State
+    const gameState = {
+      screen: 'title',
+      playerName: '',
+      difficulty: null,
+      playerHP: 100,
+      maxHP: 100,
+      playerATK: 10,
+      playerDEF: 5,
+      weapons: [],
+      equippedWeapon: null,
+      currentEnemy: null,
+      enemyHP: 0,
+      enemyMaxHP: 0,
+      currentQuestion: null,
+      inputText: '',
+      defeatedCount: 0,
+      totalDefeated: 0,
+      clearedLevels: [],
+      canPlayLevelOre: false,
+      combo: 0,
+      message: '',
+      showWeaponDrop: false,
+      droppedWeapon: null,
+      isBossBattle: false,
+      timeLimit: 10,
+      timeRemaining: 10,
+      timerInterval: null
+    };
+
+    // Questions Database
+    const questions = {
+      1: [
+        {kanji: '剣', reading: 'つるぎ'}, {kanji: '鉄', reading: 'てつ'},
+        {kanji: '月曜日', reading: 'げつようび'}, {kanji: '古代', reading: 'こだい'},
+        {kanji: '文字', reading: 'もじ'}, {kanji: '力', reading: 'ちから'},
+        {kanji: '海', reading: 'うみ'}, {kanji: '勇ましい', reading: 'いさましい'},
+        {kanji: '姫', reading: 'ひめ'}, {kanji: '盾', reading: 'たて'},
+        {kanji: '神', reading: 'かみ'}, {kanji: '赤ん坊', reading: 'あかんぼう'},
+        {kanji: '双子', reading: 'ふたご'}, {kanji: '宮田', reading: 'みやた'}
+      ],
+      2: [
+        {kanji: '平和', reading: 'へいわ'}, {kanji: '勇者', reading: 'ゆうしゃ'},
+        {kanji: '島', reading: 'しま'}, {kanji: '金融', reading: 'きんゆう'},
+        {kanji: '終焉', reading: 'しゅうえん'}, {kanji: '過大評価', reading: 'かだいひょうか'},
+        {kanji: '魔王', reading: 'まおう'}, {kanji: '城', reading: 'しろ'},
+        {kanji: '龍', reading: 'りゅう'}, {kanji: '剛', reading: 'ごう'},
+        {kanji: '摩天楼', reading: 'まてんろう'}, {kanji: '狼', reading: 'おおかみ'},
+        {kanji: '大砲', reading: 'たいほう'}, {kanji: '兎', reading: 'うさぎ'}
+      ],
+      3: [
+        {kanji: '英吉利', reading: 'いぎりす'}, {kanji: '亜米利加', reading: 'あめりか'},
+        {kanji: '印度', reading: 'いんど'}, {kanji: '葡萄牙', reading: 'ぽるとがる'},
+        {kanji: '知床', reading: 'しれとこ'}, {kanji: '奄美', reading: 'あまみ'},
+        {kanji: '檸檬', reading: 'れもん'}, {kanji: '蝶', reading: 'ちょう'},
+        {kanji: '弔', reading: 'とむらい'}, {kanji: '王騎', reading: 'おうき'},
+        {kanji: '鎌倉幕府', reading: 'かまくらばくふ'}, {kanji: '源頼朝', reading: 'みなもとのよりとも'},
+        {kanji: '柴田勝家', reading: 'しばたかついえ'}
+      ],
+      ore: [
+        {kanji: '蜃', reading: 'はまぐり'}, {kanji: '赤保留古', reading: 'あかぷるこ'},
+        {kanji: '扁桃', reading: 'あーもんど'}, {kanji: '改羅', reading: 'かいろ'},
+        {kanji: '片口鰯', reading: 'かたくちいわし'}, {kanji: '加特力', reading: 'かとりっく'},
+        {kanji: '兜蝦', reading: 'かぶとえび'}, {kanji: '鯣烏賊', reading: 'するめいか'},
+        {kanji: '雪隠金亀子', reading: 'せんちこがね'}, {kanji: '曹達', reading: 'そーだ'},
+        {kanji: '啄木', reading: 'たくぼく'}, {kanji: '太刀魚', reading: 'たちうお'},
+        {kanji: '魚蝨', reading: 'ちょう'}, {kanji: '仲人', reading: 'なこうど'},
+        {kanji: '韮', reading: 'にら'}, {kanji: '蚤', reading: 'のみ'},
+        {kanji: '獏', reading: 'ばく'}, {kanji: '洋琴', reading: 'ぴあの'},
+        {kanji: '船虫', reading: 'ふなむし'}
+      ]
+    };
+
+    // Weapons Database with Ranks
+    const weapons = [
+      // Common (40%)
+      {id: 1, name: '黒鉄の筆', desc: '基本の武器。墨の跡で敵を切り裂く。', rank: 'common', atk: 5, emoji: '🖌️'},
+      {id: 2, name: '一画の短剣', desc: '鋭い一振りの斬撃を繰り出す。', rank: 'common', atk: 7, emoji: '🗡️'},
+      {id: 3, name: '連綿の鎖', desc: '文字を繋げるように敵を拘束する。', rank: 'common', atk: 4, def: 3, emoji: '⛓️'},
+      {id: 4, name: '跳ね返しの硯', desc: '敵の物理攻撃を一定確率で弾き返す。', rank: 'common', def: 8, emoji: '📦'},
+      {id: 5, name: '千字文の長槍', desc: 'リーチが長く、遠くの敵を突く。', rank: 'common', atk: 8, emoji: '🔱'},
+      // Uncommon (30%)
+      {id: 6, name: '言霊の弓', desc: '正解した漢字のエネルギーを矢にして放つ。', rank: 'uncommon', atk: 12, emoji: '🏹'},
+      {id: 7, name: '破邪の朱印', desc: '敵にスタンプを押し、呪いを解除する。', rank: 'uncommon', atk: 10, special: 'cleanse', emoji: '🔴'},
+      {id: 8, name: '難読の盾', desc: '複雑な画数で構成された強固な盾。', rank: 'uncommon', def: 15, emoji: '🛡️'},
+      {id: 9, name: '音読みの双剣', desc: '素早い二連撃が可能。', rank: 'uncommon', atk: 14, emoji: '⚔️'},
+      {id: 10, name: '訓読みの大槌', desc: '重い一撃で敵を気絶させる。', rank: 'uncommon', atk: 18, emoji: '🔨'},
+      {id: 11, name: '墨風の扇', desc: '墨の霧を巻き起こし、敵の命中率を下げる。', rank: 'uncommon', atk: 8, special: 'blind', emoji: '🪭'},
+      // Rare (18%)
+      {id: 12, name: '永字八法の剣', desc: '基本の8動作を極めたバランスの良い剣。', rank: 'rare', atk: 15, def: 10, emoji: '🗡️'},
+      {id: 13, name: '部首の籠手', desc: '属性攻撃を強化。', rank: 'rare', atk: 20, emoji: '🥊'},
+      {id: 14, name: '草書の流刀', desc: '受け流しに特化した、しなやかな刀。', rank: 'rare', atk: 16, def: 12, emoji: '🔪'},
+      {id: 15, name: '万葉の杖', desc: '古代の言葉を操り、魔法攻撃を行う。', rank: 'rare', atk: 22, emoji: '🪄'},
+      {id: 16, name: '画数ブーストの指輪', desc: '漢字の画数が多いほど攻撃力が上がる。', rank: 'rare', atk: 12, special: 'strokeBoost', emoji: '💍'},
+      {id: 17, name: '象形文字のメダル', desc: '自然の力を借りる。', rank: 'rare', atk: 14, def: 8, emoji: '🏅'},
+      {id: 18, name: '書き順のタリスマン', desc: 'コンボが繋がりやすくなる。', rank: 'rare', atk: 10, special: 'combo', emoji: '📿'},
+      // Epic (10%)
+      {id: 19, name: '真贋の眼鏡', desc: '敵の弱点漢字を見抜く。', rank: 'epic', atk: 18, special: 'hint', emoji: '👓'},
+      {id: 20, name: '黄金の文鎮', desc: '敵の動きを完全に封じる重石。', rank: 'epic', atk: 25, special: 'stun', emoji: '🪙'},
+      {id: 21, name: '龍文字の篭手', desc: '龍の如き力強い一撃を繰り出す。', rank: 'epic', atk: 30, emoji: '🐉'},
+      {id: 22, name: '四字熟語の陣羽織', desc: '四連撃を出すと防御力が大幅アップ。', rank: 'epic', def: 20, special: 'comboDefense', emoji: '🥋'},
+      {id: 23, name: '六書のクロスボウ', desc: '漢字の構成原理を利用した多角攻撃。', rank: 'epic', atk: 28, emoji: '🎯'},
+      {id: 24, name: '漢籍の魔導書', desc: '難しい読みほど高火力の魔法が出る。', rank: 'epic', atk: 24, special: 'difficultyBoost', emoji: '📕'},
+      // Legendary (2%)
+      {id: 25, name: '点画のレイピア', desc: '敵の隙をピンポイントで突く。', rank: 'legendary', atk: 35, emoji: '🤺'},
+      {id: 26, name: '蒼天の半紙', desc: '自身のステータス異常を浄化する。', rank: 'legendary', def: 25, special: 'purify', emoji: '📜'},
+      {id: 27, name: '行書の薙刀', desc: '流れに沿った広範囲攻撃。', rank: 'legendary', atk: 38, emoji: '🌀'},
+      {id: 28, name: '楷書の重鎧', desc: '隙がない完璧な防御を誇る。', rank: 'legendary', def: 40, emoji: '🛡️'},
+      {id: 29, name: '異体字のブーメラン', desc: '予測不能な動きで敵を翻弄する。', rank: 'legendary', atk: 32, special: 'doubleHit', emoji: '🪃'},
+      {id: 30, name: '究極の筆：天啓', desc: 'すべての漢字を統べる伝説の筆。', rank: 'legendary', atk: 50, def: 20, emoji: '✨'}
+    ];
+
+    // Enemies
+    const enemies = {
+      1: [
+        {name: '墨汁スライム', emoji: '💧', hp: 30, atk: 5},
+        {name: '漢字ゴブリン', emoji: '👺', hp: 40, atk: 8},
+        {name: '文字コウモリ', emoji: '🦇', hp: 25, atk: 10}
+      ],
+      2: [
+        {name: '書道オーガ', emoji: '👹', hp: 60, atk: 12},
+        {name: '筆ドラゴン', emoji: '🐲', hp: 80, atk: 15},
+        {name: '硯ゴーレム', emoji: '🗿', hp: 100, atk: 10}
+      ],
+      3: [
+        {name: '難読の魔術師', emoji: '🧙', hp: 100, atk: 18},
+        {name: '古文書の亡霊', emoji: '👻', hp: 80, atk: 22},
+        {name: '漢籍の守護者', emoji: '🦾', hp: 120, atk: 16}
+      ],
+      ore: [
+        {name: '究極読師', emoji: '👁️', hp: 150, atk: 25},
+        {name: '言霊の化身', emoji: '🔮', hp: 130, atk: 30},
+        {name: '文字神の使徒', emoji: '⚡', hp: 180, atk: 20}
+      ]
+    };
+
+    const bosses = {
+      1: {name: '墨染めの大蛇', emoji: '🐍', hp: 100, atk: 15},
+      2: {name: '書道王オロチ', emoji: '🐉', hp: 180, atk: 22},
+      3: {name: '漢字帝ヤマタ', emoji: '👑', hp: 280, atk: 30},
+      ore: {name: '【究極】文字神カンジ', emoji: '🌟', hp: 500, atk: 40}
+    };
+
+    // Flick Input Layout
+    const flickLayout = [
+      ['あ', 'か', 'さ', 'た', 'な'],
+      ['は', 'ま', 'や', 'ら', 'わ'],
+      ['゛', '゜', '小', 'ー', '⌫']
+    ];
+
+    const flickMap = {
+      'あ': {center: 'あ', up: 'う', down: 'お', left: 'い', right: 'え'},
+      'か': {center: 'か', up: 'く', down: 'こ', left: 'き', right: 'け'},
+      'さ': {center: 'さ', up: 'す', down: 'そ', left: 'し', right: 'せ'},
+      'た': {center: 'た', up: 'つ', down: 'と', left: 'ち', right: 'て'},
+      'な': {center: 'な', up: 'ぬ', down: 'の', left: 'に', right: 'ね'},
+      'は': {center: 'は', up: 'ふ', down: 'ほ', left: 'ひ', right: 'へ'},
+      'ま': {center: 'ま', up: 'む', down: 'も', left: 'み', right: 'め'},
+      'や': {center: 'や', up: 'ゆ', down: 'よ', left: '（', right: '）'},
+      'ら': {center: 'ら', up: 'る', down: 'ろ', left: 'り', right: 'れ'},
+      'わ': {center: 'わ', up: 'ん', down: 'ー', left: 'を', right: '〜'}
+    };
+
+    const dakutenMap = {
+      'か': 'が', 'き': 'ぎ', 'く': 'ぐ', 'け': 'げ', 'こ': 'ご',
+      'さ': 'ざ', 'し': 'じ', 'す': 'ず', 'せ': 'ぜ', 'そ': 'ぞ',
+      'た': 'だ', 'ち': 'ぢ', 'つ': 'づ', 'て': 'で', 'と': 'ど',
+      'は': 'ば', 'ひ': 'び', 'ふ': 'ぶ', 'へ': 'べ', 'ほ': 'ぼ',
+      'う': 'ゔ'
+    };
+
+    const handakutenMap = {
+      'は': 'ぱ', 'ひ': 'ぴ', 'ふ': 'ぷ', 'へ': 'ぺ', 'ほ': 'ぽ'
+    };
+
+    const smallMap = {
+      'あ': 'ぁ', 'い': 'ぃ', 'う': 'ぅ', 'え': 'ぇ', 'お': 'ぉ',
+      'や': 'ゃ', 'ゆ': 'ゅ', 'よ': 'ょ', 'つ': 'っ'
+    };
+
+    // Helper Functions
+    function getRandomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function getRandomWeapon() {
+      const roll = Math.random() * 100;
+      let rank;
+      if (roll < 40) rank = 'common';
+      else if (roll < 70) rank = 'uncommon';
+      else if (roll < 88) rank = 'rare';
+      else if (roll < 98) rank = 'epic';
+      else rank = 'legendary';
+      
+      const rankWeapons = weapons.filter(w => w.rank === rank);
+      return getRandomItem(rankWeapons);
+    }
+
+    function getRankColor(rank) {
+      const colors = {
+        common: '#9ca3af',
+        uncommon: '#22c55e',
+        rare: '#3b82f6',
+        epic: '#a855f7',
+        legendary: '#ffd700'
+      };
+      return colors[rank] || '#9ca3af';
+    }
+
+    function getRankName(rank) {
+      const names = {
+        common: 'コモン',
+        uncommon: 'アンコモン',
+        rare: 'レア',
+        epic: 'エピック',
+        legendary: '伝説'
+      };
+      return names[rank] || 'コモン';
+    }
+
+    function calculateDamage() {
+      let baseDamage = gameState.playerATK;
+      if (gameState.equippedWeapon) {
+        baseDamage += gameState.equippedWeapon.atk || 0;
+      }
+      baseDamage += gameState.combo * 2;
+      return baseDamage;
+    }
+
+    function getTimeLimitByDifficulty(difficulty) {
+      const timeLimits = {
+        1: 10,
+        2: 9,
+        3: 8,
+        ore: 7
+      };
+      return timeLimits[difficulty] || 10;
+    }
+
+    function spawnEnemy() {
+      const diffKey = gameState.difficulty === 'ore' ? 'ore' : gameState.difficulty;
+      const enemyList = enemies[diffKey];
+      const enemy = {...getRandomItem(enemyList)};
+      gameState.currentEnemy = enemy;
+      gameState.enemyHP = enemy.hp;
+      gameState.enemyMaxHP = enemy.hp;
+    }
+
+    function spawnBoss() {
+      const diffKey = gameState.difficulty === 'ore' ? 'ore' : gameState.difficulty;
+      const boss = {...bosses[diffKey]};
+      gameState.currentEnemy = boss;
+      gameState.enemyHP = boss.hp;
+      gameState.enemyMaxHP = boss.hp;
+      gameState.isBossBattle = true;
+    }
+
+    function getNewQuestion() {
+      const diffKey = gameState.difficulty === 'ore' ? 'ore' : gameState.difficulty;
+      const questionList = questions[diffKey];
+      gameState.currentQuestion = getRandomItem(questionList);
+      gameState.inputText = '';
+      startTimer();
+    }
+
+    function startTimer() {
+      if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+      
+      gameState.timeLimit = getTimeLimitByDifficulty(gameState.difficulty);
+      gameState.timeRemaining = gameState.timeLimit;
+      
+      gameState.timerInterval = setInterval(() => {
+        gameState.timeRemaining--;
+        render();
+        
+        if (gameState.timeRemaining <= 0) {
+          clearInterval(gameState.timerInterval);
+          handleTimeOut();
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+        gameState.timerInterval = null;
+      }
+    }
+
+    // Config for Element SDK
+    const defaultConfig = {
+      game_title: '漢字勇者',
+      primary_color: '#1e1e3f',
+      accent_color: '#ffd700',
+      text_color: '#ffffff'
+    };
+
+    let config = {...defaultConfig};
+
+    // Render Functions
+    function render() {
+      const app = document.getElementById('app');
+      
+      switch(gameState.screen) {
+        case 'title':
+          renderTitleScreen(app);
+          break;
+        case 'difficulty':
+          renderDifficultyScreen(app);
+          break;
+        case 'battle':
+          renderBattleScreen(app);
+          break;
+        case 'victory':
+          renderVictoryScreen(app);
+          break;
+        case 'gameOver':
+          renderGameOverScreen(app);
+          break;
+        case 'weaponDrop':
+          renderWeaponDropScreen(app);
+          break;
+        case 'inventory':
+          renderInventoryScreen(app);
+          break;
+        case 'levelClear':
+          renderLevelClearScreen(app);
+          break;
+      }
+    }
+
+    function renderTitleScreen(container) {
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
+          <div class="text-center mb-8">
+            <h1 class="title-font text-6xl font-bold mb-4 float-anim" style="color: #ffd700; text-shadow: 0 0 30px rgba(255,215,0,0.5);">
+              ${config.game_title || defaultConfig.game_title}
+            </h1>
+            <p class="text-2xl text-gray-300">〜 読みの試練 〜</p>
+          </div>
+          
+          <div class="mb-8">
+            <div class="text-8xl float-anim" style="animation-delay: 0.5s;">⚔️📖</div>
+          </div>
+          
+          <div class="w-full max-w-md mb-6">
+            <label class="block text-lg mb-2 text-gray-300">勇者の名前を入力</label>
+            <input type="text" id="playerNameInput" 
+              class="w-full px-4 py-3 text-xl rounded-xl bg-gray-800 border-2 border-gray-600 focus:border-yellow-500 focus:outline-none text-white"
+              placeholder="名前を入力..."
+              value="${gameState.playerName}"
+            >
+          </div>
+          
+          <button onclick="startGame()" 
+            class="px-12 py-4 text-2xl font-bold rounded-xl pulse-glow transition-transform hover:scale-105"
+            style="background: linear-gradient(145deg, #ffd700, #ffaa00); color: #1a1a2e;">
+            冒険を始める
+          </button>
+          
+          <p class="mt-8 text-gray-500 text-sm">漢字の読み方を答えて敵を倒そう！</p>
+        </div>
+      `;
+    }
+
+    function renderDifficultyScreen(container) {
+      const canPlayOre = gameState.clearedLevels.includes(1) && 
+                         gameState.clearedLevels.includes(2) && 
+                         gameState.clearedLevels.includes(3);
+      
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
+          <h2 class="title-font text-4xl font-bold mb-2" style="color: #ffd700;">難易度を選択</h2>
+          <p class="text-xl text-gray-400 mb-6">勇者 ${gameState.playerName} よ、挑戦する試練を選べ</p>
+          
+          <div class="grid grid-cols-4 gap-4 w-full max-w-4xl">
+            <button onclick="selectDifficulty(1)" 
+              class="p-6 rounded-2xl border-2 border-green-500 bg-green-900/30 hover:bg-green-800/50 transition-all hover:scale-105 ${gameState.clearedLevels.includes(1) ? 'ring-2 ring-yellow-400' : ''}">
+              <div class="text-4xl mb-2">🌱</div>
+              <div class="text-2xl font-bold text-green-400">レベル1</div>
+              <div class="text-sm text-gray-400 mt-2">基本の漢字</div>
+              <div class="text-xs text-gray-500 mt-1">10秒</div>
+              ${gameState.clearedLevels.includes(1) ? '<div class="text-yellow-400 mt-2">✓ クリア済</div>' : ''}
+            </button>
+            
+            <button onclick="selectDifficulty(2)" 
+              class="p-6 rounded-2xl border-2 border-blue-500 bg-blue-900/30 hover:bg-blue-800/50 transition-all hover:scale-105 ${gameState.clearedLevels.includes(2) ? 'ring-2 ring-yellow-400' : ''}">
+              <div class="text-4xl mb-2">⚔️</div>
+              <div class="text-2xl font-bold text-blue-400">レベル2</div>
+              <div class="text-sm text-gray-400 mt-2">中級の漢字</div>
+              <div class="text-xs text-gray-500 mt-1">9秒</div>
+              ${gameState.clearedLevels.includes(2) ? '<div class="text-yellow-400 mt-2">✓ クリア済</div>' : ''}
+            </button>
+            
+            <button onclick="selectDifficulty(3)" 
+              class="p-6 rounded-2xl border-2 border-purple-500 bg-purple-900/30 hover:bg-purple-800/50 transition-all hover:scale-105 ${gameState.clearedLevels.includes(3) ? 'ring-2 ring-yellow-400' : ''}">
+              <div class="text-4xl mb-2">🔥</div>
+              <div class="text-2xl font-bold text-purple-400">レベル3</div>
+              <div class="text-sm text-gray-400 mt-2">難読漢字</div>
+              <div class="text-xs text-gray-500 mt-1">8秒</div>
+              ${gameState.clearedLevels.includes(3) ? '<div class="text-yellow-400 mt-2">✓ クリア済</div>' : ''}
+            </button>
+            
+            <button onclick="${canPlayOre ? "selectDifficulty('ore')" : ''}" 
+              class="p-6 rounded-2xl border-2 ${canPlayOre ? 'border-yellow-500 bg-yellow-900/30 hover:bg-yellow-800/50 hover:scale-105' : 'border-gray-600 bg-gray-900/30 opacity-50 cursor-not-allowed'} transition-all">
+              <div class="text-4xl mb-2">${canPlayOre ? '👑' : '🔒'}</div>
+              <div class="text-2xl font-bold ${canPlayOre ? 'text-yellow-400' : 'text-gray-500'}">レベル俺</div>
+              <div class="text-sm text-gray-400 mt-2">${canPlayOre ? '究極の試練' : 'Lv1-3クリアで解放'}</div>
+              <div class="text-xs text-gray-500 mt-1">${canPlayOre ? '7秒' : ''}</div>
+            </button>
+          </div>
+          
+          <button onclick="goToInventory()" 
+            class="mt-6 px-8 py-3 text-lg rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
+            🎒 武器一覧 (${gameState.weapons.length})
+          </button>
+        </div>
+      `;
+    }
+
+    function renderBattleScreen(container) {
+      const hpPercent = (gameState.playerHP / gameState.maxHP) * 100;
+      const enemyHpPercent = (gameState.enemyHP / gameState.enemyMaxHP) * 100;
+      const isLowHP = hpPercent < 30;
+      const isTimeWarning = gameState.timeRemaining <= 3;
+      
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-row battle-screen">
+          <!-- Left Panel: Status & Enemy -->
+          <div class="w-1/2 flex flex-col p-4">
+            <!-- Player Status -->
+            <div class="bg-black/40 rounded-xl p-3 mb-3">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-lg font-bold">${gameState.playerName}</span>
+                <span class="text-sm text-gray-400">コンボ: ${gameState.combo}x</span>
+              </div>
+              <div class="hp-bar">
+                <div class="hp-fill ${isLowHP ? 'low' : ''}" style="width: ${hpPercent}%"></div>
+              </div>
+              <div class="flex justify-between text-sm mt-1">
+                <span>HP: ${gameState.playerHP}/${gameState.maxHP}</span>
+                <span>ATK: ${calculateDamage()}</span>
+              </div>
+              ${gameState.equippedWeapon ? `
+                <div class="mt-2 text-sm text-yellow-400">
+                  ${gameState.equippedWeapon.emoji} ${gameState.equippedWeapon.name}
+                </div>
+              ` : ''}
+            </div>
+            
+            <!-- Enemy Display -->
+            <div class="flex-1 flex flex-col items-center justify-center">
+              <div class="text-center mb-4">
+                <div class="enemy-sprite ${gameState.isBossBattle ? 'victory-glow' : 'float-anim'}" id="enemySprite">
+                  ${gameState.currentEnemy.emoji}
+                </div>
+                <div class="text-2xl font-bold mt-2 ${gameState.isBossBattle ? 'text-red-400' : ''}">${gameState.currentEnemy.name}</div>
+                ${gameState.isBossBattle ? '<div class="text-red-500 text-sm">【BOSS】</div>' : ''}
+              </div>
+              
+              <!-- Enemy HP -->
+              <div class="w-full max-w-xs">
+                <div class="hp-bar">
+                  <div class="hp-fill enemy" style="width: ${enemyHpPercent}%"></div>
+                </div>
+                <div class="text-center text-sm mt-1">HP: ${gameState.enemyHP}/${gameState.enemyMaxHP}</div>
+              </div>
+              
+              <!-- Battle Progress -->
+              <div class="mt-4 text-gray-400 text-sm">
+                ${gameState.isBossBattle ? 'ボス戦！' : `撃破数: ${gameState.defeatedCount}/3`}
+              </div>
+            </div>
+            
+            <!-- Message -->
+            <div class="bg-black/40 rounded-xl p-3 text-center min-h-[60px]" id="messageBox">
+              ${gameState.message || '漢字の読み方を入力せよ！'}
+            </div>
+          </div>
+          
+          <!-- Right Panel: Question & Input -->
+          <div class="w-1/2 flex flex-col p-4 bg-black/20">
+            <!-- Question -->
+            <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 mb-3 text-center border-2 border-gray-700">
+              <div class="flex justify-between items-center mb-2">
+                <div class="text-sm text-gray-400">この漢字の読み方は？</div>
+                <div class="text-sm font-bold ${isTimeWarning ? 'text-red-500 time-warning' : 'text-yellow-400'}">
+                  ⏱️ ${gameState.timeRemaining}秒
+                </div>
+              </div>
+              <div class="title-font text-5xl font-bold" style="color: #ffd700;">
+                ${gameState.currentQuestion.kanji}
+              </div>
+              <div class="time-bar mt-4">
+                <div class="time-bar-fill ${isTimeWarning ? 'warning' : ''}" style="width: ${(gameState.timeRemaining / gameState.timeLimit) * 100}%"></div>
+              </div>
+            </div>
+            
+            <!-- Input Display -->
+            <div class="input-display flex items-center justify-between mb-3">
+              <span id="inputText">${gameState.inputText || '　'}</span>
+              <button onclick="submitAnswer()" 
+                class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold transition-all">
+                決定
+              </button>
+            </div>
+            
+            <!-- Flick Keyboard -->
+            <div class="flex-1 flex flex-col justify-center">
+              ${flickLayout.map((row, ri) => `
+                <div class="flex justify-center gap-2 mb-2">
+                  ${row.map((key, ki) => `
+                    <div class="flick-key" 
+                      data-key="${key}"
+                      onmousedown="startFlick(event, '${key}')"
+                      onmouseup="endFlick(event)"
+                      onmouseleave="endFlick(event)"
+                      ontouchstart="startFlick(event, '${key}')"
+                      ontouchend="endFlick(event)"
+                      ontouchmove="moveFlick(event)">
+                      ${key}
+                    </div>
+                  `).join('')}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderWeaponDropScreen(container) {
+      const weapon = gameState.droppedWeapon;
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
+          <h2 class="text-3xl font-bold mb-6 text-yellow-400">🎉 武器を獲得！</h2>
+          
+          <div class="weapon-card ${weapon.rank} w-80 mb-6">
+            <div class="text-6xl mb-4">${weapon.emoji}</div>
+            <div class="text-sm mb-2" style="color: ${getRankColor(weapon.rank)}">${getRankName(weapon.rank)}</div>
+            <div class="text-2xl font-bold mb-2">${weapon.name}</div>
+            <div class="text-gray-400 text-sm mb-4">${weapon.desc}</div>
+            <div class="flex justify-center gap-4 text-sm">
+              ${weapon.atk ? `<span class="text-red-400">ATK +${weapon.atk}</span>` : ''}
+              ${weapon.def ? `<span class="text-blue-400">DEF +${weapon.def}</span>` : ''}
+            </div>
+          </div>
+          
+          <div class="flex gap-4">
+            <button onclick="equipNewWeapon()" 
+              class="px-8 py-3 text-lg font-bold rounded-xl bg-yellow-600 hover:bg-yellow-500 transition-all">
+              装備する
+            </button>
+            <button onclick="continueAfterDrop()" 
+              class="px-8 py-3 text-lg font-bold rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
+              持ち物に入れる
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderVictoryScreen(container) {
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e3f1e 0%, #0a1a0a 100%);">
+          <div class="text-8xl mb-6 victory-glow">🏆</div>
+          <h2 class="title-font text-5xl font-bold mb-4 text-yellow-400">勝利！</h2>
+          <p class="text-2xl text-gray-300 mb-2">${gameState.playerName} はボスを倒した！</p>
+          <p class="text-xl text-gray-400 mb-8">レベル${gameState.difficulty === 'ore' ? '俺' : gameState.difficulty} クリア！</p>
+          
+          <div class="flex gap-4">
+            <button onclick="goToDifficulty()" 
+              class="px-8 py-4 text-xl font-bold rounded-xl bg-yellow-600 hover:bg-yellow-500 transition-all">
+              難易度選択へ
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderGameOverScreen(container) {
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #3f1e1e 0%, #1a0a0a 100%);">
+          <div class="text-8xl mb-6">💀</div>
+          <h2 class="title-font text-5xl font-bold mb-4 text-red-400">敗北...</h2>
+          <p class="text-2xl text-gray-300 mb-8">${gameState.playerName} は力尽きた...</p>
+          
+          <div class="flex gap-4">
+            <button onclick="retryBattle()" 
+              class="px-8 py-4 text-xl font-bold rounded-xl bg-red-600 hover:bg-red-500 transition-all">
+              再挑戦
+            </button>
+            <button onclick="goToDifficulty()" 
+              class="px-8 py-4 text-xl font-bold rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
+              難易度選択へ
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderInventoryScreen(container) {
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-3xl font-bold text-yellow-400">🎒 武器一覧</h2>
+            <button onclick="goToDifficulty()" 
+              class="px-6 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
+              戻る
+            </button>
+          </div>
+          
+          ${gameState.equippedWeapon ? `
+            <div class="mb-4 p-4 rounded-xl bg-yellow-900/30 border-2 border-yellow-500">
+              <div class="text-sm text-yellow-400 mb-2">装備中</div>
+              <div class="flex items-center gap-4">
+                <span class="text-4xl">${gameState.equippedWeapon.emoji}</span>
+                <div>
+                  <div class="font-bold">${gameState.equippedWeapon.name}</div>
+                  <div class="text-sm text-gray-400">
+                    ${gameState.equippedWeapon.atk ? `ATK +${gameState.equippedWeapon.atk}` : ''} 
+                    ${gameState.equippedWeapon.def ? `DEF +${gameState.equippedWeapon.def}` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ` : '<div class="mb-4 p-4 rounded-xl bg-gray-800 text-gray-400">武器未装備</div>'}
+          
+          <div class="flex-1 overflow-auto">
+            ${gameState.weapons.length === 0 ? `
+              <div class="text-center text-gray-500 py-8">
+                まだ武器を持っていません。<br>敵を倒して武器を集めよう！
+              </div>
+            ` : `
+              <div class="grid grid-cols-5 gap-3">
+                ${gameState.weapons.map((w, i) => `
+                  <div class="weapon-card ${w.rank} cursor-pointer hover:scale-105 transition-all ${gameState.equippedWeapon?.id === w.id ? 'ring-2 ring-yellow-400' : ''}"
+                    onclick="equipWeapon(${i})">
+                    <div class="text-3xl mb-2">${w.emoji}</div>
+                    <div class="text-xs mb-1" style="color: ${getRankColor(w.rank)}">${getRankName(w.rank)}</div>
+                    <div class="text-sm font-bold truncate">${w.name}</div>
+                    <div class="text-xs text-gray-400 mt-1">
+                      ${w.atk ? `ATK+${w.atk}` : ''} ${w.def ? `DEF+${w.def}` : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLevelClearScreen(container) {
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e3f3f 0%, #0a1a1a 100%);">
+          <div class="text-6xl mb-4">⭐</div>
+          <h2 class="text-3xl font-bold mb-4 text-cyan-400">ステージクリア！</h2>
+          <p class="text-xl text-gray-300 mb-6">3体の敵を撃破！ボスが現れる...</p>
+          
+          <button onclick="startBossBattle()" 
+            class="px-8 py-4 text-xl font-bold rounded-xl bg-red-600 hover:bg-red-500 transition-all pulse-glow">
+            ボスに挑む！
+          </button>
+        </div>
+      `;
+    }
+
+    // Game Logic
+    function startGame() {
+      const nameInput = document.getElementById('playerNameInput');
+      gameState.playerName = nameInput?.value || '勇者';
+      if (!gameState.playerName.trim()) gameState.playerName = '勇者';
+      gameState.screen = 'difficulty';
+      render();
+    }
+
+    function selectDifficulty(level) {
+      gameState.difficulty = level;
+      gameState.playerHP = 100;
+      gameState.maxHP = 100;
+      gameState.defeatedCount = 0;
+      gameState.combo = 0;
+      gameState.isBossBattle = false;
+      gameState.message = '';
+      spawnEnemy();
+      getNewQuestion();
+      gameState.screen = 'battle';
+      render();
+    }
+
+    function goToDifficulty() {
+      stopTimer();
+      gameState.screen = 'difficulty';
+      render();
+    }
+
+    function goToInventory() {
+      gameState.screen = 'inventory';
+      render();
+    }
+
+    function equipWeapon(index) {
+      gameState.equippedWeapon = gameState.weapons[index];
+      render();
+    }
+
+    function equipNewWeapon() {
+      if (!gameState.weapons.find(w => w.id === gameState.droppedWeapon.id)) {
+        gameState.weapons.push(gameState.droppedWeapon);
+      }
+      gameState.equippedWeapon = gameState.droppedWeapon;
+      continueAfterDrop();
+    }
+
+    function continueAfterDrop() {
+      if (!gameState.weapons.find(w => w.id === gameState.droppedWeapon.id)) {
+        gameState.weapons.push(gameState.droppedWeapon);
+      }
+      gameState.showWeaponDrop = false;
+      gameState.droppedWeapon = null;
+      
+      if (gameState.defeatedCount >= 3 && !gameState.isBossBattle) {
+        gameState.screen = 'levelClear';
+      } else {
+        spawnEnemy();
+        getNewQuestion();
+        gameState.screen = 'battle';
+      }
+      render();
+    }
+
+    function startBossBattle() {
+      spawnBoss();
+      getNewQuestion();
+      gameState.screen = 'battle';
+      render();
+    }
+
+    function retryBattle() {
+      stopTimer();
+      gameState.playerHP = 100;
+      gameState.defeatedCount = 0;
+      gameState.combo = 0;
+      gameState.isBossBattle = false;
+      spawnEnemy();
+      getNewQuestion();
+      gameState.screen = 'battle';
+      render();
+    }
+
+    // Flick Input Logic
+    let flickStartPos = null;
+    let currentFlickKey = null;
+
+    function startFlick(event, key) {
+      event.preventDefault();
+      const touch = event.touches ? event.touches[0] : event;
+      flickStartPos = { x: touch.clientX, y: touch.clientY };
+      currentFlickKey = key;
+      
+      const keyEl = event.target.closest('.flick-key');
+      if (keyEl) keyEl.classList.add('active');
+    }
+
+    function moveFlick(event) {
+      if (!flickStartPos) return;
+      event.preventDefault();
+    }
+
+    function endFlick(event) {
+      if (!flickStartPos || !currentFlickKey) {
+        flickStartPos = null;
+        currentFlickKey = null;
+        return;
+      }
+      
+      event.preventDefault();
+      const touch = event.changedTouches ? event.changedTouches[0] : event;
+      const endPos = { x: touch.clientX, y: touch.clientY };
+      
+      const dx = endPos.x - flickStartPos.x;
+      const dy = endPos.y - flickStartPos.y;
+      const threshold = 30;
+      
+      let direction = 'center';
+      if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+          direction = dx > 0 ? 'right' : 'left';
+        } else {
+          direction = dy > 0 ? 'down' : 'up';
+        }
+      }
+      
+      processFlickInput(currentFlickKey, direction);
+      
+      document.querySelectorAll('.flick-key').forEach(el => el.classList.remove('active'));
+      flickStartPos = null;
+      currentFlickKey = null;
+    }
+
+    function processFlickInput(key, direction) {
+      if (key === '⌫') {
+        gameState.inputText = gameState.inputText.slice(0, -1);
+      } else if (key === '゛') {
+        applyDakuten();
+      } else if (key === '゜') {
+        applyHandakuten();
+      } else if (key === '小') {
+        applySmall();
+      } else if (key === 'ー') {
+        gameState.inputText += 'ー';
+      } else if (flickMap[key]) {
+        const char = flickMap[key][direction] || flickMap[key].center;
+        if (char && char !== '（' && char !== '）' && char !== '〜') {
+          gameState.inputText += char;
+        }
+      }
+      
+      const inputDisplay = document.getElementById('inputText');
+      if (inputDisplay) {
+        inputDisplay.textContent = gameState.inputText || '　';
+      }
+    }
+
+    function applyDakuten() {
+      if (gameState.inputText.length === 0) return;
+      const lastChar = gameState.inputText.slice(-1);
+      if (dakutenMap[lastChar]) {
+        gameState.inputText = gameState.inputText.slice(0, -1) + dakutenMap[lastChar];
+      }
+    }
+
+    function applyHandakuten() {
+      if (gameState.inputText.length === 0) return;
+      const lastChar = gameState.inputText.slice(-1);
+      if (handakutenMap[lastChar]) {
+        gameState.inputText = gameState.inputText.slice(0, -1) + handakutenMap[lastChar];
+      }
+    }
+
+    function applySmall() {
+      if (gameState.inputText.length === 0) return;
+      const lastChar = gameState.inputText.slice(-1);
+      if (smallMap[lastChar]) {
+        gameState.inputText = gameState.inputText.slice(0, -1) + smallMap[lastChar];
+      }
+    }
+
+    function submitAnswer() {
+      stopTimer();
+      const answer = gameState.inputText.toLowerCase();
+      const correct = gameState.currentQuestion.reading.toLowerCase();
+      
+      if (answer === correct) {
+        handleCorrectAnswer();
+      } else {
+        handleWrongAnswer();
+      }
+    }
+
+    function handleTimeOut() {
+      gameState.combo = 0;
+      const enemyDamage = gameState.currentEnemy.atk;
+      gameState.playerHP -= enemyDamage;
+      gameState.message = `⏰ 時間切れ... 正解は「${gameState.currentQuestion.reading}」 ${enemyDamage}ダメージを受けた！`;
+      
+      if (gameState.playerHP <= 0) {
+        gameState.playerHP = 0;
+        gameState.screen = 'gameOver';
+      } else {
+        getNewQuestion();
+      }
+      render();
+    }
+
+    function handleCorrectAnswer() {
+      gameState.combo++;
+      const damage = calculateDamage();
+      gameState.enemyHP -= damage;
+      gameState.message = `✨ 正解！ ${damage}ダメージ！ コンボ${gameState.combo}x`;
+      
+      const enemySprite = document.getElementById('enemySprite');
+      if (enemySprite) {
+        enemySprite.classList.add('damage-flash');
+        setTimeout(() => enemySprite.classList.remove('damage-flash'), 200);
+      }
+      
+      if (gameState.enemyHP <= 0) {
+        handleEnemyDefeat();
+      } else {
+        getNewQuestion();
+        render();
+      }
+    }
+
+    function handleWrongAnswer() {
+      gameState.combo = 0;
+      const enemyDamage = gameState.currentEnemy.atk;
+      gameState.playerHP -= enemyDamage;
+      gameState.message = `❌ 不正解... 正解は「${gameState.currentQuestion.reading}」 ${enemyDamage}ダメージを受けた！`;
+      
+      if (gameState.playerHP <= 0) {
+        gameState.playerHP = 0;
+        gameState.screen = 'gameOver';
+      } else {
+        getNewQuestion();
+      }
+      render();
+    }
+
+    function handleEnemyDefeat() {
+      gameState.totalDefeated++;
+      
+      if (gameState.isBossBattle) {
+        const diffKey = gameState.difficulty === 'ore' ? 'ore' : gameState.difficulty;
+        if (!gameState.clearedLevels.includes(diffKey)) {
+          gameState.clearedLevels.push(diffKey);
+        }
+        
+        gameState.droppedWeapon = getRandomWeapon();
+        gameState.screen = 'weaponDrop';
+        setTimeout(() => {
+          gameState.screen = 'victory';
+          render();
+        }, 3000);
+      } else {
+        gameState.defeatedCount++;
+        
+        if (Math.random() < 0.7) {
+          gameState.droppedWeapon = getRandomWeapon();
+          gameState.screen = 'weaponDrop';
+        } else if (gameState.defeatedCount >= 3) {
+          gameState.screen = 'levelClear';
+        } else {
+          spawnEnemy();
+          getNewQuestion();
+          gameState.message = '敵を倒した！次の敵が現れた...';
+        }
+      }
+      render();
+    }
+
+    // Element SDK Integration
+    window.elementSdk.init({
+      defaultConfig,
+      onConfigChange: async (newConfig) => {
+        config = {...config, ...newConfig};
+        render();
+      },
+      mapToCapabilities: (cfg) => ({
+        recolorables: [],
+        borderables: [],
+        fontEditable: undefined,
+        fontSizeable: undefined
+      }),
+      mapToEditPanelValues: (cfg) => new Map([
+        ['game_title', cfg.game_title || defaultConfig.game_title]
+      ])
+    });
+
+    // Initialize
+    render();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c8a155ad4c7d415',t:'MTc3MDIwNzIyMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
