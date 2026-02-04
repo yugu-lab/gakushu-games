@@ -1,0 +1,707 @@
+<!doctype html>
+<html lang="ja" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>給食を食べきれ！</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- (任意) Element SDK：使わない環境なら消してOK -->
+    <script src="/_sdk/element_sdk.js"></script>
+    <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet" />
+
+    <style>
+      body {
+        box-sizing: border-box;
+      }
+      * {
+        font-family: "Kosugi Maru", sans-serif;
+      }
+
+      @keyframes bounce-in {
+        0% {
+          transform: scale(0.3);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        70% {
+          transform: scale(0.9);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        10%,
+        30%,
+        50%,
+        70%,
+        90% {
+          transform: translateX(-8px);
+        }
+        20%,
+        40%,
+        60%,
+        80% {
+          transform: translateX(8px);
+        }
+      }
+
+      @keyframes fall-down {
+        0% {
+          transform: translateY(0) rotate(0deg);
+        }
+        100% {
+          transform: translateY(20px) rotate(-15deg);
+        }
+      }
+
+      @keyframes rainbow-burst {
+        0% {
+          transform: translateY(0) scale(0.5);
+          opacity: 0;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-100px) scale(2);
+          opacity: 0;
+        }
+      }
+
+      @keyframes eat-food {
+        0% {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: translateY(-30px) scale(0.8);
+        }
+        100% {
+          transform: translateY(-60px) scale(0) rotate(360deg);
+          opacity: 0;
+        }
+      }
+
+      @keyframes food-increase {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.2);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .bounce-in {
+        animation: bounce-in 0.6s ease-out;
+      }
+      .shake {
+        animation: shake 0.5s ease-in-out;
+      }
+      .fall-down {
+        animation: fall-down 0.8s ease-out forwards;
+      }
+      .rainbow-burst {
+        animation: rainbow-burst 1.5s ease-out forwards;
+      }
+      .eat-food {
+        animation: eat-food 0.8s ease-out;
+      }
+      .food-increase {
+        animation: food-increase 0.5s ease-out;
+      }
+
+      .answer-btn {
+        transition: all 0.2s ease;
+      }
+      .answer-btn:hover {
+        transform: translateY(-3px) scale(1.05);
+      }
+
+      .timer-pulse {
+        animation: pulse 1s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
+      }
+    </style>
+
+    <style>
+      @view-transition {
+        navigation: auto;
+      }
+    </style>
+  </head>
+
+  <body class="h-full m-0 p-0">
+    <div id="app" class="h-full w-full overflow-auto"></div>
+
+    <script>
+      const defaultConfig = {
+        game_title: "給食を食べきれ！",
+        start_button_text: "いただきます！",
+        clear_message: "ごちそうさまでした！🎉",
+        gameover_text: "ゲームオーバー",
+        background_color: "#fef3c7",
+        surface_color: "#ffffff",
+        text_color: "#78350f",
+        primary_action_color: "#f59e0b",
+        secondary_action_color: "#10b981",
+        font_family: "Kosugi Maru",
+        font_size: 16,
+      };
+
+      let config = { ...defaultConfig };
+
+      // =========================
+      // 問題（難易度は元の構成に合わせて「計算」だけで多様化）
+      // - レベル1：1桁の＋－×÷（結果は0〜81程度）
+      // - レベル2：2桁の足し算/引き算（繰り上がり/繰り下がり混在）
+      // - レベル3：わり算（割り切れる）＋ かけ算（1桁×2桁中心、少し2桁×1桁も）
+      // - レベル4：2桁×1桁（大きめ）＋ わり算（割り切れる、商は1〜12程度も混在）
+      // =========================
+      const LEVELS = [
+        {
+          level: 1,
+          name: "レベル1",
+          questions: [
+            { q: "7 + 5", a: 12 },
+            { q: "9 - 6", a: 3 },
+            { q: "8 + 4", a: 12 },
+            { q: "6 - 2", a: 4 },
+            { q: "7 × 3", a: 21 },
+            { q: "8 × 6", a: 48 },
+            { q: "18 ÷ 3", a: 6 },
+            { q: "21 ÷ 7", a: 3 },
+          ],
+        },
+        {
+          level: 2,
+          name: "レベル2",
+          questions: [
+            { q: "18 + 27", a: 45 },
+            { q: "46 + 19", a: 65 },
+            { q: "58 + 24", a: 82 },
+            { q: "73 + 28", a: 101 },
+            { q: "67 - 29", a: 38 },
+            { q: "84 - 37", a: 47 },
+            { q: "90 - 16", a: 74 },
+            { q: "99 - 84", a: 15 },
+          ],
+        },
+        {
+          level: 3,
+          name: "レベル3",
+          questions: [
+            { q: "72 ÷ 6", a: 12 },
+            { q: "96 ÷ 8", a: 12 },
+            { q: "84 ÷ 7", a: 12 },
+            { q: "63 ÷ 9", a: 7 },
+            { q: "12 × 6", a: 72 },
+            { q: "14 × 7", a: 98 },
+            { q: "22 × 5", a: 110 },
+            { q: "24 × 8", a: 192 },
+          ],
+        },
+        {
+          level: 4,
+          name: "レベル4",
+          questions: [
+            { q: "63 × 4", a: 252 },
+            { q: "80 × 6", a: 480 },
+            { q: "43 × 5", a: 215 },
+            { q: "58 × 7", a: 406 },
+            { q: "84 ÷ 7", a: 12 },
+            { q: "96 ÷ 12", a: 8 },
+            { q: "91 ÷ 13", a: 7 },
+            { q: "144 ÷ 16", a: 9 },
+          ],
+        },
+      ];
+
+      let gameState = {
+        screen: "start",
+        currentLevel: 0,
+        questionIndex: 0,
+        foodAmount: 100,
+        timeLeft: 15,
+        timerId: null,
+        feedback: null,
+        isGameOver: false,
+        gameOverAnimation: false,
+      };
+
+      // 4択を自動生成（計算ゲーム用）
+      function generateChoices(correctAnswer) {
+        const choices = [correctAnswer];
+
+        // 正答の大きさに応じてハズレ幅を調整（小さい答えにも対応）
+        const base = Math.max(8, Math.floor(Math.abs(correctAnswer) * 0.25));
+        const range = Math.min(80, base + 12);
+
+        while (choices.length < 4) {
+          let offset = Math.floor(Math.random() * range * 2) - range;
+          if (offset === 0) offset = 1;
+
+          // 近すぎ＆同じの連発を避けるため、少し工夫
+          const wrong = correctAnswer + offset;
+
+          if (wrong !== correctAnswer && wrong >= 0 && !choices.includes(wrong)) {
+            choices.push(wrong);
+          }
+        }
+
+        // シャッフル
+        for (let i = choices.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [choices[i], choices[j]] = [choices[j], choices[i]];
+        }
+
+        return choices;
+      }
+
+      function startTimer() {
+        if (gameState.timerId) clearInterval(gameState.timerId);
+        gameState.timeLeft = 15;
+        gameState.timerId = setInterval(() => {
+          gameState.timeLeft--;
+          updateTimerDisplay();
+          if (gameState.timeLeft <= 0) {
+            clearInterval(gameState.timerId);
+            handleAnswer(null);
+          }
+        }, 1000);
+      }
+
+      function updateTimerDisplay() {
+        const timerEl = document.getElementById("timer");
+        const timerBar = document.getElementById("timer-bar");
+        if (timerEl && timerBar) {
+          timerEl.textContent = gameState.timeLeft;
+          const percentage = (gameState.timeLeft / 15) * 100;
+          timerBar.style.width = `${percentage}%`;
+
+          if (gameState.timeLeft <= 3) {
+            timerEl.classList.add("timer-pulse");
+            timerBar.style.backgroundColor = "#ef4444";
+          } else {
+            timerEl.classList.remove("timer-pulse");
+            timerBar.style.backgroundColor = config.primary_action_color || defaultConfig.primary_action_color;
+          }
+        }
+      }
+
+      function handleAnswer(selectedAnswer) {
+        if (gameState.timerId) clearInterval(gameState.timerId);
+
+        const currentQuestion = LEVELS[gameState.currentLevel].questions[gameState.questionIndex];
+        const isCorrect = selectedAnswer === currentQuestion.a;
+
+        if (isCorrect) {
+          gameState.foodAmount = Math.max(0, gameState.foodAmount - 25);
+          gameState.feedback = { type: "correct" };
+
+          if (gameState.foodAmount === 0) {
+            gameState.screen = "clear";
+            render();
+            return;
+          }
+        } else {
+          gameState.foodAmount = Math.min(100, gameState.foodAmount + 12.5);
+          gameState.feedback = { type: "wrong", correctAnswer: currentQuestion.a };
+        }
+
+        render();
+
+        setTimeout(() => {
+          gameState.feedback = null;
+          gameState.questionIndex++;
+
+          if (gameState.questionIndex >= LEVELS[gameState.currentLevel].questions.length) {
+            if (gameState.foodAmount > 0) {
+              triggerGameOver();
+              return;
+            }
+          }
+
+          render();
+          if (gameState.screen === "game") startTimer();
+        }, 1000);
+      }
+
+      function triggerGameOver() {
+        gameState.isGameOver = true;
+        gameState.screen = "gameover";
+        render();
+
+        setTimeout(() => {
+          gameState.gameOverAnimation = true;
+          render();
+        }, 1000);
+      }
+
+      function startGame(level) {
+        gameState = {
+          screen: "game",
+          currentLevel: level,
+          questionIndex: 0,
+          foodAmount: 100,
+          timeLeft: 15,
+          timerId: null,
+          feedback: null,
+          isGameOver: false,
+          gameOverAnimation: false,
+        };
+        render();
+        startTimer();
+      }
+
+      function goToStart() {
+        if (gameState.timerId) clearInterval(gameState.timerId);
+        gameState.screen = "start";
+        render();
+      }
+
+      function getFoodEmoji(amount) {
+        if (amount >= 75) return "🍛🍚🥗🍞";
+        if (amount >= 50) return "🍛🍚🥗";
+        if (amount >= 25) return "🍛🍚";
+        return "🍚";
+      }
+
+      function render() {
+        const app = document.getElementById("app");
+        const bgColor = config.background_color || defaultConfig.background_color;
+        const surfaceColor = config.surface_color || defaultConfig.surface_color;
+        const textColor = config.text_color || defaultConfig.text_color;
+        const primaryColor = config.primary_action_color || defaultConfig.primary_action_color;
+        const secondaryColor = config.secondary_action_color || defaultConfig.secondary_action_color;
+        const fontFamily = config.font_family || defaultConfig.font_family;
+        const fontSize = config.font_size || defaultConfig.font_size;
+
+        if (gameState.screen === "start") {
+          app.innerHTML = `
+            <div class="min-h-full w-full flex flex-col items-center justify-center p-6" style="background: ${bgColor}; font-family: ${fontFamily}, sans-serif;">
+              <div class="text-center bounce-in max-w-2xl">
+                <div class="text-7xl mb-6">🍛</div>
+                <h1 class="text-4xl md:text-5xl font-black mb-4" style="color: ${primaryColor}; font-size: ${fontSize * 2.8}px;">
+                  ${config.game_title || defaultConfig.game_title}
+                </h1>
+                <p class="text-xl mb-8" style="color: ${textColor}; font-size: ${fontSize * 1.3}px;">
+                  時間内に問題を解いて給食を完食しよう！
+                </p>
+
+                <div class="mb-8 p-6 rounded-2xl" style="background: ${surfaceColor}; color: ${textColor};">
+                  <div class="text-left space-y-2" style="font-size: ${fontSize}px;">
+                    <p>✅ 正解すると給食が 1/4 減る</p>
+                    <p>❌ 間違えると給食が 1/8 増える</p>
+                    <p>⏱️ 制限時間は1問15秒</p>
+                    <p>🎯 全て食べきったらクリア！</p>
+                    <p>⚠️ 8問終わっても残ったら...</p>
+                  </div>
+                </div>
+
+                <div class="space-y-4">
+                  ${LEVELS.map(
+                    (level, index) => `
+                    <button
+                      onclick="startGame(${index})"
+                      class="w-full px-8 py-4 text-xl font-bold rounded-2xl shadow-lg transform hover:scale-105 transition-all"
+                      style="background: ${
+                        index === 0 ? primaryColor : index === 1 ? "#3b82f6" : index === 2 ? "#8b5cf6" : "#ec4899"
+                      }; color: white; font-size: ${fontSize * 1.3}px;"
+                    >
+                      ${level.name} - ${
+                      index === 0
+                        ? "一桁の計算"
+                        : index === 1
+                        ? "二桁の計算"
+                        : index === 2
+                        ? "わり算＋かけ算(中)"
+                        : "2桁×1桁＆わり算(むず)"
+                    }
+                    </button>
+                  `
+                  ).join("")}
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (gameState.screen === "game") {
+          const currentQuestion = LEVELS[gameState.currentLevel].questions[gameState.questionIndex];
+          const choices = generateChoices(currentQuestion.a);
+          const foodEmoji = getFoodEmoji(gameState.foodAmount);
+
+          const feedbackHtml = gameState.feedback
+            ? `
+              <div class="absolute inset-0 flex items-center justify-center z-20 ${gameState.feedback.type === "correct" ? "bounce-in" : "shake"}">
+                <div class="text-center p-8 rounded-3xl shadow-2xl" style="background: ${
+                  gameState.feedback.type === "correct" ? "rgba(34, 197, 94, 0.95)" : "rgba(239, 68, 68, 0.95)"
+                };">
+                  <div class="text-6xl mb-4">${gameState.feedback.type === "correct" ? "😋" : "😱"}</div>
+                  <p class="text-3xl font-bold text-white" style="font-size: ${fontSize * 2}px;">
+                    ${gameState.feedback.type === "correct" ? "正解！" : "不正解..."}
+                  </p>
+                  ${
+                    gameState.feedback.type === "wrong"
+                      ? `<p class="text-xl text-white mt-2" style="font-size: ${fontSize * 1.2}px;">正解: ${gameState.feedback.correctAnswer}</p>`
+                      : ""
+                  }
+                </div>
+              </div>
+            `
+            : "";
+
+          app.innerHTML = `
+            <div class="min-h-full w-full flex flex-col p-4 relative" style="background: ${bgColor}; font-family: ${fontFamily}, sans-serif;">
+              ${feedbackHtml}
+
+              <div class="flex justify-between items-center mb-4">
+                <div class="px-4 py-2 rounded-full font-bold" style="background: ${primaryColor}; color: white; font-size: ${fontSize}px;">
+                  ${LEVELS[gameState.currentLevel].name}
+                </div>
+                <div class="text-right" style="color: ${textColor};">
+                  <div class="font-bold" style="font-size: ${fontSize}px;">問題 ${gameState.questionIndex + 1}/8</div>
+                </div>
+              </div>
+
+              <div class="mb-4 rounded-full overflow-hidden h-4" style="background: ${surfaceColor};">
+                <div id="timer-bar" class="h-full rounded-full transition-all duration-500" style="width: 100%; background: ${primaryColor};"></div>
+              </div>
+              <div class="text-center mb-6">
+                <span id="timer" class="text-5xl font-black" style="color: ${primaryColor}; font-size: ${fontSize * 3}px;">${gameState.timeLeft}</span>
+              </div>
+
+              <div class="mb-6">
+                <div class="text-center mb-2" style="color: ${textColor}; font-size: ${fontSize}px;">給食の残り</div>
+                <div class="w-full h-8 rounded-full overflow-hidden" style="background: ${surfaceColor}; border: 3px solid ${textColor};">
+                  <div class="h-full transition-all duration-500 ${
+                    gameState.feedback?.type === "correct" ? "eat-food" : gameState.feedback?.type === "wrong" ? "food-increase" : ""
+                  }"
+                       style="width: ${gameState.foodAmount}%; background: linear-gradient(90deg, ${secondaryColor} 0%, ${primaryColor} 100%);"></div>
+                </div>
+                <div class="text-center mt-2">
+                  <div class="text-4xl">${foodEmoji}</div>
+                </div>
+              </div>
+
+              <div class="flex-1 flex flex-col items-center justify-center">
+                <div class="p-8 rounded-3xl shadow-xl mb-8 bounce-in" style="background: ${surfaceColor};">
+                  <div class="text-4xl md:text-5xl font-black text-center" style="color: ${textColor}; font-size: ${fontSize * 2.8}px;">
+                    ${currentQuestion.q} = ?
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 w-full max-w-md">
+                  ${choices
+                    .map(
+                      (choice) => `
+                        <button
+                          onclick="handleAnswer(${choice})"
+                          class="answer-btn py-6 text-3xl font-bold rounded-2xl shadow-lg ${gameState.feedback ? "pointer-events-none opacity-50" : ""}"
+                          style="background: ${secondaryColor}; color: white; font-size: ${fontSize * 1.8}px;"
+                        >
+                          ${choice}
+                        </button>
+                      `
+                    )
+                    .join("")}
+                </div>
+              </div>
+
+              <div class="mt-4 text-center">
+                <button
+                  onclick="goToStart()"
+                  class="px-6 py-2 rounded-full font-semibold transition-all"
+                  style="background: ${surfaceColor}; color: ${textColor}; font-size: ${fontSize * 0.9}px;"
+                >
+                  やめる
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (gameState.screen === "clear") {
+          app.innerHTML = `
+            <div class="min-h-full w-full flex flex-col items-center justify-center p-6" style="background: ${bgColor}; font-family: ${fontFamily}, sans-serif;">
+              <div class="text-center bounce-in">
+                <div class="text-8xl mb-6">🎉</div>
+                <h2 class="text-4xl font-black mb-4" style="color: ${primaryColor}; font-size: ${fontSize * 2.5}px;">
+                  ${config.clear_message || defaultConfig.clear_message}
+                </h2>
+                <p class="text-2xl mb-8" style="color: ${textColor}; font-size: ${fontSize * 1.5}px;">完食できました！</p>
+
+                <div class="text-7xl mb-8">😊👍</div>
+
+                <div class="space-y-4">
+                  <button
+                    onclick="startGame(${gameState.currentLevel})"
+                    class="w-full px-8 py-4 text-xl font-bold rounded-2xl shadow-lg transform hover:scale-105 transition-all"
+                    style="background: ${primaryColor}; color: white; font-size: ${fontSize * 1.3}px;"
+                  >
+                    もう一度挑戦 🔄
+                  </button>
+                  <button
+                    onclick="goToStart()"
+                    class="w-full px-8 py-3 text-lg font-semibold rounded-2xl transition-all"
+                    style="background: ${surfaceColor}; color: ${textColor}; font-size: ${fontSize * 1.1}px;"
+                  >
+                    レベル選択に戻る
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (gameState.screen === "gameover") {
+          app.innerHTML = `
+            <div class="min-h-full w-full flex flex-col items-center justify-center p-6 relative" style="background: ${bgColor}; font-family: ${fontFamily}, sans-serif;">
+              <div class="text-center">
+                <div class="relative inline-block mb-8">
+                  <div class="text-9xl ${gameState.gameOverAnimation ? "fall-down" : ""}">😫</div>
+                  ${
+                    gameState.gameOverAnimation
+                      ? `
+                        <div class="absolute top-0 left-1/2 transform -translate-x-1/2">
+                          <div class="text-7xl rainbow-burst">🌈</div>
+                        </div>
+                      `
+                      : ""
+                  }
+                </div>
+
+                <div class="mb-8">
+                  <div class="text-xl mb-4" style="color: ${textColor}; font-size: ${fontSize * 1.3}px;">
+                    お腹いっぱい...
+                  </div>
+                  <h2 class="text-5xl font-black shake" style="color: #ef4444; font-size: ${fontSize * 3}px; text-shadow: 3px 3px 0 #000;">
+                    ${config.gameover_text || defaultConfig.gameover_text}
+                  </h2>
+                </div>
+
+                <div class="space-y-4 mt-8">
+                  <button
+                    onclick="startGame(${gameState.currentLevel})"
+                    class="w-full px-8 py-4 text-xl font-bold rounded-2xl shadow-lg transform hover:scale-105 transition-all"
+                    style="background: ${primaryColor}; color: white; font-size: ${fontSize * 1.3}px;"
+                  >
+                    リトライ 🔄
+                  </button>
+                  <button
+                    onclick="goToStart()"
+                    class="w-full px-8 py-3 text-lg font-semibold rounded-2xl transition-all"
+                    style="background: ${surfaceColor}; color: ${textColor}; font-size: ${fontSize * 1.1}px;"
+                  >
+                    レベル選択に戻る
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      async function onConfigChange(newConfig) {
+        config = { ...defaultConfig, ...newConfig };
+        render();
+      }
+
+      function mapToCapabilities(cfg) {
+        return {
+          recolorables: [
+            {
+              get: () => cfg.background_color || defaultConfig.background_color,
+              set: (value) => {
+                cfg.background_color = value;
+                window.elementSdk.setConfig({ background_color: value });
+              },
+            },
+            {
+              get: () => cfg.surface_color || defaultConfig.surface_color,
+              set: (value) => {
+                cfg.surface_color = value;
+                window.elementSdk.setConfig({ surface_color: value });
+              },
+            },
+            {
+              get: () => cfg.text_color || defaultConfig.text_color,
+              set: (value) => {
+                cfg.text_color = value;
+                window.elementSdk.setConfig({ text_color: value });
+              },
+            },
+            {
+              get: () => cfg.primary_action_color || defaultConfig.primary_action_color,
+              set: (value) => {
+                cfg.primary_action_color = value;
+                window.elementSdk.setConfig({ primary_action_color: value });
+              },
+            },
+            {
+              get: () => cfg.secondary_action_color || defaultConfig.secondary_action_color,
+              set: (value) => {
+                cfg.secondary_action_color = value;
+                window.elementSdk.setConfig({ secondary_action_color: value });
+              },
+            },
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => cfg.font_family || defaultConfig.font_family,
+            set: (value) => {
+              cfg.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            },
+          },
+          fontSizeable: {
+            get: () => cfg.font_size || defaultConfig.font_size,
+            set: (value) => {
+              cfg.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            },
+          },
+        };
+      }
+
+      function mapToEditPanelValues(cfg) {
+        return new Map([
+          ["game_title", cfg.game_title || defaultConfig.game_title],
+          ["start_button_text", cfg.start_button_text || defaultConfig.start_button_text],
+          ["clear_message", cfg.clear_message || defaultConfig.clear_message],
+          ["gameover_text", cfg.gameover_text || defaultConfig.gameover_text],
+        ]);
+      }
+
+      if (window.elementSdk) {
+        window.elementSdk.init({
+          defaultConfig,
+          onConfigChange,
+          mapToCapabilities,
+          mapToEditPanelValues,
+        });
+      } else {
+        render();
+      }
+    </script>
+  </body>
+</html>
