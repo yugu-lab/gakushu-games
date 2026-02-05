@@ -13,32 +13,13 @@
     * { font-family: 'Zen Maru Gothic', sans-serif; }
     .title-font { font-family: 'Yuji Syuku', serif; }
 
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 20px rgba(255,215,0,0.3); }
-      50% { box-shadow: 0 0 40px rgba(255,215,0,0.6); }
-    }
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      75% { transform: translateX(5px); }
-    }
-    @keyframes damage-flash {
-      0%, 100% { filter: brightness(1); }
-      50% { filter: brightness(2) saturate(0); }
-    }
-    @keyframes victory-glow {
-      0% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.1); opacity: 0.8; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-    @keyframes time-warning {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-    }
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    @keyframes pulse-glow { 0%,100%{box-shadow:0 0 20px rgba(255,215,0,0.3)} 50%{box-shadow:0 0 40px rgba(255,215,0,0.6)} }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+    @keyframes damage-flash { 0%,100%{filter:brightness(1)} 50%{filter:brightness(2) saturate(0)} }
+    @keyframes victory-glow { 0%{transform:scale(1);opacity:1} 50%{transform:scale(1.1);opacity:.8} 100%{transform:scale(1);opacity:1} }
+    @keyframes time-warning { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+
     .float-anim { animation: float 3s ease-in-out infinite; }
     .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
     .shake { animation: shake 0.3s ease-in-out; }
@@ -46,40 +27,27 @@
     .victory-glow { animation: victory-glow 1s ease-in-out infinite; }
     .time-warning { animation: time-warning 0.4s ease-in-out infinite; }
 
-    /* =========================
-       Flick Keys (battle only)
-       - 小さめ + 枠に収める
-       ========================= */
+    /* Flick Keys (battle only) */
     .flick-key {
-      width: 56px;            /* ← 大きすぎ対策：固定で小さめ */
+      width: 56px;
       height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
       border: 2px solid #4a4a6e;
       border-radius: 12px;
       font-size: 1.15rem;
-      color: #fff;
-      cursor: pointer;
-      user-select: none;
-      transition: transform 0.15s, background 0.15s, box-shadow 0.15s, border-color 0.15s;
-      position: relative;
+      color:#fff;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .15s, background .15s, box-shadow .15s, border-color .15s;
       -webkit-tap-highlight-color: transparent;
       touch-action: none;
     }
-    .flick-key:active {
-      transform: scale(0.95);
-      background: linear-gradient(145deg, #3a3a5e, #2a2a4e);
-    }
-    .flick-key.active {
-      border-color: #ffd700;
-      box-shadow: 0 0 15px rgba(255,215,0,0.5);
-    }
-    .flick-key.disabled {
-      pointer-events: none;
-      opacity: 0;
-    }
+    .flick-key:active { transform: scale(0.95); background: linear-gradient(145deg, #3a3a5e, #2a2a4e); }
+    .flick-key.active { border-color:#ffd700; box-shadow:0 0 15px rgba(255,215,0,.5); }
+    .flick-key.disabled { pointer-events:none; opacity:0; }
 
     .hp-bar {
       height: 24px;
@@ -109,13 +77,8 @@
     .weapon-card.epic { border-color: #a855f7; }
     .weapon-card.legendary { border-color: #ffd700; box-shadow: 0 0 30px rgba(255,215,0,0.3); }
 
-    .battle-screen {
-      background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);
-    }
-    .enemy-sprite {
-      font-size: 4rem;
-      filter: drop-shadow(0 0 20px rgba(255,0,0,0.3));
-    }
+    .battle-screen { background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%); }
+    .enemy-sprite { font-size: 4rem; filter: drop-shadow(0 0 20px rgba(255,0,0,0.3)); }
 
     .input-display {
       min-height: 48px;
@@ -139,9 +102,7 @@
       background: linear-gradient(90deg, #22c55e, #4ade80);
       transition: width 0.1s linear, background 0.1s linear;
     }
-    .time-bar-fill.warning {
-      background: linear-gradient(90deg, #ef4444, #f87171);
-    }
+    .time-bar-fill.warning { background: linear-gradient(90deg, #ef4444, #f87171); }
   </style>
 </head>
 
@@ -155,7 +116,7 @@
     const gameState = {
       screen: 'title',
       playerName: '',
-      // ★バトル入力方式のみ（battleInputMode）
+      // battle input only
       battleInputMode: 'flick', // 'keyboard' | 'flick'
       difficulty: null,
       playerHP: 100,
@@ -332,9 +293,7 @@
       'う': 'ゔ'
     };
 
-    const handakutenMap = {
-      'は': 'ぱ', 'ひ': 'ぴ', 'ふ': 'ぷ', 'へ': 'ぺ', 'ほ': 'ぽ'
-    };
+    const handakutenMap = { 'は':'ぱ', 'ひ':'ぴ', 'ふ':'ぷ', 'へ':'ぺ', 'ほ':'ぽ' };
 
     const smallMap = {
       'あ': 'ぁ', 'い': 'ぃ', 'う': 'ぅ', 'え': 'ぇ', 'お': 'ぉ',
@@ -400,7 +359,33 @@
       const diffKey = gameState.difficulty === 'ore' ? 'ore' : gameState.difficulty;
       gameState.currentQuestion = getRandomItem(questions[diffKey]);
       gameState.inputText = '';
-      startTimer();
+      startTimer(); // ★ここでタイマーUIも更新される
+    }
+
+    function syncInputDisplay() {
+      const inputDisplay = document.getElementById('inputText');
+      if (inputDisplay) inputDisplay.textContent = gameState.inputText || '　';
+    }
+
+    // =========================
+    // Timer UI (★renderしないでDOMだけ更新)
+    // =========================
+    function updateTimerUI() {
+      const timeEl = document.getElementById('timeText');
+      const barEl = document.getElementById('timeBarFill');
+
+      const isWarn = gameState.timeRemaining <= 3;
+
+      if (timeEl) {
+        timeEl.textContent = `⏱️ ${gameState.timeRemaining}秒`;
+        timeEl.className = `text-sm font-bold ${isWarn ? 'text-red-500 time-warning' : 'text-yellow-400'}`;
+      }
+
+      if (barEl) {
+        const pct = (gameState.timeRemaining / gameState.timeLimit) * 100;
+        barEl.style.width = pct + '%';
+        barEl.classList.toggle('warning', isWarn);
+      }
     }
 
     function startTimer() {
@@ -408,9 +393,11 @@
       gameState.timeLimit = getTimeLimitByDifficulty(gameState.difficulty);
       gameState.timeRemaining = gameState.timeLimit;
 
+      updateTimerUI();
+
       gameState.timerInterval = setInterval(() => {
         gameState.timeRemaining--;
-        render();
+        updateTimerUI();
 
         if (gameState.timeRemaining <= 0) {
           clearInterval(gameState.timerInterval);
@@ -425,11 +412,6 @@
         clearInterval(gameState.timerInterval);
         gameState.timerInterval = null;
       }
-    }
-
-    function syncInputDisplay() {
-      const inputDisplay = document.getElementById('inputText');
-      if (inputDisplay) inputDisplay.textContent = gameState.inputText || '　';
     }
 
     // =========================
@@ -453,20 +435,19 @@
       }
     }
 
-    // ★名前入力は常にキーボード
+    // =========================
+    // Screens
+    // =========================
+    // 名前入力は常にキーボード
     function renderTitleScreen(container) {
       container.innerHTML = `
         <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
           <div class="text-center mb-8">
-            <h1 class="title-font text-6xl font-bold mb-4 float-anim" style="color: #ffd700; text-shadow: 0 0 30px rgba(255,215,0,0.5);">
-              漢字勇者
-            </h1>
+            <h1 class="title-font text-6xl font-bold mb-4 float-anim" style="color: #ffd700; text-shadow: 0 0 30px rgba(255,215,0,0.5);">漢字勇者</h1>
             <p class="text-2xl text-gray-300">〜 読みの試練 〜</p>
           </div>
 
-          <div class="mb-8">
-            <div class="text-8xl float-anim" style="animation-delay: 0.5s;">⚔️📖</div>
-          </div>
+          <div class="mb-8"><div class="text-8xl float-anim" style="animation-delay: 0.5s;">⚔️📖</div></div>
 
           <div class="w-full max-w-md mb-6">
             <label class="block text-lg mb-2 text-gray-300">勇者の名前を入力</label>
@@ -618,7 +599,7 @@
                     class="px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs font-bold">
                     ⏸ 中断
                   </button>
-                  <div class="text-sm font-bold ${isTimeWarning ? 'text-red-500 time-warning' : 'text-yellow-400'}">
+                  <div id="timeText" class="text-sm font-bold ${isTimeWarning ? 'text-red-500 time-warning' : 'text-yellow-400'}">
                     ⏱️ ${gameState.timeRemaining}秒
                   </div>
                 </div>
@@ -628,7 +609,8 @@
                 ${gameState.currentQuestion.kanji}
               </div>
               <div class="time-bar mt-4">
-                <div class="time-bar-fill ${isTimeWarning ? 'warning' : ''}" style="width: ${(gameState.timeRemaining / gameState.timeLimit) * 100}%"></div>
+                <div id="timeBarFill" class="time-bar-fill ${isTimeWarning ? 'warning' : ''}"
+                     style="width: ${(gameState.timeRemaining / gameState.timeLimit) * 100}%"></div>
               </div>
             </div>
 
@@ -659,13 +641,17 @@
         </div>
       `;
 
+      // 入力欄同期
       syncInputDisplay();
 
-      // battleでkeyboardならフォーカス（PC向け）
+      // battleでkeyboardなら描画直後に1回だけフォーカス（毎秒renderしないので安定）
       if (gameState.battleInputMode === 'keyboard') {
         const el = document.getElementById('battleKeyboardInput');
         if (el) setTimeout(() => el.focus(), 0);
       }
+
+      // 念のため（初回表示直後のUI整合）
+      updateTimerUI();
     }
 
     function renderWeaponDropScreen(container) {
@@ -809,7 +795,7 @@
     }
 
     // =========================
-    // Difficulty screen: battle input mode
+    // Difficulty: battle input mode
     // =========================
     function setBattleInputMode(mode) {
       gameState.battleInputMode = mode;
@@ -965,7 +951,7 @@
       const endPos = { x: event.clientX, y: event.clientY };
       const dx = endPos.x - flickStartPos.x;
       const dy = endPos.y - flickStartPos.y;
-      const threshold = 26; // ちょい敏感に
+      const threshold = 26;
 
       let direction = 'center';
       if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
@@ -981,7 +967,7 @@
     }
 
     function processFlickInput(key, direction, target) {
-      if (target !== 'battle') return; // ★バトルのみ
+      if (target !== 'battle') return;
 
       if (key === '⌫') {
         gameState.inputText = gameState.inputText.slice(0, -1);
@@ -1065,7 +1051,7 @@
         gameState.playerHP = 0;
         gameState.screen = 'gameOver';
       } else {
-        getNewQuestion();
+        getNewQuestion(); // ★ここで次のタイマー開始
       }
       render();
     }
@@ -1104,6 +1090,7 @@
     function handleEnemyDefeat() {
       gameState.totalDefeated++;
 
+      // Boss defeat
       if (gameState.isBossBattle) {
         const diffKey = gameState.difficulty === 'ore' ? 'ore' : gameState.difficulty;
         if (!gameState.clearedLevels.includes(diffKey)) gameState.clearedLevels.push(diffKey);
@@ -1114,6 +1101,7 @@
         return;
       }
 
+      // Normal defeat
       gameState.defeatedCount++;
 
       if (Math.random() < 0.7) {
@@ -1132,7 +1120,7 @@
     }
 
     // =========================
-    // 初期化
+    // Init
     // =========================
     render();
   </script>
