@@ -46,16 +46,17 @@
     .victory-glow { animation: victory-glow 1s ease-in-out infinite; }
     .time-warning { animation: time-warning 0.4s ease-in-out infinite; }
 
+    /* 3列レイアウトに合わせて「枠いっぱい」に収まるキー */
     .flick-key {
-      width: 60px;
-      height: 60px;
+      width: 100%;
+      aspect-ratio: 1 / 1;
       display: flex;
       align-items: center;
       justify-content: center;
       background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
       border: 2px solid #4a4a6e;
-      border-radius: 12px;
-      font-size: 1.2rem;
+      border-radius: 14px;
+      font-size: 1.35rem;
       color: #fff;
       cursor: pointer;
       user-select: none;
@@ -65,12 +66,16 @@
       touch-action: none; /* iPadでのスクロール干渉を減らす */
     }
     .flick-key:active {
-      transform: scale(0.95);
+      transform: scale(0.96);
       background: linear-gradient(145deg, #3a3a5e, #2a2a4e);
     }
     .flick-key.active {
       border-color: #ffd700;
       box-shadow: 0 0 15px rgba(255,215,0,0.5);
+    }
+    .flick-key.disabled {
+      pointer-events: none;
+      opacity: 0;
     }
 
     .hp-bar {
@@ -147,6 +152,7 @@
     const gameState = {
       screen: 'title',
       playerName: '',
+      nameInputMode: 'keyboard', // 'keyboard' | 'flick'
       difficulty: null,
       playerHP: 100,
       maxHP: 100,
@@ -291,12 +297,16 @@
     };
 
     // =========================
-    // Flick Input Layout
+    // Flick Input Layout (3列区切り)
     // =========================
+    // 要望の並びに近い形：3つずつ区切り + 「空き枠」は透明で枠だけ確保
     const flickLayout = [
-      ['あ', 'か', 'さ', 'た', 'な'],
-      ['は', 'ま', 'や', 'ら', 'わ'],
-      ['゛', '゜', '小', 'ー', '⌫']
+      ['あ', 'か', 'さ'],
+      ['た', 'な', 'は'],
+      ['ま', 'や', 'ら'],
+      ['',  'わ', '⌫'],
+      ['゛', '゜', '小'],
+      ['ー', '',   '']   // 下の空き枠（必要ならここに「空白」など追加可）
     ];
 
     const flickMap = {
@@ -332,9 +342,7 @@
     // =========================
     // Helpers
     // =========================
-    function getRandomItem(arr) {
-      return arr[Math.floor(Math.random() * arr.length)];
-    }
+    function getRandomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
     function getRandomWeapon() {
       const roll = Math.random() * 100;
@@ -349,24 +357,11 @@
     }
 
     function getRankColor(rank) {
-      const colors = {
-        common: '#9ca3af',
-        uncommon: '#22c55e',
-        rare: '#3b82f6',
-        epic: '#a855f7',
-        legendary: '#ffd700'
-      };
+      const colors = { common:'#9ca3af', uncommon:'#22c55e', rare:'#3b82f6', epic:'#a855f7', legendary:'#ffd700' };
       return colors[rank] || '#9ca3af';
     }
-
     function getRankName(rank) {
-      const names = {
-        common: 'コモン',
-        uncommon: 'アンコモン',
-        rare: 'レア',
-        epic: 'エピック',
-        legendary: '伝説'
-      };
+      const names = { common:'コモン', uncommon:'アンコモン', rare:'レア', epic:'エピック', legendary:'伝説' };
       return names[rank] || 'コモン';
     }
 
@@ -384,8 +379,7 @@
 
     function spawnEnemy() {
       const diffKey = gameState.difficulty === 'ore' ? 'ore' : gameState.difficulty;
-      const enemyList = enemies[diffKey];
-      const enemy = { ...getRandomItem(enemyList) };
+      const enemy = { ...getRandomItem(enemies[diffKey]) };
       gameState.currentEnemy = enemy;
       gameState.enemyHP = enemy.hp;
       gameState.enemyMaxHP = enemy.hp;
@@ -403,8 +397,7 @@
 
     function getNewQuestion() {
       const diffKey = gameState.difficulty === 'ore' ? 'ore' : gameState.difficulty;
-      const questionList = questions[diffKey];
-      gameState.currentQuestion = getRandomItem(questionList);
+      gameState.currentQuestion = getRandomItem(questions[diffKey]);
       gameState.inputText = '';
       startTimer();
     }
@@ -438,12 +431,16 @@
       if (inputDisplay) inputDisplay.textContent = gameState.inputText || '　';
     }
 
+    function syncNameDisplay() {
+      const nameDisplay = document.getElementById('nameFlickDisplay');
+      if (nameDisplay) nameDisplay.textContent = gameState.playerName || '　';
+    }
+
     // =========================
     // Render
     // =========================
     function render() {
-      // battle以外ではタイマー止める（事故防止）
-      if (gameState.screen !== 'battle') stopTimer();
+      if (gameState.screen !== 'battle') stopTimer(); // battle以外ではタイマー止める
 
       const app = document.getElementById('app');
       if (!app) return;
@@ -462,25 +459,60 @@
     }
 
     function renderTitleScreen(container) {
+      const isKeyboard = gameState.nameInputMode === 'keyboard';
+      const isFlick = gameState.nameInputMode === 'flick';
+
       container.innerHTML = `
         <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
-          <div class="text-center mb-8">
-            <h1 class="title-font text-6xl font-bold mb-4 float-anim" style="color: #ffd700; text-shadow: 0 0 30px rgba(255,215,0,0.5);">
+          <div class="text-center mb-6">
+            <h1 class="title-font text-6xl font-bold mb-3 float-anim" style="color: #ffd700; text-shadow: 0 0 30px rgba(255,215,0,0.5);">
               漢字勇者
             </h1>
             <p class="text-2xl text-gray-300">〜 読みの試練 〜</p>
           </div>
 
-          <div class="mb-8">
-            <div class="text-8xl float-anim" style="animation-delay: 0.5s;">⚔️📖</div>
+          <div class="mb-6">
+            <div class="text-7xl float-anim" style="animation-delay: 0.5s;">⚔️📖</div>
           </div>
 
-          <div class="w-full max-w-md mb-6">
-            <label class="block text-lg mb-2 text-gray-300">勇者の名前を入力</label>
-            <input type="text" id="playerNameInput"
-              class="w-full px-4 py-3 text-xl rounded-xl bg-gray-800 border-2 border-gray-600 focus:border-yellow-500 focus:outline-none text-white"
-              placeholder="名前を入力..."
-              value="${gameState.playerName}">
+          <div class="w-full max-w-md mb-4">
+            <div class="flex gap-2 mb-3">
+              <button onclick="setNameInputMode('keyboard')"
+                class="flex-1 px-3 py-2 rounded-xl border-2 ${isKeyboard ? 'border-yellow-400 bg-yellow-900/30' : 'border-gray-600 bg-gray-800/40 hover:bg-gray-700/40'} transition-all text-sm font-bold">
+                ⌨️ キーボード
+              </button>
+              <button onclick="setNameInputMode('flick')"
+                class="flex-1 px-3 py-2 rounded-xl border-2 ${isFlick ? 'border-yellow-400 bg-yellow-900/30' : 'border-gray-600 bg-gray-800/40 hover:bg-gray-700/40'} transition-all text-sm font-bold">
+                📱 フリック
+              </button>
+            </div>
+
+            ${isKeyboard ? `
+              <label class="block text-lg mb-2 text-gray-300">勇者の名前を入力</label>
+              <input type="text" id="playerNameInput"
+                class="w-full px-4 py-3 text-xl rounded-xl bg-gray-800 border-2 border-gray-600 focus:border-yellow-500 focus:outline-none text-white"
+                placeholder="名前を入力..."
+                value="${gameState.playerName}"
+                oninput="onNameKeyboardInput(this.value)">
+            ` : `
+              <label class="block text-lg mb-2 text-gray-300">勇者の名前を入力（フリック）</label>
+
+              <div class="input-display flex items-center justify-between mb-3">
+                <span id="nameFlickDisplay">${gameState.playerName || '　'}</span>
+                <button onclick="clearPlayerName()"
+                  class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-bold transition-all">
+                  クリア
+                </button>
+              </div>
+
+              <div class="w-full">
+                ${renderFlickGridHTML("name")}
+              </div>
+
+              <p class="mt-2 text-xs text-gray-400">
+                ※「⌫」で1文字消去。「゛」「゜」「小」「ー」も使えます。
+              </p>
+            `}
           </div>
 
           <button onclick="startGame()"
@@ -489,9 +521,11 @@
             冒険を始める
           </button>
 
-          <p class="mt-8 text-gray-500 text-sm">漢字の読み方を答えて敵を倒そう！</p>
+          <p class="mt-6 text-gray-500 text-sm">漢字の読み方を答えて敵を倒そう！</p>
         </div>
       `;
+
+      if (isFlick) syncNameDisplay();
     }
 
     function renderDifficultyScreen(container) {
@@ -608,13 +642,11 @@
             <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 mb-3 text-center border-2 border-gray-700">
               <div class="flex justify-between items-center mb-2">
                 <div class="text-sm text-gray-400">この漢字の読み方は？</div>
-
                 <div class="flex items-center gap-3">
                   <button onclick="pauseToDifficulty()"
                     class="px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs font-bold">
                     ⏸ 中断
                   </button>
-
                   <div class="text-sm font-bold ${isTimeWarning ? 'text-red-500 time-warning' : 'text-yellow-400'}">
                     ⏱️ ${gameState.timeRemaining}秒
                   </div>
@@ -638,26 +670,12 @@
             </div>
 
             <div class="flex-1 flex flex-col justify-center">
-              ${flickLayout.map(row => `
-                <div class="flex justify-center gap-2 mb-2">
-                  ${row.map(key => `
-                    <div class="flick-key"
-                      data-key="${key}"
-                      onpointerdown="startFlick(event, '${key}')"
-                      onpointerup="endFlick(event)"
-                      onpointerleave="endFlick(event)"
-                      onpointermove="moveFlick(event)">
-                      ${key}
-                    </div>
-                  `).join('')}
-                </div>
-              `).join('')}
+              ${renderFlickGridHTML("battle")}
             </div>
           </div>
         </div>
       `;
 
-      // 描画直後に入力欄同期（まれに空になる事故防止）
       syncInputDisplay();
     }
 
@@ -802,12 +820,33 @@
     }
 
     // =========================
+    // Title: name input mode
+    // =========================
+    function setNameInputMode(mode) {
+      gameState.nameInputMode = mode;
+      render();
+    }
+
+    function onNameKeyboardInput(val) {
+      gameState.playerName = (val || '').slice(0, 12); // 長すぎ防止（必要なら調整）
+    }
+
+    function clearPlayerName() {
+      gameState.playerName = '';
+      syncNameDisplay();
+    }
+
+    // =========================
     // Game Logic
     // =========================
     function startGame() {
+      // keyboardモードなら入力欄からも拾う（未入力でもstateに反映）
       const nameInput = document.getElementById('playerNameInput');
-      gameState.playerName = (nameInput?.value || '勇者').trim();
+      if (nameInput) gameState.playerName = (nameInput.value || '').trim();
+
+      gameState.playerName = (gameState.playerName || '勇者').trim();
       if (!gameState.playerName) gameState.playerName = '勇者';
+
       gameState.screen = 'difficulty';
       render();
     }
@@ -858,7 +897,6 @@
       }
       gameState.droppedWeapon = null;
 
-      // 次へ
       if (!gameState.isBossBattle && gameState.defeatedCount >= 3) {
         gameState.screen = 'levelClear';
       } else {
@@ -869,7 +907,6 @@
       render();
     }
 
-    // ★追加：武器獲得画面から難易度選択へ戻る（武器は確保）
     function returnToDifficultyFromDrop() {
       if (gameState.droppedWeapon && !gameState.weapons.find(w => w.id === gameState.droppedWeapon.id)) {
         gameState.weapons.push(gameState.droppedWeapon);
@@ -903,7 +940,6 @@
       render();
     }
 
-    // ★追加：バトル中断して難易度選択へ戻る
     function pauseToDifficulty() {
       stopTimer();
       gameState.screen = 'difficulty';
@@ -917,6 +953,7 @@
     let currentFlickKey = null;
 
     function startFlick(event, key) {
+      if (!key) return;
       event.preventDefault();
       const p = event;
       flickStartPos = { x: p.clientX, y: p.clientY };
@@ -931,7 +968,7 @@
       event.preventDefault();
     }
 
-    function endFlick(event) {
+    function endFlick(event, target) {
       if (!flickStartPos || !currentFlickKey) {
         flickStartPos = null;
         currentFlickKey = null;
@@ -951,49 +988,109 @@
         else direction = dy > 0 ? 'down' : 'up';
       }
 
-      processFlickInput(currentFlickKey, direction);
+      processFlickInput(currentFlickKey, direction, target);
 
       document.querySelectorAll('.flick-key').forEach(el => el.classList.remove('active'));
       flickStartPos = null;
       currentFlickKey = null;
     }
 
-    function processFlickInput(key, direction) {
+    function processFlickInput(key, direction, target) {
+      const isName = target === 'name';
+      const isBattle = target === 'battle';
+
+      if (!key) return;
+
       if (key === '⌫') {
-        gameState.inputText = gameState.inputText.slice(0, -1);
+        if (isName) gameState.playerName = gameState.playerName.slice(0, -1);
+        if (isBattle) gameState.inputText = gameState.inputText.slice(0, -1);
+
       } else if (key === '゛') {
-        applyDakuten();
+        if (isName) applyDakutenTo('name');
+        if (isBattle) applyDakutenTo('battle');
+
       } else if (key === '゜') {
-        applyHandakuten();
+        if (isName) applyHandakutenTo('name');
+        if (isBattle) applyHandakutenTo('battle');
+
       } else if (key === '小') {
-        applySmall();
+        if (isName) applySmallTo('name');
+        if (isBattle) applySmallTo('battle');
+
       } else if (key === 'ー') {
-        gameState.inputText += 'ー';
+        if (isName) gameState.playerName += 'ー';
+        if (isBattle) gameState.inputText += 'ー';
+
       } else if (flickMap[key]) {
         const char = flickMap[key][direction] || flickMap[key].center;
         if (char && char !== '（' && char !== '）' && char !== '〜') {
-          gameState.inputText += char;
+          if (isName) gameState.playerName = (gameState.playerName + char).slice(0, 12);
+          if (isBattle) gameState.inputText += char;
         }
       }
-      syncInputDisplay();
+
+      if (isName) syncNameDisplay();
+      if (isBattle) syncInputDisplay();
     }
 
-    function applyDakuten() {
-      if (!gameState.inputText) return;
-      const lastChar = gameState.inputText.slice(-1);
-      if (dakutenMap[lastChar]) gameState.inputText = gameState.inputText.slice(0, -1) + dakutenMap[lastChar];
+    function applyDakutenTo(target) {
+      const text = target === 'name' ? gameState.playerName : gameState.inputText;
+      if (!text) return;
+      const lastChar = text.slice(-1);
+      if (!dakutenMap[lastChar]) return;
+
+      const newText = text.slice(0, -1) + dakutenMap[lastChar];
+      if (target === 'name') gameState.playerName = newText;
+      else gameState.inputText = newText;
     }
 
-    function applyHandakuten() {
-      if (!gameState.inputText) return;
-      const lastChar = gameState.inputText.slice(-1);
-      if (handakutenMap[lastChar]) gameState.inputText = gameState.inputText.slice(0, -1) + handakutenMap[lastChar];
+    function applyHandakutenTo(target) {
+      const text = target === 'name' ? gameState.playerName : gameState.inputText;
+      if (!text) return;
+      const lastChar = text.slice(-1);
+      if (!handakutenMap[lastChar]) return;
+
+      const newText = text.slice(0, -1) + handakutenMap[lastChar];
+      if (target === 'name') gameState.playerName = newText;
+      else gameState.inputText = newText;
     }
 
-    function applySmall() {
-      if (!gameState.inputText) return;
-      const lastChar = gameState.inputText.slice(-1);
-      if (smallMap[lastChar]) gameState.inputText = gameState.inputText.slice(0, -1) + smallMap[lastChar];
+    function applySmallTo(target) {
+      const text = target === 'name' ? gameState.playerName : gameState.inputText;
+      if (!text) return;
+      const lastChar = text.slice(-1);
+      if (!smallMap[lastChar]) return;
+
+      const newText = text.slice(0, -1) + smallMap[lastChar];
+      if (target === 'name') gameState.playerName = newText;
+      else gameState.inputText = newText;
+    }
+
+    function renderFlickGridHTML(target) {
+      // 3列グリッドで「空き枠」も同サイズ確保（disabledで透明）
+      return `
+        <div class="w-full max-w-md mx-auto">
+          <div class="grid grid-cols-3 gap-2">
+            ${flickLayout.flat().map(key => {
+              const isEmpty = !key;
+              const cls = isEmpty ? 'flick-key disabled' : 'flick-key';
+              const safeKey = key || '';
+              return `
+                <div class="${cls}"
+                  ${isEmpty ? '' : `
+                    data-key="${safeKey}"
+                    onpointerdown="startFlick(event, '${safeKey}')"
+                    onpointerup="endFlick(event, '${target}')"
+                    onpointerleave="endFlick(event, '${target}')"
+                    onpointermove="moveFlick(event)"
+                  `}>
+                  ${safeKey}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
     }
 
     // =========================
@@ -1003,7 +1100,6 @@
       stopTimer();
       const answer = (gameState.inputText || '').toLowerCase();
       const correct = (gameState.currentQuestion.reading || '').toLowerCase();
-
       if (answer === correct) handleCorrectAnswer();
       else handleWrongAnswer();
     }
@@ -1057,7 +1153,6 @@
     function handleEnemyDefeat() {
       gameState.totalDefeated++;
 
-      // ボス撃破
       if (gameState.isBossBattle) {
         const diffKey = gameState.difficulty === 'ore' ? 'ore' : gameState.difficulty;
         if (!gameState.clearedLevels.includes(diffKey)) gameState.clearedLevels.push(diffKey);
@@ -1065,13 +1160,10 @@
         gameState.droppedWeapon = getRandomWeapon();
         gameState.screen = 'weaponDrop';
         render();
-
-        // ※勝手にvictoryへ飛ばさない（ボタン操作で進む）
         setTimeout(() => {}, 10);
         return;
       }
 
-      // 通常敵撃破
       gameState.defeatedCount++;
 
       if (Math.random() < 0.7) {
@@ -1092,7 +1184,6 @@
     // =========================
     // 初期化
     // =========================
-    // ここで必ず最初の画面を描画
     render();
   </script>
 </body>
