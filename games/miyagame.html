@@ -608,10 +608,19 @@
             <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 mb-3 text-center border-2 border-gray-700">
               <div class="flex justify-between items-center mb-2">
                 <div class="text-sm text-gray-400">この漢字の読み方は？</div>
-                <div class="text-sm font-bold ${isTimeWarning ? 'text-red-500 time-warning' : 'text-yellow-400'}">
-                  ⏱️ ${gameState.timeRemaining}秒
+
+                <div class="flex items-center gap-3">
+                  <button onclick="pauseToDifficulty()"
+                    class="px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs font-bold">
+                    ⏸ 中断
+                  </button>
+
+                  <div class="text-sm font-bold ${isTimeWarning ? 'text-red-500 time-warning' : 'text-yellow-400'}">
+                    ⏱️ ${gameState.timeRemaining}秒
+                  </div>
                 </div>
               </div>
+
               <div class="title-font text-5xl font-bold" style="color: #ffd700;">
                 ${gameState.currentQuestion.kanji}
               </div>
@@ -669,14 +678,20 @@
             </div>
           </div>
 
-          <div class="flex gap-4">
+          <div class="flex gap-4 flex-wrap justify-center">
             <button onclick="equipNewWeapon()"
               class="px-8 py-3 text-lg font-bold rounded-xl bg-yellow-600 hover:bg-yellow-500 transition-all">
               装備する
             </button>
+
             <button onclick="continueAfterDrop()"
               class="px-8 py-3 text-lg font-bold rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
-              持ち物に入れる
+              続ける（持ち物に入れる）
+            </button>
+
+            <button onclick="returnToDifficultyFromDrop()"
+              class="px-8 py-3 text-lg font-bold rounded-xl bg-blue-700 hover:bg-blue-600 transition-all">
+              難易度選択へ戻る
             </button>
           </div>
         </div>
@@ -854,6 +869,18 @@
       render();
     }
 
+    // ★追加：武器獲得画面から難易度選択へ戻る（武器は確保）
+    function returnToDifficultyFromDrop() {
+      if (gameState.droppedWeapon && !gameState.weapons.find(w => w.id === gameState.droppedWeapon.id)) {
+        gameState.weapons.push(gameState.droppedWeapon);
+      }
+      gameState.droppedWeapon = null;
+
+      stopTimer();
+      gameState.screen = 'difficulty';
+      render();
+    }
+
     function startBossBattle() {
       spawnBoss();
       getNewQuestion();
@@ -873,6 +900,13 @@
       spawnEnemy();
       getNewQuestion();
       gameState.screen = 'battle';
+      render();
+    }
+
+    // ★追加：バトル中断して難易度選択へ戻る
+    function pauseToDifficulty() {
+      stopTimer();
+      gameState.screen = 'difficulty';
       render();
     }
 
@@ -1033,12 +1067,7 @@
         render();
 
         // ※勝手にvictoryへ飛ばさない（ボタン操作で進む）
-        // weapon獲得 → 次へボタンでdifficultyへ戻る想定
-        // ただし「勝利画面は見せたい」ので、武器取得後に難易度へ戻す前に表示したい場合は調整可
-        setTimeout(() => {
-          // 武器画面のままでも良いが、表示演出だけ軽く入れるならここでmessageなど変える
-        }, 10);
-
+        setTimeout(() => {}, 10);
         return;
       }
 
