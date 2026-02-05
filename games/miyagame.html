@@ -46,27 +46,30 @@
     .victory-glow { animation: victory-glow 1s ease-in-out infinite; }
     .time-warning { animation: time-warning 0.4s ease-in-out infinite; }
 
-    /* 3列レイアウトに合わせて「枠いっぱい」に収まるキー */
+    /* =========================
+       Flick Keys (battle only)
+       - 小さめ + 枠に収める
+       ========================= */
     .flick-key {
-      width: 100%;
-      aspect-ratio: 1 / 1;
+      width: 56px;            /* ← 大きすぎ対策：固定で小さめ */
+      height: 56px;
       display: flex;
       align-items: center;
       justify-content: center;
       background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
       border: 2px solid #4a4a6e;
-      border-radius: 14px;
-      font-size: 1.35rem;
+      border-radius: 12px;
+      font-size: 1.15rem;
       color: #fff;
       cursor: pointer;
       user-select: none;
       transition: transform 0.15s, background 0.15s, box-shadow 0.15s, border-color 0.15s;
       position: relative;
       -webkit-tap-highlight-color: transparent;
-      touch-action: none; /* iPadでのスクロール干渉を減らす */
+      touch-action: none;
     }
     .flick-key:active {
-      transform: scale(0.96);
+      transform: scale(0.95);
       background: linear-gradient(145deg, #3a3a5e, #2a2a4e);
     }
     .flick-key.active {
@@ -152,7 +155,8 @@
     const gameState = {
       screen: 'title',
       playerName: '',
-      nameInputMode: 'keyboard', // 'keyboard' | 'flick'
+      // ★バトル入力方式のみ（battleInputMode）
+      battleInputMode: 'flick', // 'keyboard' | 'flick'
       difficulty: null,
       playerHP: 100,
       maxHP: 100,
@@ -226,20 +230,19 @@
     // Weapons Database
     // =========================
     const weapons = [
-      // Common (40%)
       {id: 1, name: '黒鉄の筆', desc: '基本の武器。墨の跡で敵を切り裂く。', rank: 'common', atk: 5, emoji: '🖌️'},
       {id: 2, name: '一画の短剣', desc: '鋭い一振りの斬撃を繰り出す。', rank: 'common', atk: 7, emoji: '🗡️'},
       {id: 3, name: '連綿の鎖', desc: '文字を繋げるように敵を拘束する。', rank: 'common', atk: 4, def: 3, emoji: '⛓️'},
       {id: 4, name: '跳ね返しの硯', desc: '敵の物理攻撃を一定確率で弾き返す。', rank: 'common', def: 8, emoji: '📦'},
       {id: 5, name: '千字文の長槍', desc: 'リーチが長く、遠くの敵を突く。', rank: 'common', atk: 8, emoji: '🔱'},
-      // Uncommon (30%)
+
       {id: 6, name: '言霊の弓', desc: '正解した漢字のエネルギーを矢にして放つ。', rank: 'uncommon', atk: 12, emoji: '🏹'},
       {id: 7, name: '破邪の朱印', desc: '敵にスタンプを押し、呪いを解除する。', rank: 'uncommon', atk: 10, special: 'cleanse', emoji: '🔴'},
       {id: 8, name: '難読の盾', desc: '複雑な画数で構成された強固な盾。', rank: 'uncommon', def: 15, emoji: '🛡️'},
       {id: 9, name: '音読みの双剣', desc: '素早い二連撃が可能。', rank: 'uncommon', atk: 14, emoji: '⚔️'},
       {id: 10, name: '訓読みの大槌', desc: '重い一撃で敵を気絶させる。', rank: 'uncommon', atk: 18, emoji: '🔨'},
       {id: 11, name: '墨風の扇', desc: '墨の霧を巻き起こし、敵の命中率を下げる。', rank: 'uncommon', atk: 8, special: 'blind', emoji: '🪭'},
-      // Rare (18%)
+
       {id: 12, name: '永字八法の剣', desc: '基本の8動作を極めたバランスの良い剣。', rank: 'rare', atk: 15, def: 10, emoji: '🗡️'},
       {id: 13, name: '部首の籠手', desc: '属性攻撃を強化。', rank: 'rare', atk: 20, emoji: '🥊'},
       {id: 14, name: '草書の流刀', desc: '受け流しに特化した、しなやかな刀。', rank: 'rare', atk: 16, def: 12, emoji: '🔪'},
@@ -247,14 +250,14 @@
       {id: 16, name: '画数ブーストの指輪', desc: '漢字の画数が多いほど攻撃力が上がる。', rank: 'rare', atk: 12, special: 'strokeBoost', emoji: '💍'},
       {id: 17, name: '象形文字のメダル', desc: '自然の力を借りる。', rank: 'rare', atk: 14, def: 8, emoji: '🏅'},
       {id: 18, name: '書き順のタリスマン', desc: 'コンボが繋がりやすくなる。', rank: 'rare', atk: 10, special: 'combo', emoji: '📿'},
-      // Epic (10%)
+
       {id: 19, name: '真贋の眼鏡', desc: '敵の弱点漢字を見抜く。', rank: 'epic', atk: 18, special: 'hint', emoji: '👓'},
       {id: 20, name: '黄金の文鎮', desc: '敵の動きを完全に封じる重石。', rank: 'epic', atk: 25, special: 'stun', emoji: '🪙'},
       {id: 21, name: '龍文字の篭手', desc: '龍の如き力強い一撃を繰り出す。', rank: 'epic', atk: 30, emoji: '🐉'},
       {id: 22, name: '四字熟語の陣羽織', desc: '四連撃を出すと防御力が大幅アップ。', rank: 'epic', def: 20, special: 'comboDefense', emoji: '🥋'},
       {id: 23, name: '六書のクロスボウ', desc: '漢字の構成原理を利用した多角攻撃。', rank: 'epic', atk: 28, emoji: '🎯'},
       {id: 24, name: '漢籍の魔導書', desc: '難しい読みほど高火力の魔法が出る。', rank: 'epic', atk: 24, special: 'difficultyBoost', emoji: '📕'},
-      // Legendary (2%)
+
       {id: 25, name: '点画のレイピア', desc: '敵の隙をピンポイントで突く。', rank: 'legendary', atk: 35, emoji: '🤺'},
       {id: 26, name: '蒼天の半紙', desc: '自身のステータス異常を浄化する。', rank: 'legendary', def: 25, special: 'purify', emoji: '📜'},
       {id: 27, name: '行書の薙刀', desc: '流れに沿った広範囲攻撃。', rank: 'legendary', atk: 38, emoji: '🌀'},
@@ -299,14 +302,13 @@
     // =========================
     // Flick Input Layout (3列区切り)
     // =========================
-    // 要望の並びに近い形：3つずつ区切り + 「空き枠」は透明で枠だけ確保
     const flickLayout = [
       ['あ', 'か', 'さ'],
       ['た', 'な', 'は'],
       ['ま', 'や', 'ら'],
       ['',  'わ', '⌫'],
       ['゛', '゜', '小'],
-      ['ー', '',   '']   // 下の空き枠（必要ならここに「空白」など追加可）
+      ['ー', '',   '']
     ];
 
     const flickMap = {
@@ -352,8 +354,7 @@
       else if (roll < 88) rank = 'rare';
       else if (roll < 98) rank = 'epic';
       else rank = 'legendary';
-      const rankWeapons = weapons.filter(w => w.rank === rank);
-      return getRandomItem(rankWeapons);
+      return getRandomItem(weapons.filter(w => w.rank === rank));
     }
 
     function getRankColor(rank) {
@@ -431,17 +432,11 @@
       if (inputDisplay) inputDisplay.textContent = gameState.inputText || '　';
     }
 
-    function syncNameDisplay() {
-      const nameDisplay = document.getElementById('nameFlickDisplay');
-      if (nameDisplay) nameDisplay.textContent = gameState.playerName || '　';
-    }
-
     // =========================
     // Render
     // =========================
     function render() {
-      if (gameState.screen !== 'battle') stopTimer(); // battle以外ではタイマー止める
-
+      if (gameState.screen !== 'battle') stopTimer();
       const app = document.getElementById('app');
       if (!app) return;
 
@@ -458,61 +453,27 @@
       }
     }
 
+    // ★名前入力は常にキーボード
     function renderTitleScreen(container) {
-      const isKeyboard = gameState.nameInputMode === 'keyboard';
-      const isFlick = gameState.nameInputMode === 'flick';
-
       container.innerHTML = `
         <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
-          <div class="text-center mb-6">
-            <h1 class="title-font text-6xl font-bold mb-3 float-anim" style="color: #ffd700; text-shadow: 0 0 30px rgba(255,215,0,0.5);">
+          <div class="text-center mb-8">
+            <h1 class="title-font text-6xl font-bold mb-4 float-anim" style="color: #ffd700; text-shadow: 0 0 30px rgba(255,215,0,0.5);">
               漢字勇者
             </h1>
             <p class="text-2xl text-gray-300">〜 読みの試練 〜</p>
           </div>
 
-          <div class="mb-6">
-            <div class="text-7xl float-anim" style="animation-delay: 0.5s;">⚔️📖</div>
+          <div class="mb-8">
+            <div class="text-8xl float-anim" style="animation-delay: 0.5s;">⚔️📖</div>
           </div>
 
-          <div class="w-full max-w-md mb-4">
-            <div class="flex gap-2 mb-3">
-              <button onclick="setNameInputMode('keyboard')"
-                class="flex-1 px-3 py-2 rounded-xl border-2 ${isKeyboard ? 'border-yellow-400 bg-yellow-900/30' : 'border-gray-600 bg-gray-800/40 hover:bg-gray-700/40'} transition-all text-sm font-bold">
-                ⌨️ キーボード
-              </button>
-              <button onclick="setNameInputMode('flick')"
-                class="flex-1 px-3 py-2 rounded-xl border-2 ${isFlick ? 'border-yellow-400 bg-yellow-900/30' : 'border-gray-600 bg-gray-800/40 hover:bg-gray-700/40'} transition-all text-sm font-bold">
-                📱 フリック
-              </button>
-            </div>
-
-            ${isKeyboard ? `
-              <label class="block text-lg mb-2 text-gray-300">勇者の名前を入力</label>
-              <input type="text" id="playerNameInput"
-                class="w-full px-4 py-3 text-xl rounded-xl bg-gray-800 border-2 border-gray-600 focus:border-yellow-500 focus:outline-none text-white"
-                placeholder="名前を入力..."
-                value="${gameState.playerName}"
-                oninput="onNameKeyboardInput(this.value)">
-            ` : `
-              <label class="block text-lg mb-2 text-gray-300">勇者の名前を入力（フリック）</label>
-
-              <div class="input-display flex items-center justify-between mb-3">
-                <span id="nameFlickDisplay">${gameState.playerName || '　'}</span>
-                <button onclick="clearPlayerName()"
-                  class="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-bold transition-all">
-                  クリア
-                </button>
-              </div>
-
-              <div class="w-full">
-                ${renderFlickGridHTML("name")}
-              </div>
-
-              <p class="mt-2 text-xs text-gray-400">
-                ※「⌫」で1文字消去。「゛」「゜」「小」「ー」も使えます。
-              </p>
-            `}
+          <div class="w-full max-w-md mb-6">
+            <label class="block text-lg mb-2 text-gray-300">勇者の名前を入力</label>
+            <input type="text" id="playerNameInput"
+              class="w-full px-4 py-3 text-xl rounded-xl bg-gray-800 border-2 border-gray-600 focus:border-yellow-500 focus:outline-none text-white"
+              placeholder="名前を入力..."
+              value="${gameState.playerName}">
           </div>
 
           <button onclick="startGame()"
@@ -521,11 +482,9 @@
             冒険を始める
           </button>
 
-          <p class="mt-6 text-gray-500 text-sm">漢字の読み方を答えて敵を倒そう！</p>
+          <p class="mt-8 text-gray-500 text-sm">漢字の読み方を答えて敵を倒そう！</p>
         </div>
       `;
-
-      if (isFlick) syncNameDisplay();
     }
 
     function renderDifficultyScreen(container) {
@@ -573,8 +532,20 @@
             </button>
           </div>
 
+          <div class="mt-6 flex items-center gap-3 bg-black/30 border border-gray-700 rounded-2xl px-4 py-3">
+            <div class="text-sm text-gray-300 font-bold">バトル入力</div>
+            <button onclick="setBattleInputMode('keyboard')"
+              class="px-3 py-2 rounded-xl border-2 ${gameState.battleInputMode === 'keyboard' ? 'border-yellow-400 bg-yellow-900/30' : 'border-gray-600 bg-gray-800/40 hover:bg-gray-700/40'} text-sm font-bold">
+              ⌨️ キーボード
+            </button>
+            <button onclick="setBattleInputMode('flick')"
+              class="px-3 py-2 rounded-xl border-2 ${gameState.battleInputMode === 'flick' ? 'border-yellow-400 bg-yellow-900/30' : 'border-gray-600 bg-gray-800/40 hover:bg-gray-700/40'} text-sm font-bold">
+              📱 フリック
+            </button>
+          </div>
+
           <button onclick="goToInventory()"
-            class="mt-6 px-8 py-3 text-lg rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
+            class="mt-5 px-8 py-3 text-lg rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
             🎒 武器一覧 (${gameState.weapons.length})
           </button>
         </div>
@@ -669,14 +640,32 @@
               </button>
             </div>
 
-            <div class="flex-1 flex flex-col justify-center">
-              ${renderFlickGridHTML("battle")}
-            </div>
+            ${gameState.battleInputMode === 'keyboard' ? `
+              <div class="bg-black/30 border border-gray-700 rounded-2xl p-4">
+                <div class="text-sm text-gray-400 mb-2">キーボードで入力（Enterで決定）</div>
+                <input id="battleKeyboardInput"
+                  class="w-full px-4 py-3 text-xl rounded-xl bg-gray-800 border-2 border-gray-600 focus:border-yellow-500 focus:outline-none text-white"
+                  placeholder="よみを入力..."
+                  value="${gameState.inputText}"
+                  oninput="onBattleKeyboardInput(this.value)"
+                  onkeydown="onBattleKeyboardKeydown(event)">
+              </div>
+            ` : `
+              <div class="flex-1 flex flex-col justify-center items-center">
+                ${renderFlickGridHTML("battle")}
+              </div>
+            `}
           </div>
         </div>
       `;
 
       syncInputDisplay();
+
+      // battleでkeyboardならフォーカス（PC向け）
+      if (gameState.battleInputMode === 'keyboard') {
+        const el = document.getElementById('battleKeyboardInput');
+        if (el) setTimeout(() => el.focus(), 0);
+      }
     }
 
     function renderWeaponDropScreen(container) {
@@ -820,33 +809,32 @@
     }
 
     // =========================
-    // Title: name input mode
+    // Difficulty screen: battle input mode
     // =========================
-    function setNameInputMode(mode) {
-      gameState.nameInputMode = mode;
+    function setBattleInputMode(mode) {
+      gameState.battleInputMode = mode;
       render();
     }
 
-    function onNameKeyboardInput(val) {
-      gameState.playerName = (val || '').slice(0, 12); // 長すぎ防止（必要なら調整）
+    function onBattleKeyboardInput(val) {
+      gameState.inputText = (val || '').toLowerCase();
+      syncInputDisplay();
     }
 
-    function clearPlayerName() {
-      gameState.playerName = '';
-      syncNameDisplay();
+    function onBattleKeyboardKeydown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitAnswer();
+      }
     }
 
     // =========================
     // Game Logic
     // =========================
     function startGame() {
-      // keyboardモードなら入力欄からも拾う（未入力でもstateに反映）
       const nameInput = document.getElementById('playerNameInput');
-      if (nameInput) gameState.playerName = (nameInput.value || '').trim();
-
-      gameState.playerName = (gameState.playerName || '勇者').trim();
+      gameState.playerName = (nameInput?.value || '勇者').trim();
       if (!gameState.playerName) gameState.playerName = '勇者';
-
       gameState.screen = 'difficulty';
       render();
     }
@@ -912,7 +900,6 @@
         gameState.weapons.push(gameState.droppedWeapon);
       }
       gameState.droppedWeapon = null;
-
       stopTimer();
       gameState.screen = 'difficulty';
       render();
@@ -955,8 +942,7 @@
     function startFlick(event, key) {
       if (!key) return;
       event.preventDefault();
-      const p = event;
-      flickStartPos = { x: p.clientX, y: p.clientY };
+      flickStartPos = { x: event.clientX, y: event.clientY };
       currentFlickKey = key;
 
       const keyEl = event.target.closest('.flick-key');
@@ -974,13 +960,12 @@
         currentFlickKey = null;
         return;
       }
-
       event.preventDefault();
-      const endPos = { x: event.clientX, y: event.clientY };
 
+      const endPos = { x: event.clientX, y: event.clientY };
       const dx = endPos.x - flickStartPos.x;
       const dy = endPos.y - flickStartPos.y;
-      const threshold = 30;
+      const threshold = 26; // ちょい敏感に
 
       let direction = 'center';
       if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
@@ -996,99 +981,64 @@
     }
 
     function processFlickInput(key, direction, target) {
-      const isName = target === 'name';
-      const isBattle = target === 'battle';
-
-      if (!key) return;
+      if (target !== 'battle') return; // ★バトルのみ
 
       if (key === '⌫') {
-        if (isName) gameState.playerName = gameState.playerName.slice(0, -1);
-        if (isBattle) gameState.inputText = gameState.inputText.slice(0, -1);
-
+        gameState.inputText = gameState.inputText.slice(0, -1);
       } else if (key === '゛') {
-        if (isName) applyDakutenTo('name');
-        if (isBattle) applyDakutenTo('battle');
-
+        applyDakuten();
       } else if (key === '゜') {
-        if (isName) applyHandakutenTo('name');
-        if (isBattle) applyHandakutenTo('battle');
-
+        applyHandakuten();
       } else if (key === '小') {
-        if (isName) applySmallTo('name');
-        if (isBattle) applySmallTo('battle');
-
+        applySmall();
       } else if (key === 'ー') {
-        if (isName) gameState.playerName += 'ー';
-        if (isBattle) gameState.inputText += 'ー';
-
+        gameState.inputText += 'ー';
       } else if (flickMap[key]) {
         const char = flickMap[key][direction] || flickMap[key].center;
         if (char && char !== '（' && char !== '）' && char !== '〜') {
-          if (isName) gameState.playerName = (gameState.playerName + char).slice(0, 12);
-          if (isBattle) gameState.inputText += char;
+          gameState.inputText += char;
         }
       }
-
-      if (isName) syncNameDisplay();
-      if (isBattle) syncInputDisplay();
+      syncInputDisplay();
     }
 
-    function applyDakutenTo(target) {
-      const text = target === 'name' ? gameState.playerName : gameState.inputText;
-      if (!text) return;
-      const lastChar = text.slice(-1);
-      if (!dakutenMap[lastChar]) return;
-
-      const newText = text.slice(0, -1) + dakutenMap[lastChar];
-      if (target === 'name') gameState.playerName = newText;
-      else gameState.inputText = newText;
+    function applyDakuten() {
+      if (!gameState.inputText) return;
+      const lastChar = gameState.inputText.slice(-1);
+      if (dakutenMap[lastChar]) gameState.inputText = gameState.inputText.slice(0, -1) + dakutenMap[lastChar];
     }
 
-    function applyHandakutenTo(target) {
-      const text = target === 'name' ? gameState.playerName : gameState.inputText;
-      if (!text) return;
-      const lastChar = text.slice(-1);
-      if (!handakutenMap[lastChar]) return;
-
-      const newText = text.slice(0, -1) + handakutenMap[lastChar];
-      if (target === 'name') gameState.playerName = newText;
-      else gameState.inputText = newText;
+    function applyHandakuten() {
+      if (!gameState.inputText) return;
+      const lastChar = gameState.inputText.slice(-1);
+      if (handakutenMap[lastChar]) gameState.inputText = gameState.inputText.slice(0, -1) + handakutenMap[lastChar];
     }
 
-    function applySmallTo(target) {
-      const text = target === 'name' ? gameState.playerName : gameState.inputText;
-      if (!text) return;
-      const lastChar = text.slice(-1);
-      if (!smallMap[lastChar]) return;
-
-      const newText = text.slice(0, -1) + smallMap[lastChar];
-      if (target === 'name') gameState.playerName = newText;
-      else gameState.inputText = newText;
+    function applySmall() {
+      if (!gameState.inputText) return;
+      const lastChar = gameState.inputText.slice(-1);
+      if (smallMap[lastChar]) gameState.inputText = gameState.inputText.slice(0, -1) + smallMap[lastChar];
     }
 
     function renderFlickGridHTML(target) {
-      // 3列グリッドで「空き枠」も同サイズ確保（disabledで透明）
       return `
-        <div class="w-full max-w-md mx-auto">
-          <div class="grid grid-cols-3 gap-2">
-            ${flickLayout.flat().map(key => {
-              const isEmpty = !key;
-              const cls = isEmpty ? 'flick-key disabled' : 'flick-key';
-              const safeKey = key || '';
-              return `
-                <div class="${cls}"
-                  ${isEmpty ? '' : `
-                    data-key="${safeKey}"
-                    onpointerdown="startFlick(event, '${safeKey}')"
-                    onpointerup="endFlick(event, '${target}')"
-                    onpointerleave="endFlick(event, '${target}')"
-                    onpointermove="moveFlick(event)"
-                  `}>
-                  ${safeKey}
-                </div>
-              `;
-            }).join('')}
-          </div>
+        <div class="grid grid-cols-3 gap-2">
+          ${flickLayout.flat().map(key => {
+            const isEmpty = !key;
+            const cls = isEmpty ? 'flick-key disabled' : 'flick-key';
+            const safeKey = key || '';
+            return `
+              <div class="${cls}"
+                ${isEmpty ? '' : `
+                  onpointerdown="startFlick(event, '${safeKey}')"
+                  onpointerup="endFlick(event, '${target}')"
+                  onpointerleave="endFlick(event, '${target}')"
+                  onpointermove="moveFlick(event)"
+                `}>
+                ${safeKey}
+              </div>
+            `;
+          }).join('')}
         </div>
       `;
     }
@@ -1100,6 +1050,7 @@
       stopTimer();
       const answer = (gameState.inputText || '').toLowerCase();
       const correct = (gameState.currentQuestion.reading || '').toLowerCase();
+
       if (answer === correct) handleCorrectAnswer();
       else handleWrongAnswer();
     }
@@ -1160,7 +1111,6 @@
         gameState.droppedWeapon = getRandomWeapon();
         gameState.screen = 'weaponDrop';
         render();
-        setTimeout(() => {}, 10);
         return;
       }
 
