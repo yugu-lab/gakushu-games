@@ -20,7 +20,6 @@
       touch-action: manipulation;
     }
 
-    /* 雲（雰囲気） */
     .cloud {
       position:absolute;
       top: 8%;
@@ -46,7 +45,6 @@
       to{ transform: translateX(calc(100vw + 240px)); }
     }
 
-    /* ===== 路面（安全な2D描画） ===== */
     #road-wrap{
       position:absolute;
       inset:0;
@@ -68,7 +66,6 @@
         linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.00)),
         linear-gradient(to bottom, #5f5f5f 0%, #505050 55%, #6b6b6b 100%);
     }
-    /* 路肩 */
     #road::before,#road::after{
       content:"";
       position:absolute; top:0; bottom:0;
@@ -83,7 +80,6 @@
     #road::before{ left:0; }
     #road::after{ right:0; }
 
-    /* センターライン（スクロール） */
     #centerline{
       position:absolute;
       left: 50%;
@@ -102,8 +98,6 @@
       );
       filter: drop-shadow(0 0 6px rgba(255,255,255,0.18));
     }
-
-    /* レーンの薄いガイド */
     .lane-guide{
       position:absolute;
       top:0; bottom:0;
@@ -111,7 +105,6 @@
       background: rgba(255,255,255,0.18);
     }
 
-    /* 速度線 */
     #speedlines{
       position:absolute; inset:0;
       background: repeating-linear-gradient(115deg, rgba(255,255,255,0.0) 0 22px, rgba(255,255,255,0.12) 22px 24px);
@@ -121,7 +114,6 @@
       z-index: 6;
     }
 
-    /* ===== カート ===== */
     #karts-container{ position:absolute; inset:0; z-index: 5; }
     .kart {
       position:absolute;
@@ -144,7 +136,6 @@
       letter-spacing: 0.02em;
     }
 
-    /* ドリフト火花 */
     #sparks-layer{ position:absolute; inset:0; z-index: 7; pointer-events:none; }
     .spark {
       position:absolute;
@@ -193,7 +184,7 @@
     <div class="bg-white/10 backdrop-blur rounded-2xl p-5 mb-6 max-w-md w-full">
       <h2 class="text-xl font-bold mb-3 text-center text-pink-200">カート</h2>
       <div class="grid grid-cols-4 gap-3 mb-3" id="kart-select"></div>
-      <p class="text-center text-sm text-gray-200">選択中: <span id="selected-kart" class="text-2xl">🛒</span></p>
+      <p class="text-center text-sm text-gray-200">選択中: <span id="selected-kart" class="text-2xl">🦏</span></p>
     </div>
 
     <div class="text-center text-sm text-gray-300 mb-4">
@@ -334,11 +325,11 @@ const itemDisplay  = document.getElementById('item-display');
 
 const gameState = {
   screen: 'title',
-  selectedChar: characters[0],
-  selectedKart: karts[4],
+  selectedChar: characters[0], // ★初期値を先頭に統一
+  selectedKart: karts[0],      // ★初期値を先頭に統一（リングが1つになる）
   totalLaps: 10,
   players: [],
-  player: null, // 固定参照
+  player: null,
   pausedByQuiz: false,
   quizLapTriggered: -1,
   keys: { up:false, down:false, left:false, right:false, drift:false },
@@ -349,20 +340,24 @@ const gameState = {
   scrollY: 0
 };
 
-const LANES = 3; // 3レーン
+const LANES = 3;
 function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 function lerp(a,b,t){ return a + (b-a)*t; }
 
-/* ========= 選択UI ========= */
+/* ========= 選択UI（★リングは「選択中だけ」） ========= */
 function initCharacterSelect(){
   const wrap = document.getElementById('char-select');
   wrap.innerHTML = '';
-  characters.forEach((ch, idx)=>{
+  characters.forEach((ch)=>{
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'text-3xl p-2 rounded-lg bg-white/20 hover:bg-white/40 transition-all hover:scale-110 cursor-pointer';
     btn.textContent = ch;
-    if(idx===0) btn.classList.add('ring-4','ring-yellow-300');
+
+    if(ch === gameState.selectedChar){
+      btn.classList.add('ring-4','ring-yellow-300');
+    }
+
     btn.addEventListener('click', ()=>{
       gameState.selectedChar = ch;
       document.getElementById('selected-char').textContent = ch;
@@ -372,15 +367,20 @@ function initCharacterSelect(){
     wrap.appendChild(btn);
   });
 }
+
 function initKartSelect(){
   const wrap = document.getElementById('kart-select');
   wrap.innerHTML = '';
-  karts.forEach((k, idx)=>{
+  karts.forEach((k)=>{
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'text-3xl p-2 rounded-lg bg-white/20 hover:bg-white/40 transition-all hover:scale-110 cursor-pointer';
     btn.textContent = k;
-    if(k===gameState.selectedKart || idx===0) btn.classList.add('ring-4','ring-pink-300');
+
+    if(k === gameState.selectedKart){
+      btn.classList.add('ring-4','ring-pink-300');
+    }
+
     btn.addEventListener('click', ()=>{
       gameState.selectedKart = k;
       document.getElementById('selected-kart').textContent = k;
@@ -400,7 +400,6 @@ function spawnSpark(player, charge){
   const view = document.getElementById('race-view').getBoundingClientRect();
   const road = roadEl.getBoundingClientRect();
 
-  // road内の位置に合わせる（見える保証）
   const laneX = lerp(0.25, 0.75, player.lanePos/(LANES-1));
   const x = (road.left - view.left) + road.width * laneX + (Math.random()*12-6);
   const y = (road.top  - view.top)  + road.height * 0.82 + 30 + (Math.random()*8);
@@ -418,7 +417,7 @@ class Player {
     this.kart = kart;
     this.isAI = isAI;
 
-    this.progress = 0; // 0..100
+    this.progress = 0;
     this.laps = 0;
     this.finished = false;
 
@@ -542,21 +541,14 @@ class Player {
     const view = document.getElementById('race-view').getBoundingClientRect();
     const road = roadEl.getBoundingClientRect();
 
-    // road内に「必ず出る」座標系にする
     const laneX = lerp(0.25, 0.75, this.lanePos/(LANES-1));
     const x = (road.left - view.left) + road.width * laneX;
 
-    // 奥(上)へ：CPUは順位に応じて上へ、プレイヤーは下固定
-    const baseY = this.isAI
-      ? (0.22 + orderIndex*0.10)  // だんだん下へ
-      : 0.84;                     // 自分は常に下
-
+    const baseY = this.isAI ? (0.22 + orderIndex*0.10) : 0.84;
     const y = (road.top - view.top) + road.height * clamp(baseY, 0.18, 0.86);
 
-    // サイズ：奥は小さめ
     const scale = this.isAI ? (0.85 - orderIndex*0.05) : 1.10;
 
-    // 傾き
     const steer = (!this.isAI) ? ((gameState.keys.right?1:0) - (gameState.keys.left?1:0)) : 0;
     const tilt = (this.drifting ? this.driftDir : steer) * 10;
 
@@ -638,7 +630,7 @@ function closeQuizWithSuccess(){
   gameState.player.applyBoost(0.9, 3.2);
 }
 
-/* ========= アイテム ========= */
+/* ========= ランキング/アイテム ========= */
 function getRanking(){
   return [...gameState.players].sort((a,b)=>{
     if(a.laps !== b.laps) return b.laps - a.laps;
@@ -668,7 +660,6 @@ function applyItemEffect(item){
   if(item === '👻'){ me.applyBoost(0.6, 2.6); return '👻 すり抜け気分！'; }
   return '🎯 発動！';
 }
-
 function handleItemUse(){
   if(!gameState.player || gameState.pausedByQuiz) return;
 
@@ -686,7 +677,7 @@ function handleItemUse(){
   }
 }
 
-/* ========= HUD & スクロール ========= */
+/* ========= HUD/スクロール ========= */
 function updateHUD(){
   const ranking = getRanking();
   const myPos = ranking.findIndex(p => p === gameState.player) + 1;
@@ -700,15 +691,11 @@ function updateHUD(){
   driftMeterEl.textContent = Math.round(gameState.player.driftCharge*100);
 
   speedLinesEl.style.opacity = (pct >= 78 || gameState.player.boostTime > 0.1) ? 0.35 : 0;
-
   itemDisplay.textContent = gameState.player.currentItem ? gameState.player.currentItem : '---';
 }
-
 function updateRoadScroll(dt){
   const s = gameState.player ? gameState.player.speed : 0;
-  gameState.scrollY += s * dt * 260; // スクロール速度（見た目用）
-
-  // センターラインを流す
+  gameState.scrollY += s * dt * 260;
   centerlineEl.style.transform = `translateX(-50%) translateY(${gameState.scrollY}px)`;
 }
 
@@ -779,7 +766,7 @@ function startGame(){
   gameState.pausedByQuiz = false;
   gameState.quizLapTriggered = -1;
 
-  // まず1回描画して「見える」を保証
+  // 初回描画
   const ranking = getRanking();
   ranking.forEach((p, idx)=> p.render(idx));
   updateHUD();
@@ -842,7 +829,6 @@ document.getElementById('submit-answer').addEventListener('click', ()=>{
   }
 });
 
-/* キーボード */
 document.addEventListener('keydown', (e)=>{
   if(gameState.screen !== 'game') return;
 
@@ -866,7 +852,7 @@ document.addEventListener('keyup', (e)=>{
   if(e.key === 'Shift')      gameState.keys.drift = false;
 });
 
-/* スマホ/マウス共通：pointerで長押し */
+/* pointer長押し */
 function bindHoldPointer(btnId, onDown, onUp){
   const el = document.getElementById(btnId);
   el.addEventListener('pointerdown', (e)=>{ e.preventDefault(); el.setPointerCapture(e.pointerId); onDown(); });
@@ -881,7 +867,7 @@ bindHoldPointer('btn-right', ()=> gameState.keys.right = true,()=> gameState.key
 bindHoldPointer('btn-drift', ()=> gameState.keys.drift = true,()=> gameState.keys.drift = false);
 document.getElementById('btn-item').addEventListener('click', (e)=>{ e.preventDefault(); handleItemUse(); });
 
-/* 初期化 */
+/* 初期化（★表示も初期値に合わせる） */
 initCharacterSelect();
 initKartSelect();
 document.getElementById('selected-char').textContent = gameState.selectedChar;
