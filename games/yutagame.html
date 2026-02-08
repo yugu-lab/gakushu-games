@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>算数カートレース v4</title>
+  <title>算数カートレース v4.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
@@ -22,25 +22,7 @@
       background: linear-gradient(180deg, #78c6ff 0%, #e5f7ff 45%, #7fe0a0 45%, #67b987 100%);
       touch-action: manipulation;
     }
-
-    /* Canvasは絶対前面で表示 */
-    #game-canvas{
-      position:absolute; inset:0;
-      width: 100%; height: 100%;
-      z-index: 10;
-    }
-
-    #debug{
-      position:absolute; left:10px; bottom:10px;
-      z-index: 99;
-      background: rgba(0,0,0,0.55);
-      color:#fff; padding:8px 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      line-height: 1.35;
-      pointer-events:none;
-      backdrop-filter: blur(4px);
-    }
+    #game-canvas{ position:absolute; inset:0; width:100%; height:100%; z-index:10; }
 
     @keyframes shake { 0%,100%{ transform: translateX(0);} 25%{ transform: translateX(-6px);} 75%{ transform: translateX(6px);} }
     .shake { animation: shake 220ms ease-in-out; }
@@ -60,7 +42,7 @@
     <h1 class="text-4xl md:text-6xl font-black text-yellow-300 mb-3 text-center drop-shadow-lg">
       🏎️ 算数カートレース 🏎️
     </h1>
-    <p class="text-lg md:text-xl mb-6 text-cyan-200">カーブ＆障害物！ 1周ごとに算数！</p>
+    <p class="text-lg md:text-xl mb-6 text-cyan-200">アイテム箱あり！ カーブ＆障害物！ 1周ごとに算数！</p>
 
     <div class="bg-white/10 backdrop-blur rounded-2xl p-5 mb-5 max-w-md w-full">
       <h2 class="text-xl font-bold mb-3 text-center text-yellow-200">キャラクター</h2>
@@ -89,7 +71,7 @@
     <!-- HUD -->
     <div class="bg-black/80 p-3 flex flex-wrap gap-2 justify-between items-center">
       <div class="text-base md:text-lg font-bold">
-        <span class="text-white/60 mr-2">BUILD v4.0</span>
+        <span class="text-white/60 mr-2">BUILD v4.1</span>
         🏁 <span id="lap-display">1</span>/<span id="lap-total">10</span>周
         <span class="mx-2">|</span>
         🏆 <span id="position">1</span>位/5
@@ -105,7 +87,6 @@
     <!-- レースビュー -->
     <div id="race-view">
       <canvas id="game-canvas"></canvas>
-      <div id="debug" class="hidden"></div>
     </div>
 
     <!-- 操作 -->
@@ -163,6 +144,7 @@
       <p class="mb-2">使用アイテム: <span id="items-used" class="font-black">0</span>個</p>
       <p>レースタイム: <span id="race-time" class="font-black">0:00</span></p>
       <p class="mt-2 text-sm text-white/70">障害物ヒット: <span id="hits" class="font-black">0</span>回</p>
+      <p class="mt-1 text-sm text-white/70">アイテム箱取得: <span id="boxes" class="font-black">0</span>回</p>
     </div>
 
     <button id="retry-btn"
@@ -175,7 +157,7 @@
 
 <script>
 /* ===========================
-   共通ユーティリティ
+   ユーティリティ
 =========================== */
 function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 function lerp(a,b,t){ return a + (b-a)*t; }
@@ -183,7 +165,7 @@ function rand(min,max){ return Math.random()*(max-min)+min; }
 function randi(min,max){ return Math.floor(rand(min,max+1)); }
 
 /* ===========================
-   初期データ
+   データ
 =========================== */
 const characters = ['🥸','🥷🏿','💀','💰','🐜','🐰','🐷','🦇'];
 const karts      = ['🦏','🦀','🐄','🐖','🛒','🐓','🐜','🐇'];
@@ -204,39 +186,59 @@ const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d', { alpha: true });
 
 /* ===========================
-   コース（カーブ）
-   centerOffset(t): -1..+1
-   tはコース上の距離(0..LAP_LEN)
+   コース（見た目を強化）
 =========================== */
-const LAP_LEN = 1000; // 1周の「距離」単位（内部）
+const LAP_LEN = 1000;
 function centerOffset(t){
-  // 周によって微妙に違う感（tに周期を複数重ねる）
-  const a = Math.sin(t*0.008) * 0.55;
-  const b = Math.sin(t*0.019 + 1.2) * 0.25;
-  const c = Math.sin(t*0.041 + 2.1) * 0.12;
-  return clamp(a+b+c, -0.95, 0.95);
+  // v4.0より“コース感”を強める（振れ幅を少し増やす）
+  const a = Math.sin(t*0.0075) * 0.70;
+  const b = Math.sin(t*0.017  + 1.2) * 0.30;
+  const c = Math.sin(t*0.039  + 2.0) * 0.14;
+  return clamp(a+b+c, -0.98, 0.98);
 }
 
 /* ===========================
-   障害物（距離tと横位置x -1..1）
+   障害物（既存）
 =========================== */
 let obstacles = [];
 function buildObstacles(totalLaps){
   obstacles = [];
   for(let lap=0; lap<totalLaps; lap++){
     const base = lap * LAP_LEN;
-    // 1周あたり 6〜10個
-    const n = randi(6,10);
+    const n = randi(6,9);
     for(let i=0;i<n;i++){
-      const tt = base + randi(140, LAP_LEN-120);
-      // コース中心から少しズラす
+      const tt = base + randi(150, LAP_LEN-140);
       const off = centerOffset(tt % LAP_LEN);
-      const x = clamp(off + rand(-0.55, 0.55), -0.95, 0.95);
+      const x = clamp(off + rand(-0.52, 0.52), -0.95, 0.95);
       const kind = Math.random() < 0.6 ? 'cone' : 'banana';
       obstacles.push({ t: tt, x, kind, used:false });
     }
   }
   obstacles.sort((a,b)=>a.t-b.t);
+}
+
+/* ===========================
+   ★アイテム箱
+   - 箱に当たると必ずアイテム
+   - 取った箱は一定時間で復活
+=========================== */
+let itemBoxes = [];
+const BOX_RESPAWN = 7.5; // 秒
+function buildItemBoxes(totalLaps){
+  itemBoxes = [];
+  for(let lap=0; lap<totalLaps; lap++){
+    const base = lap * LAP_LEN;
+    // 1周あたり 4〜6個：カーブ区間にも置く
+    const n = randi(4,6);
+    for(let i=0;i<n;i++){
+      const tt = base + randi(120, LAP_LEN-120);
+      const off = centerOffset(tt % LAP_LEN);
+      // 道路の中心寄りに置く（取りやすい）
+      const x = clamp(off + rand(-0.35, 0.35), -0.80, 0.80);
+      itemBoxes.push({ t: tt, x, cooldown: 0 });
+    }
+  }
+  itemBoxes.sort((a,b)=>a.t-b.t);
 }
 
 /* ===========================
@@ -304,12 +306,11 @@ function closeQuizSuccess(){
   clearInterval(quizTimer);
   mathModal.classList.add('hidden');
   gameState.pausedByQuiz = false;
-  // 正解で小ブースト
   gameState.player.boost(0.9, 0.22);
 }
 
 /* ===========================
-   プレイヤー／AI
+   レーサー
 =========================== */
 class Racer {
   constructor(char, kart, isAI){
@@ -317,40 +318,37 @@ class Racer {
     this.kart = kart;
     this.isAI = isAI;
 
-    this.totalDist = 0;     // コース上の進んだ距離（順位に直結）
-    this.speed = isAI ? rand(0.33, 0.42) : 0; // 0..1 くらいのスケール
-    this.vx = 0;            // 横速度
-    this.x = isAI ? rand(-0.25, 0.25) : 0; // -1..+1（道路内）
-    this.drift = 0;         // 0..1
+    this.totalDist = 0;
+    this.speed = isAI ? rand(0.33, 0.42) : 0;
+    this.vx = 0;
+    this.x = isAI ? rand(-0.25, 0.25) : 0;
+    this.drift = 0;
     this.boostTime = 0;
     this.boostPower = 0;
 
     this.item = null;
     this.stun = 0;
 
-    // AI性格
     this.aiLineBias = isAI ? rand(-0.35, 0.35) : 0;
     this.aiTopSpeed = isAI ? rand(0.36, 0.44) : 0.45;
     this.aiAggro = isAI ? rand(0.6, 1.0) : 0;
 
     this.hits = 0;
+    this.boxes = 0;
   }
 
   giveItem(){
     this.item = itemsPool[randi(0, itemsPool.length-1)];
   }
-
   boost(sec, power){
     this.boostTime = Math.max(this.boostTime, sec);
     this.boostPower = Math.max(this.boostPower, power);
   }
-
   spin(sec){
     this.stun = Math.max(this.stun, sec);
     this.speed *= 0.35;
     this.vx *= -0.35;
   }
-
   useItem(){
     if(!this.item) return null;
     const it = this.item;
@@ -358,94 +356,74 @@ class Racer {
     return it;
   }
 
-  update(dt, courseCenterX, roadHalfW, aheadList){
-    // スタン
+  update(dt, courseCenterX, aheadList){
     if(this.stun > 0){
       this.stun -= dt;
       this.speed = Math.max(0, this.speed - dt*0.25);
     }
-
-    // ブースト
     if(this.boostTime > 0){
       this.boostTime -= dt;
+      if(this.boostTime <= 0) this.boostPower = 0;
     }
 
     if(this.isAI){
-      // AI：コース中心 + bias を狙う。障害物を避ける。前走者を避けて抜く。
       let targetX = courseCenterX + this.aiLineBias;
 
-      // 近い障害物を回避
-      const lookAhead = 120;
+      // 障害物回避
+      const lookAhead = 140;
       const myT = this.totalDist;
       for(const ob of obstacles){
         if(ob.used) continue;
         const d = ob.t - myT;
         if(d < 0) continue;
         if(d > lookAhead) break;
-        // 障害物の位置が近いならずらす
-        const ox = ob.x;
-        const near = Math.abs(ox - this.x) < 0.18;
+        const near = Math.abs(ob.x - this.x) < 0.18;
         if(near){
-          targetX += (this.x < ox ? -0.35 : 0.35) * (1 - d/lookAhead);
+          targetX += (this.x < ob.x ? -0.35 : 0.35) * (1 - d/lookAhead);
         }
       }
 
-      // 前の相手に近いなら、ラインを変えて抜く
+      // 前走者で抜き
       for(const a of aheadList){
         const dd = a.totalDist - this.totalDist;
-        if(dd > 0 && dd < 80){
-          const closeX = Math.abs(a.x - this.x) < 0.16;
+        if(dd > 0 && dd < 90){
+          const closeX = Math.abs(a.x - this.x) < 0.17;
           if(closeX){
-            targetX += (this.x < a.x ? -0.28 : 0.28) * (1 - dd/80);
+            targetX += (this.x < a.x ? -0.30 : 0.30) * (1 - dd/90);
           }
         }
       }
 
       targetX = clamp(targetX, -0.95, 0.95);
 
-      // 横方向に滑らかに追従（精密）
       const steer = clamp((targetX - this.x) * 4.2, -1.0, 1.0);
       this.vx += steer * dt * 1.9;
       this.vx *= (1 - dt*2.0);
 
-      // 速度：ゴムバンド（最後尾ほどちょい速く）
       const rank = getRanking().findIndex(r => r === this) + 1;
-      const rubber = clamp((6 - rank) * 0.012, 0, 0.06); // 5位は+0.012…みたいな
-      const targetSp = this.aiTopSpeed + rubber;
+      const rubber = clamp((6 - rank) * 0.012, 0, 0.06);
 
-      // カーブがきついと少し落とす（コース中心から離れるほど不利）
-      const curvePenalty = Math.abs(this.x - courseCenterX) * 0.08;
-      let sp = targetSp - curvePenalty;
+      const curvePenalty = Math.abs(this.x - courseCenterX) * 0.085;
+      const targetSp = (this.aiTopSpeed + rubber) - curvePenalty;
 
-      // たまにドリフトっぽい滑り
-      if(Math.random() < 0.005 * this.aiAggro && sp > 0.34){
-        this.boost(0.45, 0.07);
-      }
-
-      // 加速/減速
       const accel = 0.55;
-      this.speed = lerp(this.speed, sp, 1 - Math.exp(-accel*dt));
+      this.speed = lerp(this.speed, targetSp, 1 - Math.exp(-accel*dt));
 
-      // アイテム
-      if(!this.item && Math.random() < 0.008) this.giveItem();
-      if(this.item && Math.random() < 0.004) {
+      // アイテム（AIは箱で確実に取るのでここは控えめ）
+      if(this.item && Math.random() < 0.003){
         const it = this.useItem();
-        // AIは簡略：🍄⭐だけ自分強化、他は前方妨害
         if(it === '🍄') this.boost(0.7, 0.12);
         if(it === '⭐') this.boost(1.0, 0.18);
       }
     }else{
-      // 人間：精密ハンドル（連続値）
       const steering = (gameState.keys.right?1:0) - (gameState.keys.left?1:0);
       const accel = gameState.keys.up ? 0.62 : 0.0;
       const brake = gameState.keys.down ? 0.95 : 0.0;
 
-      // ドリフト：横の慣性を増やして滑る
       const drifting = gameState.keys.drift && Math.abs(steering) > 0 && this.speed > 0.18 && this.stun<=0;
       if(drifting){
         this.drift = clamp(this.drift + dt*0.55, 0, 1);
       }else{
-        // ドリフト解除時、溜めに応じてミニターボ
         if(this.drift > 0.22){
           const pow = this.drift > 0.75 ? 0.18 : (this.drift > 0.5 ? 0.13 : 0.09);
           const sec = this.drift > 0.75 ? 1.0 : (this.drift > 0.5 ? 0.75 : 0.55);
@@ -454,48 +432,29 @@ class Racer {
         this.drift = 0;
       }
 
-      // 横加速度（ドリフト中は滑りやすい＝慣性強め）
       const steerPower = drifting ? 2.2 : 3.4;
       this.vx += steering * dt * steerPower;
 
-      // 横摩擦（ドリフト中は弱くして“滑り”を出す）
       const sideFric = drifting ? 0.55 : 0.85;
       this.vx *= (1 - dt * (2.6*sideFric));
 
-      // 速度
       const top = 0.46;
-      const target = clamp(top + (this.boostTime>0 ? this.boostPower : 0) , 0, 0.62);
-
-      // カーブの外側を走ると少し落ちる（ライン取り重要）
-      const curvePenalty = Math.abs(this.x - courseCenterX) * 0.11;
+      const target = clamp(top + (this.boostTime>0 ? this.boostPower : 0), 0, 0.62);
+      const curvePenalty = Math.abs(this.x - courseCenterX) * 0.12;
 
       this.speed += accel * dt * 0.55;
       this.speed -= brake * dt * 0.85;
-      this.speed -= dt * 0.22; // 自然減速
+      this.speed -= dt * 0.22;
       this.speed = clamp(this.speed, 0, target - curvePenalty);
-
-      // アイテム
-      if(!this.item && Math.random() < 0.01) this.giveItem();
     }
 
-    // ブースト時間減
-    if(this.boostTime > 0){
-      this.boostTime -= dt;
-      if(this.boostTime <= 0) this.boostPower = 0;
-    }
-
-    // 横位置更新（道路内）
     this.x += this.vx * dt;
     this.x = clamp(this.x, -0.98, 0.98);
 
-    // 進行
-    // カーブ中は内側が少し有利、外側は不利（“抜ける”が起きやすい）
-    const lineBonus = 1 - Math.abs(this.x - courseCenterX) * 0.06;
+    const lineBonus = 1 - Math.abs(this.x - courseCenterX) * 0.07;
     const forward = this.speed * lineBonus;
 
-    this.totalDist += forward * dt * 220; // 進み量の係数
-
-    // 周回・ゴール
+    this.totalDist += forward * dt * 220;
     const lapNow = Math.floor(this.totalDist / LAP_LEN);
     if(lapNow >= gameState.totalLaps){
       this.totalDist = gameState.totalLaps * LAP_LEN;
@@ -520,7 +479,8 @@ const gameState = {
   correctAnswers: 0,
   itemsUsed: 0,
   startTime: 0,
-  hits: 0
+  hits: 0,
+  boxes: 0
 };
 
 function getRanking(){
@@ -528,7 +488,7 @@ function getRanking(){
 }
 
 /* ===========================
-   Canvasサイズ
+   Canvas
 =========================== */
 function resizeCanvas(){
   const rect = document.getElementById('race-view').getBoundingClientRect();
@@ -541,19 +501,17 @@ function resizeCanvas(){
 window.addEventListener('resize', resizeCanvas);
 
 /* ===========================
-   描画（簡易OutRun風：手前が広い）
+   描画（コース感UP）
 =========================== */
-function drawText(x,y,text,size=22,alpha=1,shadow=true){
+function drawText(x,y,text,size=22,alpha=1){
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.font = `${size}px "Zen Maru Gothic", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  if(shadow){
-    ctx.shadowColor = 'rgba(0,0,0,0.45)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 4;
-  }
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 4;
   ctx.fillText(text, x, y);
   ctx.restore();
 }
@@ -561,54 +519,79 @@ function drawText(x,y,text,size=22,alpha=1,shadow=true){
 function draw(){
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
-
   ctx.clearRect(0,0,w,h);
 
-  // 地面（簡易）
-  ctx.fillStyle = 'rgba(0,0,0,0.06)';
+  // 背景の芝を少し“地形っぽく”
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
   ctx.fillRect(0, h*0.45, w, h*0.55);
 
-  // 視点
-  const horizon = h*0.18;
-  const baseY = h*0.92;
-
-  // 自分の距離を基準に「先の道」を描く
   const me = gameState.player;
   const t0 = me.totalDist;
 
-  // 道の幅（手前広く、奥狭い）
-  const roadWNear = w*0.72;
-  const roadWFar  = w*0.12;
+  const horizon = h*0.18;
+  const baseY = h*0.92;
 
-  // 道を分割して描く
-  const segments = 70;
+  const roadWNear = w*0.74;
+  const roadWFar  = w*0.11;
+
+  const segments = 75;
+
+  // 道の外側（芝・ガード）も描くため、路面の前に“外側”を描く
   for(let i=segments; i>=1; i--){
     const p0 = (i-1)/segments;
     const p1 = i/segments;
 
-    // 距離（奥ほど先）
-    const dt0 = t0 + p0*260;
-    const dt1 = t0 + p1*260;
+    const dt0 = t0 + p0*270;
+    const dt1 = t0 + p1*270;
 
     const c0 = centerOffset(dt0 % LAP_LEN);
     const c1 = centerOffset(dt1 % LAP_LEN);
 
-    // 道中心
-    const cx0 = w/2 + c0 * (w*0.22) * (1 - p0*0.75);
-    const cx1 = w/2 + c1 * (w*0.22) * (1 - p1*0.75);
+    const cx0 = w/2 + c0 * (w*0.26) * (1 - p0*0.78);
+    const cx1 = w/2 + c1 * (w*0.26) * (1 - p1*0.78);
 
-    // 道幅
     const rw0 = lerp(roadWNear, roadWFar, p0);
     const rw1 = lerp(roadWNear, roadWFar, p1);
 
-    // y（遠近）
     const y0 = lerp(baseY, horizon, p0);
     const y1 = lerp(baseY, horizon, p1);
 
-    // 路面の色（ストライプ）
-    const stripe = (Math.floor((dt0)/24) % 2 === 0);
-    ctx.fillStyle = stripe ? 'rgba(95,95,95,0.92)' : 'rgba(86,86,86,0.92)';
+    // 外側の芝（道より少し広く）
+    const grassW0 = rw0 * 1.45;
+    const grassW1 = rw1 * 1.45;
+    ctx.fillStyle = (Math.floor(dt0/40)%2===0) ? 'rgba(78,180,110,0.38)' : 'rgba(60,160,95,0.36)';
+    ctx.beginPath();
+    ctx.moveTo(cx0 - grassW0/2, y0);
+    ctx.lineTo(cx0 + grassW0/2, y0);
+    ctx.lineTo(cx1 + grassW1/2, y1);
+    ctx.lineTo(cx1 - grassW1/2, y1);
+    ctx.closePath();
+    ctx.fill();
 
+    // ガードレール（白い帯）
+    const guardW0 = Math.max(2, rw0*0.018);
+    const guardW1 = Math.max(1, rw1*0.018);
+    ctx.fillStyle = 'rgba(240,240,240,0.38)';
+    // 左
+    ctx.beginPath();
+    ctx.moveTo(cx0 - rw0/2 - guardW0*2, y0);
+    ctx.lineTo(cx0 - rw0/2 - guardW0*0.5, y0);
+    ctx.lineTo(cx1 - rw1/2 - guardW1*0.5, y1);
+    ctx.lineTo(cx1 - rw1/2 - guardW1*2, y1);
+    ctx.closePath();
+    ctx.fill();
+    // 右
+    ctx.beginPath();
+    ctx.moveTo(cx0 + rw0/2 + guardW0*0.5, y0);
+    ctx.lineTo(cx0 + rw0/2 + guardW0*2, y0);
+    ctx.lineTo(cx1 + rw1/2 + guardW1*2, y1);
+    ctx.lineTo(cx1 + rw1/2 + guardW1*0.5, y1);
+    ctx.closePath();
+    ctx.fill();
+
+    // 路面
+    const stripe = (Math.floor(dt0/24)%2===0);
+    ctx.fillStyle = stripe ? 'rgba(98,98,98,0.94)' : 'rgba(88,88,88,0.94)';
     ctx.beginPath();
     ctx.moveTo(cx0 - rw0/2, y0);
     ctx.lineTo(cx0 + rw0/2, y0);
@@ -617,33 +600,31 @@ function draw(){
     ctx.closePath();
     ctx.fill();
 
-    // 路肩（黄黒）
-    const edgeW0 = Math.max(6, rw0*0.04);
-    const edgeW1 = Math.max(2, rw1*0.04);
-
-    const edgeStripe = (Math.floor(dt0/18) % 2 === 0);
-    ctx.fillStyle = edgeStripe ? 'rgba(255,208,0,0.95)' : 'rgba(20,20,20,0.95)';
-
+    // 縁石（赤白）
+    const curbW0 = Math.max(5, rw0*0.035);
+    const curbW1 = Math.max(2, rw1*0.035);
+    const curbStripe = (Math.floor(dt0/18)%2===0);
+    ctx.fillStyle = curbStripe ? 'rgba(255,70,70,0.96)' : 'rgba(245,245,245,0.95)';
     // 左
     ctx.beginPath();
-    ctx.moveTo(cx0 - rw0/2 - edgeW0, y0);
+    ctx.moveTo(cx0 - rw0/2 - curbW0, y0);
     ctx.lineTo(cx0 - rw0/2, y0);
     ctx.lineTo(cx1 - rw1/2, y1);
-    ctx.lineTo(cx1 - rw1/2 - edgeW1, y1);
+    ctx.lineTo(cx1 - rw1/2 - curbW1, y1);
     ctx.closePath();
     ctx.fill();
     // 右
     ctx.beginPath();
     ctx.moveTo(cx0 + rw0/2, y0);
-    ctx.lineTo(cx0 + rw0/2 + edgeW0, y0);
-    ctx.lineTo(cx1 + rw1/2 + edgeW1, y1);
+    ctx.lineTo(cx0 + rw0/2 + curbW0, y0);
+    ctx.lineTo(cx1 + rw1/2 + curbW1, y1);
     ctx.lineTo(cx1 + rw1/2, y1);
     ctx.closePath();
     ctx.fill();
 
     // センターライン
     if(i%3===0){
-      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.fillStyle = 'rgba(255,255,255,0.64)';
       const lw0 = Math.max(2, rw0*0.012);
       const lw1 = Math.max(1, rw1*0.012);
       ctx.beginPath();
@@ -656,46 +637,61 @@ function draw(){
     }
   }
 
-  // 障害物描画（自分の少し先だけ）
-  const look = 260;
+  // 障害物（先）
+  const look = 280;
   const viewObs = obstacles.filter(o => !o.used && o.t >= t0 && o.t <= t0 + look);
   for(const ob of viewObs){
-    const p = (ob.t - t0) / look; // 0..1
+    const p = (ob.t - t0) / look;
     const y = lerp(baseY, horizon, p);
     const rw = lerp(roadWNear, roadWFar, p);
     const c = centerOffset(ob.t % LAP_LEN);
-    const cx = w/2 + c * (w*0.22) * (1 - p*0.75);
+    const cx = w/2 + c * (w*0.26) * (1 - p*0.78);
     const x = cx + ob.x * (rw*0.40);
-
-    const size = lerp(34, 14, p);
+    const size = lerp(36, 14, p);
     const emoji = ob.kind === 'cone' ? '🚧' : '🍌';
-    drawText(x, y-8, emoji, size, 0.95, true);
+    drawText(x, y-10, emoji, size, 0.98);
   }
 
-  // ランキング順に描画（遠い=上に小さく）
-  const ranking = getRanking();
-  for(const r of ranking.slice().reverse()){
-    // rが自分より先なら上の方、遅いなら下の方
-    const rel = clamp((r.totalDist - t0) / 240, -0.25, 1.0);
-    const p = clamp(rel, 0, 1);
-
+  // ★アイテム箱（？）
+  const viewBoxes = itemBoxes.filter(b => (b.t >= t0 && b.t <= t0 + look));
+  for(const b of viewBoxes){
+    const p = (b.t - t0) / look;
+    if(p < 0 || p > 1) continue;
     const y = lerp(baseY, horizon, p);
     const rw = lerp(roadWNear, roadWFar, p);
-    const c = centerOffset((t0 + p*240) % LAP_LEN);
-    const cx = w/2 + c * (w*0.22) * (1 - p*0.75);
+    const c = centerOffset(b.t % LAP_LEN);
+    const cx = w/2 + c * (w*0.26) * (1 - p*0.78);
+    const x = cx + b.x * (rw*0.40);
 
+    const size = lerp(34, 14, p);
+    const alpha = b.cooldown > 0 ? 0.18 : 0.95;
+    // キラッと感
+    drawText(x, y-12, '❓', size, alpha);
+    if(b.cooldown <= 0 && Math.random() < 0.08){
+      drawText(x + rand(-6,6), y - 30 + rand(-6,6), '✨', Math.max(10, size*0.55), 0.5);
+    }
+  }
+
+  // カート描画（遠近）
+  const ranking = getRanking();
+  for(const r of ranking.slice().reverse()){
+    const rel = clamp((r.totalDist - t0) / 250, -0.25, 1.0);
+    const p = clamp(rel, 0, 1);
+    const y = lerp(baseY, horizon, p);
+    const rw = lerp(roadWNear, roadWFar, p);
+    const c = centerOffset((t0 + p*250) % LAP_LEN);
+    const cx = w/2 + c * (w*0.26) * (1 - p*0.78);
     const x = cx + r.x * (rw*0.40);
-    const size = r === me ? 44 : lerp(34, 16, p);
+    const size = r === me ? 46 : lerp(34, 16, p);
 
-    // カート
-    drawText(x, y-10, r.kart, size, 1, true);
+    drawText(x, y-10, r.kart, size, 1);
 
-    // ラベル（ちょい下）
+    // ラベル
     const lap = Math.min(gameState.totalLaps, Math.floor(r.totalDist / LAP_LEN) + 1);
     ctx.save();
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = 'rgba(0,0,0,0.65)';
-    const tw = size*1.4;
+    const tw = size*1.45;
     const th = 18;
     ctx.beginPath();
     ctx.roundRect(x - tw/2, y + 14, tw, th, 10);
@@ -710,29 +706,56 @@ function draw(){
 }
 
 /* ===========================
-   衝突判定（障害物）
+   当たり判定
 =========================== */
-function handleCollisions(){
+function handleObstacleCollision(){
   const me = gameState.player;
   const t0 = me.totalDist;
-  // 近い障害物だけ見る
   for(const ob of obstacles){
     if(ob.used) continue;
     const d = ob.t - t0;
     if(d < -12) continue;
-    if(d > 18) break; // 近くだけ
-    // 横も近ければヒット
+    if(d > 18) break;
     if(Math.abs(ob.x - me.x) < 0.14){
       ob.used = true;
-      me.hits++;
-      gameState.hits++;
-      // 種類で効果
+      me.hits++; gameState.hits++;
       if(ob.kind === 'banana'){
         me.spin(0.7);
       }else{
         me.speed *= 0.55;
         me.vx *= -0.4;
       }
+    }
+  }
+}
+
+function handleBoxCollision(dt){
+  const me = gameState.player;
+  const t0 = me.totalDist;
+
+  // cooldown減らす（全箱）
+  for(const b of itemBoxes){
+    if(b.cooldown > 0) b.cooldown = Math.max(0, b.cooldown - dt);
+  }
+
+  // 近い箱だけ判定
+  for(const b of itemBoxes){
+    const d = b.t - t0;
+    if(d < -12) continue;
+    if(d > 18) break;
+
+    if(b.cooldown <= 0 && Math.abs(b.x - me.x) < 0.16){
+      // ★必ずアイテム
+      me.giveItem();
+      me.boxes++; gameState.boxes++;
+      b.cooldown = BOX_RESPAWN;
+
+      // ちょい加速（取った感）
+      me.boost(0.35, 0.08);
+
+      itemDisplay.textContent = `GET! ${me.item}`;
+      itemDisplay.classList.remove('shake'); void itemDisplay.offsetWidth; itemDisplay.classList.add('shake');
+      setTimeout(()=> itemDisplay.textContent = me.item ? me.item : '---', 600);
     }
   }
 }
@@ -749,11 +772,8 @@ function updateHUD(){
   lapTotalEl.textContent = gameState.totalLaps;
   lapDisplay.textContent = lap;
 
-  const sp = Math.round(gameState.player.speed * 220); // それっぽい表示
-  speedEl.textContent = `${sp}`;
-
+  speedEl.textContent = `${Math.round(gameState.player.speed * 220)}`;
   driftMeterEl.textContent = Math.round(gameState.player.drift*100);
-
   itemDisplay.textContent = gameState.player.item ? gameState.player.item : '---';
 }
 
@@ -766,20 +786,17 @@ function applyItem(item){
   if(item === '⭐'){ me.boost(1.2, 0.22); return '⭐ スーパーブースト！'; }
   if(item === '🪶'){ me.boost(0.6, 0.12); return '🪶 ふわっと加速！'; }
   if(item === '🐢'){
-    // 前の相手をスピン
     const rank = getRanking();
     const idx = rank.findIndex(r=>r===me);
     if(idx>0){ rank[idx-1].spin(0.8); }
     return '🐢 こうら！';
   }
   if(item === '🍌'){
-    // すぐ前方にバナナ追加
     obstacles.push({ t: me.totalDist + 90, x: clamp(me.x + rand(-0.15,0.15), -0.95, 0.95), kind:'banana', used:false });
     obstacles.sort((a,b)=>a.t-b.t);
     return '🍌 バナナ投下！';
   }
   if(item === '💣'){
-    // 周囲のAI少し減速
     gameState.players.forEach(p=>{ if(p.isAI && Math.abs(p.totalDist-me.totalDist)<140) p.spin(0.45); });
     return '💣 どかーん！';
   }
@@ -798,7 +815,10 @@ function handleItemUse(){
   if(!gameState.player || gameState.pausedByQuiz) return;
 
   if(!gameState.player.item){
-    gameState.player.giveItem();
+    // ★箱を取るゲームにしたいので、ここでは“無料配布”しない
+    itemDisplay.textContent = '箱（❓）を取ってね！';
+    itemDisplay.classList.remove('shake'); void itemDisplay.offsetWidth; itemDisplay.classList.add('shake');
+    setTimeout(()=> itemDisplay.textContent = gameState.player.item ? gameState.player.item : '---', 650);
     return;
   }
   const it = gameState.player.useItem();
@@ -817,34 +837,30 @@ function handleItemUse(){
 let lastT = performance.now();
 function loop(now){
   if(!gameState.gameActive) return;
-
   const dt = clamp((now-lastT)/1000, 0, 0.033);
   lastT = now;
 
   if(!gameState.pausedByQuiz){
     const me = gameState.player;
     const t = me.totalDist;
-    const cc = centerOffset(t % LAP_LEN); // -1..1
-    const courseCenterX = cc; // そのまま使う（-1..1）
+    const cc = centerOffset(t % LAP_LEN);
+    const courseCenterX = cc;
     const ahead = getRanking().filter(r => r.totalDist > me.totalDist);
 
-    // 更新
     for(const r of gameState.players){
       const aheadList = r.isAI ? ahead : [];
-      r.update(dt, courseCenterX, 1, aheadList);
+      r.update(dt, courseCenterX, aheadList);
     }
 
-    // 障害物当たり判定
-    handleCollisions();
+    handleObstacleCollision();
+    handleBoxCollision(dt);
 
-    // 1周ごと算数（最終周は出さない）
     const lapDone = Math.floor(me.totalDist / LAP_LEN);
     if(lapDone > gameState.quizLapTriggered && lapDone > 0 && lapDone < gameState.totalLaps){
       gameState.quizLapTriggered = lapDone;
       openQuiz(lapDone);
     }
 
-    // ゴール判定（全員が総距離に達したら）
     const finishedAll = gameState.players.every(p => p.totalDist >= gameState.totalLaps * LAP_LEN);
     if(finishedAll){
       endGame();
@@ -874,22 +890,21 @@ function startGame(){
   gameState.pausedByQuiz = false;
   gameState.quizLapTriggered = -1;
   gameState.hits = 0;
+  gameState.boxes = 0;
 
-  // 障害物生成
   buildObstacles(gameState.totalLaps);
+  buildItemBoxes(gameState.totalLaps);
 
-  // 人間
   const human = new Racer(gameState.selectedChar, gameState.selectedKart, false);
   gameState.player = human;
   gameState.players.push(human);
 
-  // CPU 4
   const availC = characters.filter(c=>c!==gameState.selectedChar);
   const availK = karts.filter(k=>k!==gameState.selectedKart);
   for(let i=0;i<4;i++){
     const cpu = new Racer(availC[i%availC.length], availK[i%availK.length], true);
     cpu.x = rand(-0.35, 0.35);
-    cpu.totalDist = rand(0, 30); // 少し散らす
+    cpu.totalDist = rand(0, 30);
     gameState.players.push(cpu);
   }
 
@@ -912,6 +927,7 @@ function endGame(){
   document.getElementById('correct-answers').textContent = gameState.correctAnswers;
   document.getElementById('items-used').textContent = gameState.itemsUsed;
   document.getElementById('hits').textContent = gameState.hits;
+  document.getElementById('boxes').textContent = gameState.boxes;
 
   const timeSeconds = Math.round((Date.now() - gameState.startTime)/1000);
   const minutes = Math.floor(timeSeconds/60);
@@ -940,7 +956,6 @@ function initCharacterSelect(){
     wrap.appendChild(btn);
   });
 }
-
 function initKartSelect(){
   const wrap = document.getElementById('kart-select');
   wrap.innerHTML = '';
@@ -964,7 +979,6 @@ function initKartSelect(){
    イベント
 =========================== */
 document.getElementById('start-btn').addEventListener('click', startGame);
-
 document.getElementById('retry-btn').addEventListener('click', ()=>{
   resultScreen.classList.add('hidden');
   titleScreen.classList.remove('hidden');
