@@ -9,77 +9,60 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
     * { font-family: 'Zen Maru Gothic', sans-serif; }
-    body { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; }
 
-    .track-gradient { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 55%, #0f3460 100%); }
+    .track-gradient { background: linear-gradient(135deg, #0c1222 0%, #0b1b34 55%, #0d2d55 100%); }
+
+    /* ★ flex依存をやめて、vhで確実に高さを作る（ここが一番強い対策） */
+    #game-screen { height: 100vh; }
 
     #race-view{
-      background: linear-gradient(180deg, #74c0ff 0%, #dff6ff 45%, #84e0a2 45%, #74c08a 100%);
+      height: calc(100vh - 160px); /* HUD + controls の分を引く */
+      min-height: 420px;
       position: relative;
       overflow: hidden;
+      background: linear-gradient(180deg, #74c0ff 0%, #dff6ff 45%, #84e0a2 45%, #74c08a 100%);
       touch-action: manipulation;
     }
 
-    .cloud {
-      position:absolute;
-      top: 8%;
-      width: 150px;
-      height: 52px;
-      border-radius: 9999px;
-      background: rgba(255,255,255,0.65);
-      filter: blur(0.5px);
-      animation: cloud-move linear infinite;
-      pointer-events:none;
-    }
-    .cloud::before,.cloud::after{
-      content:"";
-      position:absolute;
-      background: rgba(255,255,255,0.65);
-      width: 72px; height: 72px;
-      border-radius: 9999px;
-      top: -22px; left: 22px;
-    }
-    .cloud::after{ width: 58px; height:58px; top: -12px; left: 76px; }
-    @keyframes cloud-move{
-      from{ transform: translateX(-240px);}
-      to{ transform: translateX(calc(100vw + 240px)); }
-    }
-
+    /* ===== 路面（絶対に見えるように、強めに描く） ===== */
     #road-wrap{
       position:absolute;
       inset:0;
       display:flex;
       align-items:flex-end;
       justify-content:center;
+      z-index: 20; /* ★確実に前面へ */
       pointer-events:none;
-      z-index: 2;
     }
     #road{
-      width: min(92vw, 760px);
+      width: min(92vw, 820px);
       height: 92%;
       margin-bottom: 12px;
       border-radius: 22px;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 25px 80px rgba(0,0,0,0.45);
-      background:
-        linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.00)),
-        linear-gradient(to bottom, #5f5f5f 0%, #505050 55%, #6b6b6b 100%);
+      background: linear-gradient(to bottom, #666 0%, #555 60%, #6f6f6f 100%);
+      box-shadow: 0 25px 90px rgba(0,0,0,0.55);
+      outline: 3px solid rgba(255,255,255,0.18); /* ★デバッグ用：見えない問題を潰す */
     }
+    /* 路肩 */
     #road::before,#road::after{
       content:"";
       position:absolute; top:0; bottom:0;
-      width: 16px;
+      width: 18px;
       background: repeating-linear-gradient(
         to bottom,
         #ffd000 0px, #ffd000 10px,
         #1d1d1d 10px, #1d1d1d 20px
       );
-      opacity: 0.95;
+      opacity: 0.98;
     }
     #road::before{ left:0; }
     #road::after{ right:0; }
 
+    /* センターライン（スクロール） */
     #centerline{
       position:absolute;
       left: 50%;
@@ -91,30 +74,21 @@
         to bottom,
         rgba(255,255,255,0.0) 0px,
         rgba(255,255,255,0.0) 16px,
-        rgba(255,255,255,0.85) 16px,
-        rgba(255,255,255,0.85) 30px,
+        rgba(255,255,255,0.9) 16px,
+        rgba(255,255,255,0.9) 30px,
         rgba(255,255,255,0.0) 30px,
         rgba(255,255,255,0.0) 56px
       );
-      filter: drop-shadow(0 0 6px rgba(255,255,255,0.18));
+      filter: drop-shadow(0 0 8px rgba(255,255,255,0.25));
     }
     .lane-guide{
-      position:absolute;
-      top:0; bottom:0;
+      position:absolute; top:0; bottom:0;
       width: 2px;
-      background: rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.22);
     }
 
-    #speedlines{
-      position:absolute; inset:0;
-      background: repeating-linear-gradient(115deg, rgba(255,255,255,0.0) 0 22px, rgba(255,255,255,0.12) 22px 24px);
-      opacity: 0;
-      transition: opacity 120ms linear;
-      pointer-events:none;
-      z-index: 6;
-    }
-
-    #karts-container{ position:absolute; inset:0; z-index: 5; }
+    /* カート */
+    #karts-container{ position:absolute; inset:0; z-index: 30; }
     .kart {
       position:absolute;
       display:flex;
@@ -123,9 +97,9 @@
       will-change: transform, left, top;
       user-select:none;
       pointer-events:none;
-      filter: drop-shadow(0 10px 10px rgba(0,0,0,0.35));
+      filter: drop-shadow(0 12px 12px rgba(0,0,0,0.35));
     }
-    .kart-emoji { font-size: 2.3rem; line-height: 1; }
+    .kart-emoji { font-size: 2.4rem; line-height: 1; }
     .kart-label {
       font-size: 0.72rem;
       color: white;
@@ -136,20 +110,30 @@
       letter-spacing: 0.02em;
     }
 
-    #sparks-layer{ position:absolute; inset:0; z-index: 7; pointer-events:none; }
-    .spark {
-      position:absolute;
-      font-size: 1.0rem;
-      opacity: 0.95;
-      animation: spark-pop 350ms ease-out forwards;
-    }
-    @keyframes spark-pop{
-      from{ transform: translateY(0) scale(0.8); opacity: 0.9; }
-      to{ transform: translateY(18px) scale(1.3); opacity: 0; }
+    /* 速度線 */
+    #speedlines{
+      position:absolute; inset:0;
+      z-index: 25;
+      background: repeating-linear-gradient(115deg, rgba(255,255,255,0.0) 0 22px, rgba(255,255,255,0.12) 22px 24px);
+      opacity: 0;
+      transition: opacity 120ms linear;
+      pointer-events:none;
     }
 
-    @keyframes shake { 0%,100%{ transform: translateX(0);} 25%{ transform: translateX(-6px);} 75%{ transform: translateX(6px);} }
-    .shake { animation: shake 220ms ease-in-out; }
+    /* デバッグ表示（見えることが最優先） */
+    #debug{
+      position:absolute; left:10px; bottom:10px;
+      z-index: 99;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      line-height: 1.35;
+      max-width: min(92vw, 520px);
+      pointer-events:none;
+      backdrop-filter: blur(4px);
+    }
 
     @keyframes glow {
       0%,100%{ filter: drop-shadow(0 0 10px rgba(255,255,0,0.55)) drop-shadow(0 0 18px rgba(0,255,255,0.35)); }
@@ -158,10 +142,9 @@
     .glow { animation: glow 650ms ease-in-out infinite; }
 
     .press:active{ transform: scale(0.96); }
-    .modal-card{
-      box-shadow: 0 20px 80px rgba(0,0,0,0.5);
-      border: 1px solid rgba(255,255,255,0.18);
-    }
+
+    /* タイトル画面の背景 */
+    .glass { background: rgba(255,255,255,0.10); backdrop-filter: blur(10px); }
   </style>
 </head>
 
@@ -170,18 +153,18 @@
 
   <!-- タイトル -->
   <div id="title-screen" class="h-full flex flex-col items-center justify-center p-4">
-    <h1 id="game-title" class="text-4xl md:text-6xl font-black text-yellow-300 mb-3 text-center drop-shadow-lg">
+    <h1 class="text-4xl md:text-6xl font-black text-yellow-300 mb-3 text-center drop-shadow-lg">
       🏎️ 算数カートレース 🏎️
     </h1>
     <p class="text-lg md:text-xl mb-6 text-cyan-200">1周ごとに算数！ 正解でレース再開！</p>
 
-    <div class="bg-white/10 backdrop-blur rounded-2xl p-5 mb-5 max-w-md w-full">
+    <div class="glass rounded-2xl p-5 mb-5 max-w-md w-full">
       <h2 class="text-xl font-bold mb-3 text-center text-yellow-200">キャラクター</h2>
       <div class="grid grid-cols-4 gap-3 mb-3" id="char-select"></div>
       <p class="text-center text-sm text-gray-200">選択中: <span id="selected-char" class="text-2xl">🥸</span></p>
     </div>
 
-    <div class="bg-white/10 backdrop-blur rounded-2xl p-5 mb-6 max-w-md w-full">
+    <div class="glass rounded-2xl p-5 mb-6 max-w-md w-full">
       <h2 class="text-xl font-bold mb-3 text-center text-pink-200">カート</h2>
       <div class="grid grid-cols-4 gap-3 mb-3" id="kart-select"></div>
       <p class="text-center text-sm text-gray-200">選択中: <span id="selected-kart" class="text-2xl">🦏</span></p>
@@ -198,11 +181,11 @@
   </div>
 
   <!-- ゲーム -->
-  <div id="game-screen" class="h-full hidden flex-col">
-
+  <div id="game-screen" class="hidden flex-col">
     <!-- HUD -->
     <div class="bg-black/80 p-3 flex flex-wrap gap-2 justify-between items-center">
       <div class="text-base md:text-lg font-bold">
+        <span class="text-white/60 mr-2">BUILD v3.1</span>
         🏁 <span id="lap-display">1</span>/<span id="lap-total">10</span>周
         <span class="mx-2">|</span>
         🏆 <span id="position">1</span>位/5
@@ -216,11 +199,7 @@
     </div>
 
     <!-- レースビュー -->
-    <div id="race-view" class="flex-1 relative">
-      <div class="cloud" style="left: 10%; animation-duration: 22s; top: 10%; opacity: .7;"></div>
-      <div class="cloud" style="left: 45%; animation-duration: 26s; top: 6%; opacity: .6;"></div>
-      <div class="cloud" style="left: 75%; animation-duration: 30s; top: 12%; opacity: .55;"></div>
-
+    <div id="race-view">
       <div id="road-wrap">
         <div id="road">
           <div id="centerline"></div>
@@ -230,9 +209,9 @@
       </div>
 
       <div id="speedlines"></div>
-
       <div id="karts-container"></div>
-      <div id="sparks-layer"></div>
+
+      <div id="debug">debug…</div>
     </div>
 
     <!-- 操作 -->
@@ -251,52 +230,6 @@
     </div>
   </div>
 
-  <!-- 算数モーダル -->
-  <div id="math-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-    <div class="modal-card bg-gradient-to-br from-purple-600 to-indigo-700 rounded-3xl p-7 max-w-md w-full text-center">
-      <h2 class="text-3xl font-black mb-3 text-yellow-200">📚 1周クリア！算数タイム！</h2>
-      <p class="text-sm text-white/90 mb-2">正解しないとレース再開できません。</p>
-
-      <div class="bg-white/15 rounded-2xl p-4 mb-4">
-        <div class="text-sm text-white/80 mb-1">問題</div>
-        <p id="math-question" class="text-4xl font-black">15 + 35 = ?</p>
-      </div>
-
-      <input type="number" id="math-answer"
-        class="w-full text-3xl text-center p-4 rounded-xl bg-white text-gray-800 mb-3"
-        placeholder="答えを入力" />
-
-      <button id="submit-answer"
-        class="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xl font-black py-3 px-8 rounded-full hover:scale-105 transition-transform w-full press">
-        回答する！
-      </button>
-
-      <div class="mt-4 text-sm text-gray-100">
-        ⏰ 制限時間: <span id="time-left" class="font-black">10</span>秒
-      </div>
-      <p id="math-feedback" class="mt-3 text-sm font-bold text-yellow-200"></p>
-    </div>
-  </div>
-
-  <!-- 結果 -->
-  <div id="result-screen" class="hidden h-full flex-col items-center justify-center p-4 bg-gradient-to-b from-purple-900 to-blue-900">
-    <h1 class="text-5xl font-black mb-4">🏁 レース終了！ 🏁</h1>
-    <div id="result-position" class="text-8xl mb-4">🥇</div>
-    <p id="result-text" class="text-3xl font-black text-yellow-300 mb-8">1位でゴール！</p>
-
-    <div class="bg-white/10 backdrop-blur rounded-2xl p-6 mb-8 max-w-md w-full">
-      <h3 class="text-xl font-black mb-4">📊 スタッツ</h3>
-      <p class="mb-2">正解した問題: <span id="correct-answers" class="font-black">0</span>問</p>
-      <p class="mb-2">使用アイテム: <span id="items-used" class="font-black">0</span>個</p>
-      <p>レースタイム: <span id="race-time" class="font-black">0:00</span></p>
-    </div>
-
-    <button id="retry-btn"
-      class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-2xl font-black py-4 px-12 rounded-full shadow-lg transform hover:scale-105 transition-all press">
-      🔄 もう一度プレイ
-    </button>
-  </div>
-
 </div>
 
 <script>
@@ -307,14 +240,12 @@ const itemsPool  = ['🍌','🍄','⭐','💣','🦑','🪶','🐢','👻'];
 
 const titleScreen  = document.getElementById('title-screen');
 const gameScreen   = document.getElementById('game-screen');
-const resultScreen = document.getElementById('result-screen');
-const mathModal    = document.getElementById('math-modal');
 
 const kartsContainer = document.getElementById('karts-container');
-const sparksLayer    = document.getElementById('sparks-layer');
 const centerlineEl   = document.getElementById('centerline');
 const roadEl         = document.getElementById('road');
 const speedLinesEl   = document.getElementById('speedlines');
+const debugEl        = document.getElementById('debug');
 
 const lapDisplay   = document.getElementById('lap-display');
 const lapTotalEl   = document.getElementById('lap-total');
@@ -324,18 +255,12 @@ const driftMeterEl = document.getElementById('drift-meter');
 const itemDisplay  = document.getElementById('item-display');
 
 const gameState = {
-  screen: 'title',
-  selectedChar: characters[0], // ★初期値を先頭に統一
-  selectedKart: karts[0],      // ★初期値を先頭に統一（リングが1つになる）
+  selectedChar: characters[0],
+  selectedKart: karts[0],
   totalLaps: 10,
   players: [],
   player: null,
-  pausedByQuiz: false,
-  quizLapTriggered: -1,
   keys: { up:false, down:false, left:false, right:false, drift:false },
-  correctAnswers: 0,
-  itemsUsed: 0,
-  startTime: 0,
   gameActive: false,
   scrollY: 0
 };
@@ -344,7 +269,7 @@ const LANES = 3;
 function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 function lerp(a,b,t){ return a + (b-a)*t; }
 
-/* ========= 選択UI（★リングは「選択中だけ」） ========= */
+/* ========= 選択UI ========= */
 function initCharacterSelect(){
   const wrap = document.getElementById('char-select');
   wrap.innerHTML = '';
@@ -353,11 +278,7 @@ function initCharacterSelect(){
     btn.type = 'button';
     btn.className = 'text-3xl p-2 rounded-lg bg-white/20 hover:bg-white/40 transition-all hover:scale-110 cursor-pointer';
     btn.textContent = ch;
-
-    if(ch === gameState.selectedChar){
-      btn.classList.add('ring-4','ring-yellow-300');
-    }
-
+    if(ch === gameState.selectedChar) btn.classList.add('ring-4','ring-yellow-300');
     btn.addEventListener('click', ()=>{
       gameState.selectedChar = ch;
       document.getElementById('selected-char').textContent = ch;
@@ -367,7 +288,6 @@ function initCharacterSelect(){
     wrap.appendChild(btn);
   });
 }
-
 function initKartSelect(){
   const wrap = document.getElementById('kart-select');
   wrap.innerHTML = '';
@@ -376,11 +296,7 @@ function initKartSelect(){
     btn.type = 'button';
     btn.className = 'text-3xl p-2 rounded-lg bg-white/20 hover:bg-white/40 transition-all hover:scale-110 cursor-pointer';
     btn.textContent = k;
-
-    if(k === gameState.selectedKart){
-      btn.classList.add('ring-4','ring-pink-300');
-    }
-
+    if(k === gameState.selectedKart) btn.classList.add('ring-4','ring-pink-300');
     btn.addEventListener('click', ()=>{
       gameState.selectedKart = k;
       document.getElementById('selected-kart').textContent = k;
@@ -391,132 +307,44 @@ function initKartSelect(){
   });
 }
 
-/* ========= 火花 ========= */
-function spawnSpark(player, charge){
-  const sp = document.createElement('div');
-  sp.className = 'spark';
-  sp.textContent = charge > 0.75 ? '✨' : (charge > 0.5 ? '⚡' : '💥');
-
-  const view = document.getElementById('race-view').getBoundingClientRect();
-  const road = roadEl.getBoundingClientRect();
-
-  const laneX = lerp(0.25, 0.75, player.lanePos/(LANES-1));
-  const x = (road.left - view.left) + road.width * laneX + (Math.random()*12-6);
-  const y = (road.top  - view.top)  + road.height * 0.82 + 30 + (Math.random()*8);
-
-  sp.style.left = x + 'px';
-  sp.style.top  = y + 'px';
-  sparksLayer.appendChild(sp);
-  setTimeout(()=> sp.remove(), 380);
-}
-
 /* ========= プレイヤー ========= */
 class Player {
   constructor(char, kart, isAI=false){
     this.char = char;
     this.kart = kart;
     this.isAI = isAI;
-
     this.progress = 0;
     this.laps = 0;
-    this.finished = false;
-
-    this.speed = 0;
+    this.speed = isAI ? 4 : 0;
     this.baseMaxSpeed = isAI ? 10.5 : 12.5;
     this.maxSpeed = this.baseMaxSpeed;
     this.accel = isAI ? 7.0 : 8.5;
     this.brakePower = 12.0;
     this.friction = 2.8;
-
-    this.lane = 1;
-    this.lanePos = 1;
-    this.steerSpeed = isAI ? 2.2 : 4.0;
-
+    this.lane = isAI ? (Math.floor(Math.random()*LANES)) : 1;
+    this.lanePos = this.lane;
+    this.steerSpeed = isAI ? 2.2 : 4.2;
     this.drifting = false;
-    this.driftDir = 0;
     this.driftCharge = 0;
-    this.boostTime = 0;
-
-    this.stunTime = 0;
-
     this.currentItem = null;
     this.element = null;
   }
 
-  giveItem(){ this.currentItem = itemsPool[Math.floor(Math.random()*itemsPool.length)]; }
-  useItem(){
-    if(!this.currentItem) return { used:false };
-    const it = this.currentItem;
-    this.currentItem = null;
-    return { used:true, item:it };
-  }
-  applyBoost(sec, extraMax){
-    this.boostTime = Math.max(this.boostTime, sec);
-    this.maxSpeed = Math.max(this.maxSpeed, this.baseMaxSpeed + extraMax);
-  }
-  spin(sec){
-    this.stunTime = Math.max(this.stunTime, sec);
-    this.speed *= 0.3;
-  }
-
   update(dt){
-    if(this.finished) return;
-
-    if(this.stunTime > 0){
-      this.stunTime -= dt;
-      this.speed = Math.max(0, this.speed - this.brakePower*dt*0.6);
-    }
-
-    if(this.boostTime > 0){
-      this.boostTime -= dt;
-      if(this.boostTime <= 0) this.maxSpeed = this.baseMaxSpeed;
-    }else{
-      this.maxSpeed = this.baseMaxSpeed;
-    }
-
     if(this.isAI){
-      if(Math.random() < 0.007) this.lane = clamp(this.lane + (Math.random()<0.5?-1:1), 0, LANES-1);
-
-      const target = this.baseMaxSpeed * (0.72 + Math.random()*0.18);
+      const target = this.baseMaxSpeed * 0.78;
       if(this.speed < target) this.speed += this.accel*dt;
       else this.speed -= this.friction*dt*0.9;
-
-      if(!this.currentItem && Math.random()<0.01) this.giveItem();
-      if(this.currentItem && Math.random()<0.003) this.useItem();
+      if(Math.random() < 0.01) this.lane = clamp(this.lane + (Math.random()<0.5?-1:1), 0, LANES-1);
     }else{
-      if(gameState.keys.up)   this.speed += this.accel*dt;
+      if(gameState.keys.up) this.speed += this.accel*dt;
       if(gameState.keys.down) this.speed -= this.brakePower*dt;
-
       if(!gameState.keys.up && !gameState.keys.down) this.speed -= this.friction*dt;
 
       const steering = (gameState.keys.right?1:0) - (gameState.keys.left?1:0);
+      if(steering !== 0) this.lane = clamp(this.lane + steering, 0, LANES-1);
 
-      if(gameState.keys.drift && steering !== 0 && this.speed > 3.5 && this.stunTime<=0){
-        if(!this.drifting){
-          this.drifting = true;
-          this.driftDir = steering;
-          this.driftCharge = 0;
-        }
-        this.speed = Math.max(0, this.speed - 0.6*dt);
-        this.driftCharge = clamp(this.driftCharge + dt*0.55, 0, 1);
-        if(Math.random() < 0.25) spawnSpark(this, this.driftCharge);
-      }else{
-        if(this.drifting){
-          const c = this.driftCharge;
-          if(c > 0.25){
-            const boostSec = c > 0.75 ? 1.1 : (c > 0.5 ? 0.8 : 0.55);
-            const extraMax = c > 0.75 ? 4.0 : (c > 0.5 ? 2.8 : 1.8);
-            this.applyBoost(boostSec, extraMax);
-          }
-        }
-        this.drifting = false;
-        this.driftDir = 0;
-        this.driftCharge = 0;
-      }
-
-      if(steering !== 0 && this.stunTime<=0){
-        this.lane = clamp(this.lane + steering, 0, LANES-1);
-      }
+      this.driftCharge = gameState.keys.drift ? clamp(this.driftCharge + dt*0.55, 0, 1) : 0;
     }
 
     this.lanePos = lerp(this.lanePos, this.lane, clamp(dt*this.steerSpeed, 0, 1));
@@ -526,7 +354,6 @@ class Player {
     if(this.progress >= 100){
       this.progress -= 100;
       this.laps++;
-      if(this.laps >= gameState.totalLaps) this.finished = true;
     }
   }
 
@@ -541,206 +368,88 @@ class Player {
     const view = document.getElementById('race-view').getBoundingClientRect();
     const road = roadEl.getBoundingClientRect();
 
+    // ★ road内座標で固定（見えない事故を防ぐ）
     const laneX = lerp(0.25, 0.75, this.lanePos/(LANES-1));
     const x = (road.left - view.left) + road.width * laneX;
 
-    const baseY = this.isAI ? (0.22 + orderIndex*0.10) : 0.84;
+    const baseY = this.isAI ? (0.25 + orderIndex*0.10) : 0.84;
     const y = (road.top - view.top) + road.height * clamp(baseY, 0.18, 0.86);
 
-    const scale = this.isAI ? (0.85 - orderIndex*0.05) : 1.10;
-
-    const steer = (!this.isAI) ? ((gameState.keys.right?1:0) - (gameState.keys.left?1:0)) : 0;
-    const tilt = (this.drifting ? this.driftDir : steer) * 10;
+    const scale = this.isAI ? (0.88 - orderIndex*0.05) : 1.12;
 
     this.element.style.left = x + 'px';
     this.element.style.top  = y + 'px';
-    this.element.style.transform = `translate(-50%, -50%) rotate(${tilt}deg) scale(${scale})`;
+    this.element.style.transform = `translate(-50%, -50%) scale(${scale})`;
 
-    const lapText = this.finished ? '🏁' : `L${clamp(this.laps+1,1,gameState.totalLaps)}`;
     this.element.innerHTML = `
       <div class="kart-emoji">${this.kart}</div>
-      <div class="kart-label">${this.char} ${lapText}</div>
+      <div class="kart-label">${this.char} L${this.laps+1}</div>
     `;
   }
 }
 
-/* ========= 算数 ========= */
-let quizTimer = null;
-let timeLeft = 10;
-let currentQuiz = { q:'', a:0 };
-
-function makeMathProblem(lapIndex){
-  const level = clamp(lapIndex, 1, 10);
-  const types = level <= 3 ? ['add','sub'] : (level <= 6 ? ['add','sub','mul'] : ['add','sub','mul','mix']);
-  const type = types[Math.floor(Math.random()*types.length)];
-  const rand = (min,max)=> Math.floor(Math.random()*(max-min+1))+min;
-
-  if(type==='add'){
-    const a = rand(10*level, 20*level);
-    const b = rand(5*level, 15*level);
-    return { q: `${a} + ${b}`, a: a+b };
-  }
-  if(type==='sub'){
-    let a = rand(15*level, 25*level);
-    let b = rand(5*level, 18*level);
-    if(b>a) [a,b] = [b,a];
-    return { q: `${a} - ${b}`, a: a-b };
-  }
-  if(type==='mul'){
-    const a = rand(2, Math.min(9, 2+Math.floor(level/2)));
-    const b = rand(2, 9);
-    return { q: `${a} × ${b}`, a: a*b };
-  }
-  const a = rand(2, 9), b = rand(2, 9), c = rand(5, 20);
-  return { q: `${a} × ${b} + ${c}`, a: a*b + c };
-}
-
-function openQuiz(lapCompleted){
-  gameState.pausedByQuiz = true;
-  mathModal.classList.remove('hidden');
-
-  currentQuiz = makeMathProblem(lapCompleted);
-  document.getElementById('math-question').textContent = `${currentQuiz.q} = ?`;
-  document.getElementById('math-answer').value = '';
-  document.getElementById('math-feedback').textContent = '';
-
-  clearInterval(quizTimer);
-  timeLeft = 10;
-  document.getElementById('time-left').textContent = timeLeft;
-
-  quizTimer = setInterval(()=>{
-    timeLeft--;
-    document.getElementById('time-left').textContent = timeLeft;
-
-    if(timeLeft <= 0){
-      clearInterval(quizTimer);
-      document.getElementById('math-feedback').textContent = '⏰ タイムアウト！スピン！次の問題！';
-      gameState.player.spin(1.0);
-      setTimeout(()=> openQuiz(lapCompleted), 650);
-    }
-  }, 1000);
-
-  setTimeout(()=> document.getElementById('math-answer').focus(), 50);
-}
-
-function closeQuizWithSuccess(){
-  clearInterval(quizTimer);
-  mathModal.classList.add('hidden');
-  gameState.pausedByQuiz = false;
-  gameState.player.applyBoost(0.9, 3.2);
-}
-
-/* ========= ランキング/アイテム ========= */
+/* ========= HUD ========= */
 function getRanking(){
   return [...gameState.players].sort((a,b)=>{
     if(a.laps !== b.laps) return b.laps - a.laps;
     return b.progress - a.progress;
   });
 }
-function applyItemEffect(item){
-  const me = gameState.player;
-  if(item === '🍄'){ me.applyBoost(0.9, 3.4); return '🍄 ブースト！'; }
-  if(item === '⭐'){ me.applyBoost(1.3, 4.2); return '⭐ 無敵っぽい加速！'; }
-  if(item === '🍌'){
-    const ai = getRanking().filter(p=>p.isAI && !p.finished)[0];
-    if(ai) ai.spin(0.8);
-    return '🍌 前のCPUがスピン！';
-  }
-  if(item === '💣'){
-    gameState.players.filter(p=>p.isAI).forEach(p=>{ if(Math.random()<0.6) p.spin(0.6); });
-    return '💣 ドカーン！';
-  }
-  if(item === '🦑'){ me.spin(0.35); return '🦑 くらくら…'; }
-  if(item === '🪶'){ me.applyBoost(0.55, 2.2); return '🪶 ふわっと加速！'; }
-  if(item === '🐢'){
-    const lastAI = getRanking().filter(p=>p.isAI).slice(-1)[0];
-    if(lastAI) lastAI.spin(1.0);
-    return '🐢 こうら命中！';
-  }
-  if(item === '👻'){ me.applyBoost(0.6, 2.6); return '👻 すり抜け気分！'; }
-  return '🎯 発動！';
-}
-function handleItemUse(){
-  if(!gameState.player || gameState.pausedByQuiz) return;
-
-  if(!gameState.player.currentItem){
-    gameState.player.giveItem();
-    return;
-  }
-  const res = gameState.player.useItem();
-  if(res.used){
-    gameState.itemsUsed++;
-    const msg = applyItemEffect(res.item);
-    itemDisplay.textContent = msg;
-    itemDisplay.classList.remove('shake'); void itemDisplay.offsetWidth; itemDisplay.classList.add('shake');
-    setTimeout(()=> { itemDisplay.textContent = gameState.player.currentItem ? gameState.player.currentItem : '---'; }, 700);
-  }
-}
-
-/* ========= HUD/スクロール ========= */
 function updateHUD(){
   const ranking = getRanking();
-  const myPos = ranking.findIndex(p => p === gameState.player) + 1;
+  const myPos = ranking.findIndex(p=>p===gameState.player)+1;
   posEl.textContent = myPos;
-
   lapTotalEl.textContent = gameState.totalLaps;
-  lapDisplay.textContent = clamp(gameState.player.laps + 1, 1, gameState.totalLaps);
+  lapDisplay.textContent = clamp(gameState.player.laps+1, 1, gameState.totalLaps);
 
   const pct = Math.round((gameState.player.speed / gameState.player.maxSpeed) * 100);
   speedEl.textContent = `${pct}%`;
   driftMeterEl.textContent = Math.round(gameState.player.driftCharge*100);
 
-  speedLinesEl.style.opacity = (pct >= 78 || gameState.player.boostTime > 0.1) ? 0.35 : 0;
+  speedLinesEl.style.opacity = (pct >= 78) ? 0.35 : 0;
   itemDisplay.textContent = gameState.player.currentItem ? gameState.player.currentItem : '---';
 }
+
+/* ========= 道スクロール ========= */
 function updateRoadScroll(dt){
-  const s = gameState.player ? gameState.player.speed : 0;
-  gameState.scrollY += s * dt * 260;
+  gameState.scrollY += gameState.player.speed * dt * 260;
   centerlineEl.style.transform = `translateX(-50%) translateY(${gameState.scrollY}px)`;
+}
+
+/* ========= デバッグ表示 ========= */
+function updateDebug(){
+  const rv = document.getElementById('race-view').getBoundingClientRect();
+  const rd = roadEl.getBoundingClientRect();
+  debugEl.innerHTML =
+    `race-view: ${Math.round(rv.width)}×${Math.round(rv.height)}<br>`+
+    `road: ${Math.round(rd.width)}×${Math.round(rd.height)} / top:${Math.round(rd.top)}<br>`+
+    `karts: ${kartsContainer.children.length}`;
 }
 
 /* ========= ループ ========= */
 let lastT = performance.now();
-function gameLoop(now){
+function loop(now){
   if(!gameState.gameActive) return;
-
-  const dt = clamp((now - lastT)/1000, 0, 0.033);
+  const dt = clamp((now-lastT)/1000, 0, 0.033);
   lastT = now;
 
-  if(!gameState.pausedByQuiz){
-    gameState.players.forEach(p => p.update(dt));
-    updateRoadScroll(dt);
-
-    const lapsDone = gameState.player.laps;
-    if(lapsDone > gameState.quizLapTriggered && lapsDone > 0 && lapsDone < gameState.totalLaps){
-      gameState.quizLapTriggered = lapsDone;
-      openQuiz(lapsDone);
-    }
-
-    const allFinished = gameState.players.every(p => p.finished);
-    if(allFinished){
-      endGame();
-      return;
-    }
-  }
+  gameState.players.forEach(p=>p.update(dt));
+  updateRoadScroll(dt);
 
   const ranking = getRanking();
-  ranking.forEach((p, idx)=> p.render(idx));
+  ranking.forEach((p,idx)=>p.render(idx));
   updateHUD();
+  updateDebug();
 
-  requestAnimationFrame(gameLoop);
+  requestAnimationFrame(loop);
 }
 
-/* ========= 開始/終了 ========= */
+/* ========= 開始 ========= */
 function startGame(){
-  gameState.screen = 'game';
   titleScreen.classList.add('hidden');
-  resultScreen.classList.add('hidden');
   gameScreen.classList.remove('hidden');
 
   kartsContainer.innerHTML = '';
-  sparksLayer.innerHTML = '';
-
   gameState.players = [];
   gameState.scrollY = 0;
 
@@ -748,111 +457,41 @@ function startGame(){
   gameState.player = human;
   gameState.players.push(human);
 
-  const availableChars = characters.filter(c=>c!==gameState.selectedChar);
-  const availableKarts = karts.filter(k=>k!==gameState.selectedKart);
+  const availC = characters.filter(c=>c!==gameState.selectedChar);
+  const availK = karts.filter(k=>k!==gameState.selectedKart);
 
   for(let i=0;i<4;i++){
-    const cpu = new Player(availableChars[i%availableChars.length], availableKarts[i%availableKarts.length], true);
-    cpu.lane = i%LANES;
-    cpu.lanePos = cpu.lane;
-    cpu.speed = 3 + Math.random()*1.5;
-    gameState.players.push(cpu);
+    gameState.players.push(new Player(availC[i%availC.length], availK[i%availK.length], true));
   }
 
-  gameState.correctAnswers = 0;
-  gameState.itemsUsed = 0;
-  gameState.startTime = Date.now();
-  gameState.gameActive = true;
-  gameState.pausedByQuiz = false;
-  gameState.quizLapTriggered = -1;
-
-  // 初回描画
-  const ranking = getRanking();
-  ranking.forEach((p, idx)=> p.render(idx));
+  // ★「最初の1回は強制描画」して、見えない状態を排除
+  getRanking().forEach((p,idx)=>p.render(idx));
   updateHUD();
+  updateDebug();
 
+  gameState.gameActive = true;
   lastT = performance.now();
-  requestAnimationFrame(gameLoop);
+  requestAnimationFrame(loop);
 }
 
-function endGame(){
-  gameState.gameActive = false;
-  gameScreen.classList.add('hidden');
-  resultScreen.classList.remove('hidden');
-
-  const ranking = getRanking();
-  const myPos = ranking.findIndex(p => p === gameState.player) + 1;
-  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
-
-  document.getElementById('result-position').textContent = medals[myPos-1] || '🏁';
-  document.getElementById('result-text').textContent = `${myPos}位でゴール！`;
-  document.getElementById('correct-answers').textContent = gameState.correctAnswers;
-  document.getElementById('items-used').textContent = gameState.itemsUsed;
-
-  const timeSeconds = Math.round((Date.now() - gameState.startTime)/1000);
-  const minutes = Math.floor(timeSeconds/60);
-  const seconds = timeSeconds%60;
-  document.getElementById('race-time').textContent = `${minutes}:${String(seconds).padStart(2,'0')}`;
-}
-
-/* ========= イベント ========= */
+/* ========= 操作 ========= */
 document.getElementById('start-btn').addEventListener('click', startGame);
 
-document.getElementById('retry-btn').addEventListener('click', ()=>{
-  gameState.screen = 'title';
-  resultScreen.classList.add('hidden');
-  titleScreen.classList.remove('hidden');
-  gameState.gameActive = false;
-  clearInterval(quizTimer);
-  mathModal.classList.add('hidden');
-});
-
-document.getElementById('submit-answer').addEventListener('click', ()=>{
-  const input = document.getElementById('math-answer');
-  const v = Number(input.value);
-  const fb = document.getElementById('math-feedback');
-
-  if(Number.isNaN(v)){
-    fb.textContent = '数字を入れてね！';
-    input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
-    return;
-  }
-  if(v === currentQuiz.a){
-    gameState.correctAnswers++;
-    fb.textContent = '✅ 正解！ブースト！';
-    closeQuizWithSuccess();
-  }else{
-    fb.textContent = '❌ ちがう！もう一回！';
-    input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
-    timeLeft = Math.max(1, timeLeft - 2);
-    document.getElementById('time-left').textContent = timeLeft;
-  }
-});
-
 document.addEventListener('keydown', (e)=>{
-  if(gameState.screen !== 'game') return;
-
-  if(!mathModal.classList.contains('hidden')){
-    if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('submit-answer').click(); }
-    return;
-  }
-
-  if(e.key === 'ArrowUp')    { e.preventDefault(); gameState.keys.up = true; }
-  if(e.key === 'ArrowDown')  { e.preventDefault(); gameState.keys.down = true; }
-  if(e.key === 'ArrowLeft')  { e.preventDefault(); gameState.keys.left = true; }
-  if(e.key === 'ArrowRight') { e.preventDefault(); gameState.keys.right = true; }
-  if(e.key === 'Shift')      { e.preventDefault(); gameState.keys.drift = true; }
-  if(e.key === ' ')          { e.preventDefault(); handleItemUse(); }
+  if(e.key==='ArrowUp')    { e.preventDefault(); gameState.keys.up=true; }
+  if(e.key==='ArrowDown')  { e.preventDefault(); gameState.keys.down=true; }
+  if(e.key==='ArrowLeft')  { e.preventDefault(); gameState.keys.left=true; }
+  if(e.key==='ArrowRight') { e.preventDefault(); gameState.keys.right=true; }
+  if(e.key==='Shift')      { e.preventDefault(); gameState.keys.drift=true; }
 });
 document.addEventListener('keyup', (e)=>{
-  if(e.key === 'ArrowUp')    gameState.keys.up = false;
-  if(e.key === 'ArrowDown')  gameState.keys.down = false;
-  if(e.key === 'ArrowLeft')  gameState.keys.left = false;
-  if(e.key === 'ArrowRight') gameState.keys.right = false;
-  if(e.key === 'Shift')      gameState.keys.drift = false;
+  if(e.key==='ArrowUp') gameState.keys.up=false;
+  if(e.key==='ArrowDown') gameState.keys.down=false;
+  if(e.key==='ArrowLeft') gameState.keys.left=false;
+  if(e.key==='ArrowRight') gameState.keys.right=false;
+  if(e.key==='Shift') gameState.keys.drift=false;
 });
 
-/* pointer長押し */
 function bindHoldPointer(btnId, onDown, onUp){
   const el = document.getElementById(btnId);
   el.addEventListener('pointerdown', (e)=>{ e.preventDefault(); el.setPointerCapture(e.pointerId); onDown(); });
@@ -860,14 +499,14 @@ function bindHoldPointer(btnId, onDown, onUp){
   el.addEventListener('pointercancel',(e)=>{ e.preventDefault(); onUp(); });
   el.addEventListener('pointerleave', ()=>{ onUp(); });
 }
-bindHoldPointer('btn-accel', ()=> gameState.keys.up = true,   ()=> gameState.keys.up = false);
-bindHoldPointer('btn-brake', ()=> gameState.keys.down = true, ()=> gameState.keys.down = false);
-bindHoldPointer('btn-left',  ()=> gameState.keys.left = true, ()=> gameState.keys.left = false);
-bindHoldPointer('btn-right', ()=> gameState.keys.right = true,()=> gameState.keys.right = false);
-bindHoldPointer('btn-drift', ()=> gameState.keys.drift = true,()=> gameState.keys.drift = false);
-document.getElementById('btn-item').addEventListener('click', (e)=>{ e.preventDefault(); handleItemUse(); });
+bindHoldPointer('btn-accel', ()=>gameState.keys.up=true, ()=>gameState.keys.up=false);
+bindHoldPointer('btn-brake', ()=>gameState.keys.down=true, ()=>gameState.keys.down=false);
+bindHoldPointer('btn-left',  ()=>gameState.keys.left=true, ()=>gameState.keys.left=false);
+bindHoldPointer('btn-right', ()=>gameState.keys.right=true, ()=>gameState.keys.right=false);
+bindHoldPointer('btn-drift', ()=>gameState.keys.drift=true, ()=>gameState.keys.drift=false);
+document.getElementById('btn-item').addEventListener('click', (e)=>{ e.preventDefault(); });
 
-/* 初期化（★表示も初期値に合わせる） */
+/* 初期化 */
 initCharacterSelect();
 initKartSelect();
 document.getElementById('selected-char').textContent = gameState.selectedChar;
