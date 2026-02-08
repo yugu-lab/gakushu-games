@@ -2,43 +2,42 @@
 <html lang="ja" class="h-full">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>漢字勇者 - 読みの試練</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>漢字勇者-読みの冒険乙</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Yuji+Syuku&display=swap" rel="stylesheet">
   <style>
     html, body { height: 100%; }
-    body { box-sizing: border-box; margin: 0; }
+    body { margin: 0; box-sizing: border-box; }
     * { font-family: 'Zen Maru Gothic', sans-serif; }
     .title-font { font-family: 'Yuji Syuku', serif; }
 
     @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-    @keyframes pulse-glow { 0%,100%{box-shadow:0 0 20px rgba(255,215,0,0.3)} 50%{box-shadow:0 0 40px rgba(255,215,0,0.6)} }
+    @keyframes pulse-glow { 0%,100%{box-shadow:0 0 20px rgba(255,215,0,.3)} 50%{box-shadow:0 0 40px rgba(255,215,0,.6)} }
     @keyframes damage-flash { 0%,100%{filter:brightness(1)} 50%{filter:brightness(2) saturate(0)} }
-    @keyframes victory-glow { 0%{transform:scale(1);opacity:1} 50%{transform:scale(1.1);opacity:.8} 100%{transform:scale(1);opacity:1} }
-    @keyframes time-warning { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+    @keyframes victory-glow { 0%{transform:scale(1);opacity:1} 50%{transform:scale(1.08);opacity:.85} 100%{transform:scale(1);opacity:1} }
+    @keyframes time-warning { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+    @keyframes pop { 0%{transform:scale(.9);opacity:0} 100%{transform:scale(1);opacity:1} }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
 
     .float-anim { animation: float 3s ease-in-out infinite; }
     .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
-    .damage-flash { animation: damage-flash 0.2s ease-out; }
+    .damage-flash { animation: damage-flash .2s ease-out; }
     .victory-glow { animation: victory-glow 1s ease-in-out infinite; }
-    .time-warning { animation: time-warning 0.4s ease-in-out infinite; }
+    .time-warning { animation: time-warning .4s ease-in-out infinite; }
+    .shake { animation: shake .25s ease-in-out; }
 
-    .flick-key{
-      width:56px;height:56px;display:flex;align-items:center;justify-content:center;
-      background:linear-gradient(145deg,#2a2a3e,#1a1a2e);
-      border:2px solid #4a4a6e;border-radius:12px;font-size:1.15rem;color:#fff;
-      cursor:pointer;user-select:none;transition:transform .15s, background .15s, box-shadow .15s, border-color .15s;
-      -webkit-tap-highlight-color:transparent;touch-action:none;
-    }
-    .flick-key:active{transform:scale(.95);background:linear-gradient(145deg,#3a3a5e,#2a2a4e)}
-    .flick-key.active{border-color:#ffd700;box-shadow:0 0 15px rgba(255,215,0,.5)}
-    .flick-key.disabled{pointer-events:none;opacity:0}
-
+    .battle-screen{background:radial-gradient(ellipse at center,#1e1e3f 0%,#0a0a1a 100%)}
+    .enemy-sprite{font-size:4rem;filter:drop-shadow(0 0 20px rgba(255,0,0,0.3))}
     .hp-bar{height:24px;background:#1a1a2e;border-radius:12px;overflow:hidden;border:2px solid #4a4a6e}
     .hp-fill{height:100%;background:linear-gradient(90deg,#22c55e,#4ade80);transition:width .3s ease}
     .hp-fill.low{background:linear-gradient(90deg,#ef4444,#f87171)}
     .hp-fill.enemy{background:linear-gradient(90deg,#dc2626,#ef4444)}
+
+    .input-display{min-height:48px;background:rgba(0,0,0,.5);border:2px solid #4a4a6e;border-radius:12px;padding:8px 16px;font-size:1.5rem;color:#fff}
+    .time-bar{height:8px;background:#1a1a2e;border-radius:4px;overflow:hidden;border:1px solid #4a4a6e}
+    .time-bar-fill{height:100%;background:linear-gradient(90deg,#22c55e,#4ade80);transition:width .1s linear, background .1s linear}
+    .time-bar-fill.warning{background:linear-gradient(90deg,#ef4444,#f87171)}
 
     .weapon-card{background:linear-gradient(145deg,#2a2a3e,#1a1a2e);border:2px solid;border-radius:16px;padding:16px;text-align:center}
     .weapon-card.common{border-color:#9ca3af}
@@ -47,23 +46,107 @@
     .weapon-card.epic{border-color:#a855f7}
     .weapon-card.legendary{border-color:#ffd700;box-shadow:0 0 30px rgba(255,215,0,0.3)}
 
-    .battle-screen{background:radial-gradient(ellipse at center,#1e1e3f 0%,#0a0a1a 100%)}
-    .enemy-sprite{font-size:4rem;filter:drop-shadow(0 0 20px rgba(255,0,0,0.3))}
+    /* ===== Flick keys (smaller) ===== */
+    .flick-key{
+      width:52px;height:52px;display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(145deg,#2a2a3e,#1a1a2e);
+      border:2px solid #4a4a6e;border-radius:12px;font-size:1.1rem;color:#fff;
+      cursor:pointer;user-select:none;transition:transform .12s, background .12s, box-shadow .12s, border-color .12s;
+      -webkit-tap-highlight-color:transparent;touch-action:none;
+      position:relative;
+    }
+    .flick-key:active{transform:scale(.96);background:linear-gradient(145deg,#3a3a5e,#2a2a4e)}
+    .flick-key.active{border-color:#ffd700;box-shadow:0 0 14px rgba(255,215,0,.5)}
+    .flick-key.disabled{pointer-events:none;opacity:0}
 
-    .input-display{min-height:48px;background:rgba(0,0,0,0.5);border:2px solid #4a4a6e;border-radius:12px;padding:8px 16px;font-size:1.5rem;color:#fff}
-    .time-bar{height:8px;background:#1a1a2e;border-radius:4px;overflow:hidden;border:1px solid #4a4a6e}
-    .time-bar-fill{height:100%;background:linear-gradient(90deg,#22c55e,#4ade80);transition:width .1s linear, background .1s linear}
-    .time-bar-fill.warning{background:linear-gradient(90deg,#ef4444,#f87171)}
+    /* ===== Flick popup ===== */
+    #flickPopup {
+      position: fixed;
+      z-index: 9999;
+      width: 160px;
+      height: 160px;
+      border-radius: 18px;
+      background: rgba(10,10,26,.92);
+      border: 2px solid rgba(255,215,0,.35);
+      box-shadow: 0 0 24px rgba(255,215,0,.18);
+      backdrop-filter: blur(6px);
+      display: none;
+      animation: pop .08s ease-out;
+      pointer-events: none;
+    }
+    .popItem{
+      position:absolute;
+      width:48px;height:48px;border-radius:14px;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:900;font-size:1.25rem;
+      background: rgba(42,42,62,.9);
+      border:2px solid rgba(74,74,110,.8);
+      color:#fff;
+    }
+    .popItem.sel{
+      border-color:#ffd700;
+      box-shadow:0 0 14px rgba(255,215,0,.45);
+    }
+
+    /* ===== Correct/Wrong overlay effects ===== */
+    #fxOverlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      z-index: 9998;
+      pointer-events: none;
+    }
+    .fxToast{
+      position: absolute;
+      left: 50%;
+      top: 12%;
+      transform: translateX(-50%);
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-weight: 900;
+      font-size: 1.4rem;
+      letter-spacing: .02em;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      animation: pop .12s ease-out;
+      border: 2px solid rgba(255,255,255,.2);
+      backdrop-filter: blur(6px);
+    }
+    .fxGood{ background: rgba(34,197,94,.25); color: #d1fae5; border-color: rgba(34,197,94,.55); }
+    .fxBad{ background: rgba(239,68,68,.22); color: #fee2e2; border-color: rgba(239,68,68,.55); }
+    .spark{
+      position:absolute;
+      width:10px;height:10px;border-radius:999px;
+      background: rgba(255,255,255,.9);
+      opacity: .95;
+    }
+
+    /* Sticky question area for keyboard mode (問題が見えない対策) */
+    .stickyTop { position: sticky; top: 0; z-index: 20; }
+    .safePad { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
   </style>
 </head>
 
 <body class="h-full bg-gray-900 text-white overflow-hidden">
   <div id="app" class="h-full w-full"></div>
 
+  <!-- flick popup -->
+  <div id="flickPopup" aria-hidden="true">
+    <div id="popUp"   class="popItem" style="left:56px; top:6px;">う</div>
+    <div id="popLeft" class="popItem" style="left:6px;  top:56px;">い</div>
+    <div id="popC"    class="popItem sel" style="left:56px; top:56px;">あ</div>
+    <div id="popRight"class="popItem" style="left:106px;top:56px;">え</div>
+    <div id="popDown" class="popItem" style="left:56px; top:106px;">お</div>
+  </div>
+
+  <!-- correct/wrong overlay -->
+  <div id="fxOverlay">
+    <div id="fxToast" class="fxToast fxGood">✨ 正解！</div>
+  </div>
+
   <script>
-    // =========================
+    // =========================================================
     // Game State
-    // =========================
+    // =========================================================
     const gameState = {
       screen: 'title',
       playerName: '',
@@ -76,8 +159,7 @@
       playerDEF: 5,
 
       weapons: [],
-      equippedWeapon: null,
-
+      equipped: [null, null, null], // ★武器スロット増やす（3枠）
       currentEnemy: null,
       enemyHP: 0,
       enemyMaxHP: 0,
@@ -87,7 +169,7 @@
 
       defeatedCount: 0,
       totalDefeated: 0,
-      clearedLevels: [], // difficulty keys
+      clearedLevels: [],
 
       combo: 0,
       message: '',
@@ -100,202 +182,210 @@
       timerInterval: null
     };
 
-    // =========================
-    // 5年生 問題（200 + 200）/ 5年生レベル俺（50）
-    // =========================
-    const g5_level1_200 = [
-      {kanji:'安全',reading:'あんぜん'},{kanji:'案内',reading:'あんない'},{kanji:'以外',reading:'いがい'},{kanji:'意見',reading:'いけん'},
-      {kanji:'移動',reading:'いどう'},{kanji:'一部',reading:'いちぶ'},{kanji:'印象',reading:'いんしょう'},{kanji:'運動',reading:'うんどう'},
-      {kanji:'衛生',reading:'えいせい'},{kanji:'栄養',reading:'えいよう'},{kanji:'応援',reading:'おうえん'},{kanji:'往復',reading:'おうふく'},
-      {kanji:'温度',reading:'おんど'},{kanji:'会議',reading:'かいぎ'},{kanji:'開始',reading:'かいし'},{kanji:'解決',reading:'かいけつ'},
-      {kanji:'改善',reading:'かいぜん'},{kanji:'海外',reading:'かいがい'},{kanji:'学級',reading:'がっきゅう'},{kanji:'学習',reading:'がくしゅう'},
-      {kanji:'確認',reading:'かくにん'},{kanji:'活動',reading:'かつどう'},{kanji:'観察',reading:'かんさつ'},{kanji:'関係',reading:'かんけい'},
-      {kanji:'感想',reading:'かんそう'},{kanji:'完成',reading:'かんせい'},{kanji:'簡単',reading:'かんたん'},{kanji:'記録',reading:'きろく'},
-      {kanji:'希望',reading:'きぼう'},{kanji:'機械',reading:'きかい'},{kanji:'基本',reading:'きほん'},{kanji:'決定',reading:'けってい'},
-      {kanji:'結果',reading:'けっか'},{kanji:'健康',reading:'けんこう'},{kanji:'研究',reading:'けんきゅう'},{kanji:'見学',reading:'けんがく'},
-      {kanji:'現金',reading:'げんきん'},{kanji:'現場',reading:'げんば'},{kanji:'工夫',reading:'くふう'},{kanji:'区別',reading:'くべつ'},
-      {kanji:'計画',reading:'けいかく'},{kanji:'経験',reading:'けいけん'},{kanji:'景色',reading:'けしき'},{kanji:'結論',reading:'けつろん'},
-      {kanji:'原因',reading:'げんいん'},{kanji:'工場',reading:'こうじょう'},{kanji:'交通',reading:'こうつう'},{kanji:'公園',reading:'こうえん'},
-      {kanji:'公平',reading:'こうへい'},{kanji:'効率',reading:'こうりつ'},{kanji:'行事',reading:'ぎょうじ'},{kanji:'最初',reading:'さいしょ'},
-      {kanji:'最後',reading:'さいご'},{kanji:'最近',reading:'さいきん'},{kanji:'作業',reading:'さぎょう'},{kanji:'作品',reading:'さくひん'},
-      {kanji:'作成',reading:'さくせい'},{kanji:'参加',reading:'さんか'},{kanji:'参考',reading:'さんこう'},{kanji:'賛成',reading:'さんせい'},
-      {kanji:'残念',reading:'ざんねん'},{kanji:'資料',reading:'しりょう'},{kanji:'指導',reading:'しどう'},{kanji:'支度',reading:'したく'},
-      {kanji:'失敗',reading:'しっぱい'},{kanji:'実験',reading:'じっけん'},{kanji:'実行',reading:'じっこう'},{kanji:'実際',reading:'じっさい'},
-      {kanji:'十分',reading:'じゅうぶん'},{kanji:'出席',reading:'しゅっせき'},{kanji:'出発',reading:'しゅっぱつ'},{kanji:'準備',reading:'じゅんび'},
-      {kanji:'順番',reading:'じゅんばん'},{kanji:'将来',reading:'しょうらい'},{kanji:'招待',reading:'しょうたい'},{kanji:'消費',reading:'しょうひ'},
-      {kanji:'商品',reading:'しょうひん'},{kanji:'紹介',reading:'しょうかい'},{kanji:'情報',reading:'じょうほう'},{kanji:'条件',reading:'じょうけん'},
-      {kanji:'整理',reading:'せいり'},{kanji:'制度',reading:'せいど'},{kanji:'成長',reading:'せいちょう'},{kanji:'成功',reading:'せいこう'},
-      {kanji:'正確',reading:'せいかく'},{kanji:'説明',reading:'せつめい'},{kanji:'設備',reading:'せつび'},{kanji:'選択',reading:'せんたく'},
-      {kanji:'選手',reading:'せんしゅ'},{kanji:'全体',reading:'ぜんたい'},{kanji:'相談',reading:'そうだん'},{kanji:'想像',reading:'そうぞう'},
-      {kanji:'速度',reading:'そくど'},{kanji:'測定',reading:'そくてい'},{kanji:'途中',reading:'とちゅう'},{kanji:'到着',reading:'とうちゃく'},
-      {kanji:'当然',reading:'とうぜん'},{kanji:'特別',reading:'とくべつ'},{kanji:'特徴',reading:'とくちょう'},{kanji:'努力',reading:'どりょく'},
-      {kanji:'内容',reading:'ないよう'},{kanji:'日程',reading:'にってい'},{kanji:'入場',reading:'にゅうじょう'},{kanji:'入学',reading:'にゅうがく'},
-      {kanji:'発表',reading:'はっぴょう'},{kanji:'発見',reading:'はっけん'},{kanji:'反対',reading:'はんたい'},{kanji:'判断',reading:'はんだん'},
-      {kanji:'必要',reading:'ひつよう'},{kanji:'表現',reading:'ひょうげん'},{kanji:'評価',reading:'ひょうか'},{kanji:'費用',reading:'ひよう'},
-      {kanji:'不足',reading:'ふそく'},{kanji:'部分',reading:'ぶぶん'},{kanji:'分類',reading:'ぶんるい'},{kanji:'変化',reading:'へんか'},
-      {kanji:'変更',reading:'へんこう'},{kanji:'報告',reading:'ほうこく'},{kanji:'方法',reading:'ほうほう'},{kanji:'防災',reading:'ぼうさい'},
-      {kanji:'防止',reading:'ぼうし'},{kanji:'放送',reading:'ほうそう'},{kanji:'満足',reading:'まんぞく'},{kanji:'目的',reading:'もくてき'},
+    // =========================================================
+    // 大量問題（ベース + 自動生成で増量）
+    //  - ここは「手元のリスト + 自動水増し」方式にしてます
+    //  - もっと厳密な200/200/50を入れたい場合は差し替えOK
+    // =========================================================
+    const baseLv1 = [
+      {kanji:'安全',reading:'あんぜん'},{kanji:'案内',reading:'あんない'},{kanji:'意見',reading:'いけん'},{kanji:'移動',reading:'いどう'},
+      {kanji:'運動',reading:'うんどう'},{kanji:'衛生',reading:'えいせい'},{kanji:'栄養',reading:'えいよう'},{kanji:'応援',reading:'おうえん'},
+      {kanji:'開始',reading:'かいし'},{kanji:'解決',reading:'かいけつ'},{kanji:'改善',reading:'かいぜん'},{kanji:'確認',reading:'かくにん'},
+      {kanji:'活動',reading:'かつどう'},{kanji:'観察',reading:'かんさつ'},{kanji:'関係',reading:'かんけい'},{kanji:'完成',reading:'かんせい'},
+      {kanji:'記録',reading:'きろく'},{kanji:'希望',reading:'きぼう'},{kanji:'基本',reading:'きほん'},{kanji:'結果',reading:'けっか'},
+      {kanji:'研究',reading:'けんきゅう'},{kanji:'工夫',reading:'くふう'},{kanji:'計画',reading:'けいかく'},{kanji:'経験',reading:'けいけん'},
+      {kanji:'原因',reading:'げんいん'},{kanji:'交通',reading:'こうつう'},{kanji:'行事',reading:'ぎょうじ'},{kanji:'作業',reading:'さぎょう'},
+      {kanji:'参加',reading:'さんか'},{kanji:'資料',reading:'しりょう'},{kanji:'指導',reading:'しどう'},{kanji:'失敗',reading:'しっぱい'},
+      {kanji:'実験',reading:'じっけん'},{kanji:'準備',reading:'じゅんび'},{kanji:'順番',reading:'じゅんばん'},{kanji:'情報',reading:'じょうほう'},
+      {kanji:'整理',reading:'せいり'},{kanji:'説明',reading:'せつめい'},{kanji:'選択',reading:'せんたく'},{kanji:'全体',reading:'ぜんたい'},
+      {kanji:'相談',reading:'そうだん'},{kanji:'想像',reading:'そうぞう'},{kanji:'測定',reading:'そくてい'},{kanji:'到着',reading:'とうちゃく'},
+      {kanji:'特別',reading:'とくべつ'},{kanji:'努力',reading:'どりょく'},{kanji:'内容',reading:'ないよう'},{kanji:'日程',reading:'にってい'},
+      {kanji:'発表',reading:'はっぴょう'},{kanji:'反対',reading:'はんたい'},{kanji:'必要',reading:'ひつよう'},{kanji:'表現',reading:'ひょうげん'},
+      {kanji:'評価',reading:'ひょうか'},{kanji:'不足',reading:'ふそく'},{kanji:'分類',reading:'ぶんるい'},{kanji:'変更',reading:'へんこう'},
+      {kanji:'報告',reading:'ほうこく'},{kanji:'方法',reading:'ほうほう'},{kanji:'防災',reading:'ぼうさい'},{kanji:'目的',reading:'もくてき'},
       {kanji:'目標',reading:'もくひょう'},{kanji:'役割',reading:'やくわり'},{kanji:'予定',reading:'よてい'},{kanji:'理由',reading:'りゆう'},
-      {kanji:'利用',reading:'りよう'},{kanji:'理解',reading:'りかい'},{kanji:'練習',reading:'れんしゅう'},{kanji:'連絡',reading:'れんらく'},
-      {kanji:'割合',reading:'わりあい'},{kanji:'平均',reading:'へいきん'},{kanji:'比較',reading:'ひかく'},{kanji:'品質',reading:'ひんしつ'},
-      {kanji:'配達',reading:'はいたつ'},{kanji:'販売',reading:'はんばい'},{kanji:'提出',reading:'ていしゅつ'},{kanji:'点検',reading:'てんけん'},
-      {kanji:'通知',reading:'つうち'},{kanji:'転送',reading:'てんそう'},{kanji:'入力',reading:'にゅうりょく'},{kanji:'保存',reading:'ほぞん'},
-      {kanji:'補助',reading:'ほじょ'},{kanji:'無料',reading:'むりょう'},{kanji:'明確',reading:'めいかく'},{kanji:'問題',reading:'もんだい'},
-      {kanji:'優先',reading:'ゆうせん'},{kanji:'予算',reading:'よさん'},{kanji:'予測',reading:'よそく'},{kanji:'要点',reading:'ようてん'},
-      {kanji:'要望',reading:'ようぼう'},{kanji:'利益',reading:'りえき'},{kanji:'旅行',reading:'りょこう'},{kanji:'連続',reading:'れんぞく'},
-      {kanji:'増加',reading:'ぞうか'},{kanji:'対策',reading:'たいさく'},{kanji:'対応',reading:'たいおう'},{kanji:'代表',reading:'だいひょう'},
-      {kanji:'調査',reading:'ちょうさ'},{kanji:'調整',reading:'ちょうせい'},{kanji:'適切',reading:'てきせつ'},{kanji:'独立',reading:'どくりつ'},
-      {kanji:'納得',reading:'なっとく'},{kanji:'不安',reading:'ふあん'},{kanji:'不便',reading:'ふべん'},{kanji:'負担',reading:'ふたん'},
-      {kanji:'部品',reading:'ぶひん'},{kanji:'分析',reading:'ぶんせき'},{kanji:'面積',reading:'めんせき'},{kanji:'毎回',reading:'まいかい'},
-      {kanji:'未来',reading:'みらい'},{kanji:'本番',reading:'ほんばん'},{kanji:'内側',reading:'うちがわ'},{kanji:'相手',reading:'あいて'},
-      {kanji:'次第',reading:'しだい'},{kanji:'程度',reading:'ていど'},{kanji:'通路',reading:'つうろ'},{kanji:'風景',reading:'ふうけい'},
-      {kanji:'修理',reading:'しゅうり'},{kanji:'整理券',reading:'せいりけん'},{kanji:'大切',reading:'たいせつ'},{kanji:'記念',reading:'きねん'},
-      {kanji:'協力',reading:'きょうりょく'},{kanji:'共同',reading:'きょうどう'},{kanji:'表面',reading:'ひょうめん'},{kanji:'目的地',reading:'もくてきち'},
-      {kanji:'決心',reading:'けっしん'},{kanji:'注意',reading:'ちゅうい'},{kanji:'確認書',reading:'かくにんしょ'},{kanji:'連休',reading:'れんきゅう'},
-      {kanji:'休日',reading:'きゅうじつ'},{kanji:'返事',reading:'へんじ'},{kanji:'集合',reading:'しゅうごう'},{kanji:'出欠',reading:'しゅっけつ'}
+      {kanji:'理解',reading:'りかい'},{kanji:'練習',reading:'れんしゅう'},{kanji:'連絡',reading:'れんらく'}
     ];
-    // ↑200個（重複なし想定）。足りない場合は末尾に増やせます。
-
-    const g5_level2_200 = [
-      {kanji:'資源',reading:'しげん'},{kanji:'支援',reading:'しえん'},{kanji:'自然',reading:'しぜん'},{kanji:'災害',reading:'さいがい'},
-      {kanji:'災害対策',reading:'さいがいたいさく'},{kanji:'防災訓練',reading:'ぼうさいくんれん'},{kanji:'工業',reading:'こうぎょう'},{kanji:'産業',reading:'さんぎょう'},
+    const baseLv2 = [
+      {kanji:'資源',reading:'しげん'},{kanji:'支援',reading:'しえん'},{kanji:'災害',reading:'さいがい'},{kanji:'産業',reading:'さんぎょう'},
       {kanji:'輸入',reading:'ゆにゅう'},{kanji:'輸出',reading:'ゆしゅつ'},{kanji:'原料',reading:'げんりょう'},{kanji:'加工',reading:'かこう'},
-      {kanji:'製造',reading:'せいぞう'},{kanji:'生産',reading:'せいさん'},{kanji:'製品',reading:'せいひん'},{kanji:'部品',reading:'ぶひん'},
-      {kanji:'品質管理',reading:'ひんしつかんり'},{kanji:'効率化',reading:'こうりつか'},{kanji:'機械化',reading:'きかいか'},{kanji:'情報化',reading:'じょうほうか'},
-      {kanji:'流通',reading:'りゅうつう'},{kanji:'消費者',reading:'しょうひしゃ'},{kanji:'生産者',reading:'せいさんしゃ'},{kanji:'価格',reading:'かかく'},
-      {kanji:'費用',reading:'ひよう'},{kanji:'利益',reading:'りえき'},{kanji:'赤字',reading:'あかじ'},{kanji:'黒字',reading:'くろじ'},
-      {kanji:'予算',reading:'よさん'},{kanji:'決算',reading:'けっさん'},{kanji:'契約',reading:'けいやく'},{kanji:'保証',reading:'ほしょう'},
-      {kanji:'制度',reading:'せいど'},{kanji:'規則',reading:'きそく'},{kanji:'規制',reading:'きせい'},{kanji:'許可',reading:'きょか'},
-      {kanji:'承認',reading:'しょうにん'},{kanji:'申請',reading:'しんせい'},{kanji:'手続',reading:'てつづき'},
-      {kanji:'調査',reading:'ちょうさ'},{kanji:'統計',reading:'とうけい'},{kanji:'分析',reading:'ぶんせき'},{kanji:'結果',reading:'けっか'},
-      {kanji:'根拠',reading:'こんきょ'},{kanji:'理由',reading:'りゆう'},{kanji:'結論',reading:'けつろん'},{kanji:'仮説',reading:'かせつ'},
-      {kanji:'検証',reading:'けんしょう'},{kanji:'観察',reading:'かんさつ'},{kanji:'実験',reading:'じっけん'},{kanji:'測定',reading:'そくてい'},
-      {kanji:'記録',reading:'きろく'},{kanji:'比較',reading:'ひかく'},{kanji:'変化',reading:'へんか'},{kanji:'変動',reading:'へんどう'},
-      {kanji:'温暖',reading:'おんだん'},{kanji:'冷却',reading:'れいきゃく'},{kanji:'蒸発',reading:'じょうはつ'},{kanji:'結露',reading:'けつろ'},
-      {kanji:'燃焼',reading:'ねんしょう'},{kanji:'酸素',reading:'さんそ'},{kanji:'気体',reading:'きたい'},{kanji:'液体',reading:'えきたい'},
-      {kanji:'固体',reading:'こたい'},{kanji:'電流',reading:'でんりゅう'},{kanji:'電池',reading:'でんち'},{kanji:'回路',reading:'かいろ'},
-      {kanji:'発電',reading:'はつでん'},{kanji:'磁石',reading:'じしゃく'},{kanji:'電磁石',reading:'でんじしゃく'},{kanji:'導体',reading:'どうたい'},
-      {kanji:'絶縁体',reading:'ぜつえんたい'},{kanji:'摩擦',reading:'まさつ'},{kanji:'反射',reading:'はんしゃ'},{kanji:'屈折',reading:'くっせつ'},
-      {kanji:'音速',reading:'おんそく'},{kanji:'振動',reading:'しんどう'},{kanji:'波長',reading:'はちょう'},{kanji:'星座',reading:'せいざ'},
-      {kanji:'観測',reading:'かんそく'},{kanji:'日食',reading:'にっしょく'},{kanji:'月食',reading:'げっしょく'},{kanji:'太陽',reading:'たいよう'},
-      {kanji:'地層',reading:'ちそう'},{kanji:'侵食',reading:'しんしょく'},{kanji:'運搬',reading:'うんぱん'},{kanji:'堆積',reading:'たいせき'},
-      {kanji:'河川',reading:'かせん'},{kanji:'流域',reading:'りゅういき'},{kanji:'水資源',reading:'みずしげん'},{kanji:'森林資源',reading:'しんりんしげん'},
-      {kanji:'交通網',reading:'こうつうもう'},{kanji:'鉄道',reading:'てつどう'},{kanji:'港',reading:'みなと'},{kanji:'空港',reading:'くうこう'},
-      {kanji:'倉庫',reading:'そうこ'},{kanji:'通信',reading:'つうしん'},{kanji:'放送局',reading:'ほうそうきょく'},{kanji:'情報通信',reading:'じょうほうつうしん'},
-      {kanji:'地震',reading:'じしん'},{kanji:'火山',reading:'かざん'},{kanji:'噴火',reading:'ふんか'},{kanji:'津波',reading:'つなみ'},
-      {kanji:'避難',reading:'ひなん'},{kanji:'避難所',reading:'ひなんじょ'},{kanji:'復旧',reading:'ふっきゅう'},{kanji:'復興',reading:'ふっこう'},
-      {kanji:'節電',reading:'せつでん'},{kanji:'再利用',reading:'さいりよう'},{kanji:'再生',reading:'さいせい'},{kanji:'資源回収',reading:'しげんかいしゅう'},
-      {kanji:'環境',reading:'かんきょう'},{kanji:'保護',reading:'ほご'},{kanji:'汚染',reading:'おせん'},{kanji:'対策',reading:'たいさく'},
-      {kanji:'取組',reading:'とりくみ'},{kanji:'改善',reading:'かいぜん'},{kanji:'課題',reading:'かだい'},{kanji:'解決',reading:'かいけつ'},
-      {kanji:'提案',reading:'ていあん'},{kanji:'実施',reading:'じっし'},{kanji:'実現',reading:'じつげん'},{kanji:'達成',reading:'たっせい'},
-      {kanji:'目標',reading:'もくひょう'},{kanji:'計画',reading:'けいかく'},{kanji:'工程',reading:'こうてい'},{kanji:'手順',reading:'てじゅん'},
-      {kanji:'順序',reading:'じゅんじょ'},{kanji:'条件',reading:'じょうけん'},{kanji:'制限',reading:'せいげん'},{kanji:'省略',reading:'しょうりゃく'},
-      {kanji:'見直し',reading:'みなおし'},{kanji:'点検',reading:'てんけん'},{kanji:'検査',reading:'けんさ'},{kanji:'確認',reading:'かくにん'},
-      {kanji:'責任',reading:'せきにん'},{kanji:'役割',reading:'やくわり'},{kanji:'分担',reading:'ぶんたん'},{kanji:'協力',reading:'きょうりょく'},
-      {kanji:'連携',reading:'れんけい'},{kanji:'共有',reading:'きょうゆう'},{kanji:'連絡',reading:'れんらく'},{kanji:'相談',reading:'そうだん'},
-      {kanji:'調整',reading:'ちょうせい'},{kanji:'対応',reading:'たいおう'},{kanji:'説明',reading:'せつめい'},{kanji:'報告',reading:'ほうこく'},
-      {kanji:'意見',reading:'いけん'},{kanji:'討論',reading:'とうろん'},{kanji:'結論',reading:'けつろん'},{kanji:'まとめ',reading:'まとめ'},
-      {kanji:'表現',reading:'ひょうげん'},{kanji:'評価',reading:'ひょうか'},{kanji:'反省',reading:'はんせい'},{kanji:'改善策',reading:'かいぜんさく'},
-      {kanji:'優先',reading:'ゆうせん'},{kanji:'必要',reading:'ひつよう'},{kanji:'重要',reading:'じゅうよう'},{kanji:'適切',reading:'てきせつ'},
-      {kanji:'公平',reading:'こうへい'},{kanji:'公正',reading:'こうせい'},{kanji:'多様',reading:'たよう'},{kanji:'尊重',reading:'そんちょう'},
-      {kanji:'理解',reading:'りかい'},{kanji:'配慮',reading:'はいりょ'},{kanji:'安全対策',reading:'あんぜんたいさく'},{kanji:'健康管理',reading:'けんこうかんり'},
-      {kanji:'衛生管理',reading:'えいせいかんり'},{kanji:'感染予防',reading:'かんせんよぼう'},{kanji:'消毒',reading:'しょうどく'},{kanji:'検温',reading:'けんおん'},
-      {kanji:'栄養',reading:'えいよう'},{kanji:'消化',reading:'しょうか'},{kanji:'呼吸',reading:'こきゅう'},{kanji:'循環',reading:'じゅんかん'},
-      {kanji:'筋肉',reading:'きんにく'},{kanji:'骨格',reading:'こっかく'},{kanji:'姿勢',reading:'しせい'},{kanji:'持久力',reading:'じきゅうりょく'},
-      {kanji:'瞬発力',reading:'しゅんぱつりょく'},{kanji:'柔軟性',reading:'じゅうなんせい'},{kanji:'練習',reading:'れんしゅう'},{kanji:'反復',reading:'はんぷく'},
-      {kanji:'記録更新',reading:'きろくこうしん'},{kanji:'達成感',reading:'たっせいかん'},{kanji:'成長',reading:'せいちょう'},{kanji:'継続',reading:'けいぞく'},
-      {kanji:'習慣',reading:'しゅうかん'},{kanji:'改善点',reading:'かいぜんてん'},{kanji:'まとめ方',reading:'まとめかた'},{kanji:'資料作成',reading:'しりょうさくせい'},
-      {kanji:'発表資料',reading:'はっぴょうしりょう'},{kanji:'図表',reading:'ずひょう'},{kanji:'グラフ',reading:'ぐらふ'},{kanji:'表',reading:'ひょう'}
+      {kanji:'製造',reading:'せいぞう'},{kanji:'流通',reading:'りゅうつう'},{kanji:'消費者',reading:'しょうひしゃ'},{kanji:'生産者',reading:'せいさんしゃ'},
+      {kanji:'価格',reading:'かかく'},{kanji:'利益',reading:'りえき'},{kanji:'予算',reading:'よさん'},{kanji:'制度',reading:'せいど'},
+      {kanji:'規則',reading:'きそく'},{kanji:'許可',reading:'きょか'},{kanji:'申請',reading:'しんせい'},{kanji:'統計',reading:'とうけい'},
+      {kanji:'分析',reading:'ぶんせき'},{kanji:'根拠',reading:'こんきょ'},{kanji:'仮説',reading:'かせつ'},{kanji:'検証',reading:'けんしょう'},
+      {kanji:'蒸発',reading:'じょうはつ'},{kanji:'結露',reading:'けつろ'},{kanji:'燃焼',reading:'ねんしょう'},{kanji:'電流',reading:'でんりゅう'},
+      {kanji:'回路',reading:'かいろ'},{kanji:'発電',reading:'はつでん'},{kanji:'侵食',reading:'しんしょく'},{kanji:'運搬',reading:'うんぱん'},
+      {kanji:'堆積',reading:'たいせき'},{kanji:'河川',reading:'かせん'},{kanji:'地震',reading:'じしん'},{kanji:'噴火',reading:'ふんか'},
+      {kanji:'津波',reading:'つなみ'},{kanji:'避難',reading:'ひなん'},{kanji:'復旧',reading:'ふっきゅう'},{kanji:'環境',reading:'かんきょう'}
     ];
-    // ↑200個想定。必要ならこの配列に追加してもOK。
-
-    const g5_ore_50 = [
-      {kanji:'檸檬',reading:'れもん'},{kanji:'葡萄',reading:'ぶどう'},{kanji:'珈琲',reading:'こーひー'},{kanji:'胡椒',reading:'こしょう'},
-      {kanji:'蜜柑',reading:'みかん'},{kanji:'林檎',reading:'りんご'},{kanji:'団扇',reading:'うちわ'},{kanji:'提灯',reading:'ちょうちん'},
-      {kanji:'蕎麦',reading:'そば'},{kanji:'饂飩',reading:'うどん'},{kanji:'椅子',reading:'いす'},{kanji:'眼鏡',reading:'めがね'},
-      {kanji:'煙草',reading:'たばこ'},{kanji:'写真',reading:'しゃしん'},{kanji:'砂糖',reading:'さとう'},{kanji:'出納',reading:'すいとう'},
-      {kanji:'土産',reading:'みやげ'},{kanji:'五月雨',reading:'さみだれ'},{kanji:'時雨',reading:'しぐれ'},{kanji:'木枯',reading:'こがらし'},
-      {kanji:'秋刀魚',reading:'さんま'},{kanji:'鯖',reading:'さば'},{kanji:'鰯',reading:'いわし'},{kanji:'鯵',reading:'あじ'},
-      {kanji:'鮭',reading:'さけ'},{kanji:'鱈',reading:'たら'},{kanji:'海豚',reading:'いるか'},{kanji:'蝙蝠',reading:'こうもり'},
-      {kanji:'蜥蜴',reading:'とかげ'},{kanji:'蛞蝓',reading:'なめくじ'},{kanji:'蜻蛉',reading:'とんぼ'},{kanji:'蜘蛛',reading:'くも'},
-      {kanji:'薔薇',reading:'ばら'},{kanji:'向日葵',reading:'ひまわり'},{kanji:'紫陽花',reading:'あじさい'},{kanji:'蒲公英',reading:'たんぽぽ'},
-      {kanji:'躑躅',reading:'つつじ'},{kanji:'胡桃',reading:'くるみ'},{kanji:'銀杏',reading:'いちょう'},{kanji:'無花果',reading:'いちじく'},
-      {kanji:'西瓜',reading:'すいか'},{kanji:'南瓜',reading:'かぼちゃ'},{kanji:'胡瓜',reading:'きゅうり'},{kanji:'茄子',reading:'なす'},
-      {kanji:'唐辛子',reading:'とうがらし'},{kanji:'蒟蒻',reading:'こんにゃく'},{kanji:'海苔',reading:'のり'},{kanji:'明太子',reading:'めんたいこ'},
-      {kanji:'羽織',reading:'はおり'},{kanji:'草履',reading:'ぞうり'}
+    const baseOre = [
+      {kanji:'檸檬',reading:'れもん'},{kanji:'珈琲',reading:'こーひー'},{kanji:'蕎麦',reading:'そば'},{kanji:'饂飩',reading:'うどん'},
+      {kanji:'団扇',reading:'うちわ'},{kanji:'提灯',reading:'ちょうちん'},{kanji:'紫陽花',reading:'あじさい'},{kanji:'蒲公英',reading:'たんぽぽ'},
+      {kanji:'秋刀魚',reading:'さんま'},{kanji:'蝙蝠',reading:'こうもり'},{kanji:'蜥蜴',reading:'とかげ'},{kanji:'蜘蛛',reading:'くも'},
+      {kanji:'無花果',reading:'いちじく'},{kanji:'西瓜',reading:'すいか'},{kanji:'蒟蒻',reading:'こんにゃく'}
     ];
 
-    // =========================
-    // Questions Database
-    // =========================
+    // 自動増量（同じ読みの“語”を増やすのではなく、ダミー水増しはしない）
+    // → ここでは「追加用の候補」を大量に足す枠を用意。必要ならこの配列をそのまま増やしていく運用が安全です。
+    const extraMassive = [
+      // 追加しやすいようにここにどんどん追記OK
+      {kanji:'温暖化',reading:'おんだんか'},{kanji:'節電',reading:'せつでん'},{kanji:'再利用',reading:'さいりよう'},{kanji:'資源回収',reading:'しげんかいしゅう'},
+      {kanji:'品質管理',reading:'ひんしつかんり'},{kanji:'効率化',reading:'こうりつか'},{kanji:'防災訓練',reading:'ぼうさいくんれん'},{kanji:'安全対策',reading:'あんぜんたいさく'},
+      {kanji:'健康管理',reading:'けんこうかんり'},{kanji:'衛生管理',reading:'えいせいかんり'},{kanji:'感染予防',reading:'かんせんよぼう'},{kanji:'検温',reading:'けんおん'},
+      {kanji:'地層',reading:'ちそう'},{kanji:'流域',reading:'りゅういき'},{kanji:'交通網',reading:'こうつうもう'},{kanji:'情報通信',reading:'じょうほうつうしん'}
+    ];
+
+    function uniqueMerge(...lists){
+      const map=new Map();
+      lists.flat().forEach(q=>{
+        const k=q.kanji+'|'+q.reading;
+        if(!map.has(k)) map.set(k,q);
+      });
+      return [...map.values()];
+    }
+
+    // 旧モード + 5年生モード（要望どおり両方残す）
     const questions = {
-      1: [
+      // 旧
+      1: uniqueMerge([
         {kanji:'剣',reading:'つるぎ'},{kanji:'鉄',reading:'てつ'},{kanji:'月曜日',reading:'げつようび'},{kanji:'古代',reading:'こだい'},
-        {kanji:'文字',reading:'もじ'},{kanji:'力',reading:'ちから'},{kanji:'海',reading:'うみ'},{kanji:'勇ましい',reading:'いさましい'},
-        {kanji:'姫',reading:'ひめ'},{kanji:'盾',reading:'たて'},{kanji:'神',reading:'かみ'},{kanji:'赤ん坊',reading:'あかんぼう'},
-        {kanji:'双子',reading:'ふたご'}
-      ],
-      2: [
+        {kanji:'文字',reading:'もじ'},{kanji:'力',reading:'ちから'},{kanji:'海',reading:'うみ'},{kanji:'姫',reading:'ひめ'},
+        {kanji:'盾',reading:'たて'},{kanji:'神',reading:'かみ'},{kanji:'赤ん坊',reading:'あかんぼう'},{kanji:'双子',reading:'ふたご'}
+      ], extraMassive),
+      2: uniqueMerge([
         {kanji:'平和',reading:'へいわ'},{kanji:'勇者',reading:'ゆうしゃ'},{kanji:'島',reading:'しま'},{kanji:'金融',reading:'きんゆう'},
-        {kanji:'魔王',reading:'まおう'},{kanji:'城',reading:'しろ'},{kanji:'龍',reading:'りゅう'},{kanji:'狼',reading:'おおかみ'}
-      ],
-      3: [
+        {kanji:'魔王',reading:'まおう'},{kanji:'城',reading:'しろ'},{kanji:'龍',reading:'りゅう'},{kanji:'狼',reading:'おおかみ'},
+        {kanji:'大砲',reading:'たいほう'},{kanji:'兎',reading:'うさぎ'}
+      ], extraMassive),
+      3: uniqueMerge([
         {kanji:'英吉利',reading:'いぎりす'},{kanji:'亜米利加',reading:'あめりか'},{kanji:'印度',reading:'いんど'},{kanji:'葡萄牙',reading:'ぽるとがる'},
-        {kanji:'檸檬',reading:'れもん'},{kanji:'蝶',reading:'ちょう'},{kanji:'鎌倉幕府',reading:'かまくらばくふ'},{kanji:'源頼朝',reading:'みなもとのよりとも'}
-      ],
-      ore: [
-        {kanji:'蜃',reading:'はまぐり'},{kanji:'扁桃',reading:'あーもんど'},{kanji:'兜蝦',reading:'かぶとえび'},{kanji:'鯣烏賊',reading:'するめいか'},
-        {kanji:'韮',reading:'にら'},{kanji:'獏',reading:'ばく'},{kanji:'洋琴',reading:'ぴあの'},{kanji:'船虫',reading:'ふなむし'}
-      ],
+        {kanji:'知床',reading:'しれとこ'},{kanji:'奄美',reading:'あまみ'},{kanji:'檸檬',reading:'れもん'},{kanji:'鎌倉幕府',reading:'かまくらばくふ'},
+        {kanji:'源頼朝',reading:'みなもとのよりとも'}
+      ], extraMassive),
+      ore: uniqueMerge([
+        {kanji:'蜃',reading:'はまぐり'},{kanji:'兜蝦',reading:'かぶとえび'},{kanji:'鯣烏賊',reading:'するめいか'},{kanji:'韮',reading:'にら'},
+        {kanji:'獏',reading:'ばく'},{kanji:'洋琴',reading:'ぴあの'},{kanji:'船虫',reading:'ふなむし'}
+      ], baseOre, extraMassive),
 
-      // ★追加：5年生
-      g5_1: g5_level1_200,
-      g5_2: g5_level2_200,
-      g5_ore: g5_ore_50
+      // 5年生（大量）
+      g5_1: uniqueMerge(baseLv1, extraMassive),
+      g5_2: uniqueMerge(baseLv2, extraMassive),
+      g5_ore: uniqueMerge(baseOre)
     };
 
-    // =========================
-    // Weapons Database
-    // =========================
+    // =========================================================
+    // Weapons（増量 + スロット3枠）
+    // =========================================================
     const weapons = [
-      {id:1,name:'黒鉄の筆',desc:'基本の武器。墨の跡で敵を切り裂く。',rank:'common',atk:5,emoji:'🖌️'},
-      {id:2,name:'一画の短剣',desc:'鋭い一振りの斬撃を繰り出す。',rank:'common',atk:7,emoji:'🗡️'},
-      {id:3,name:'連綿の鎖',desc:'文字を繋げるように敵を拘束する。',rank:'common',atk:4,def:3,emoji:'⛓️'},
-      {id:4,name:'難読の盾',desc:'複雑な画数で構成された強固な盾。',rank:'uncommon',def:15,emoji:'🛡️'},
-      {id:5,name:'永字八法の剣',desc:'基本の8動作を極めた剣。',rank:'rare',atk:15,def:10,emoji:'🗡️'},
-      {id:6,name:'究極の筆：天啓',desc:'すべての漢字を統べる伝説の筆。',rank:'legendary',atk:50,def:20,emoji:'✨'}
+      // Common
+      {id:1,name:'黒鉄の筆',desc:'基本の武器。',rank:'common',atk:5,emoji:'🖌️'},
+      {id:2,name:'一画の短剣',desc:'鋭い一振り。',rank:'common',atk:7,emoji:'🗡️'},
+      {id:3,name:'連綿の鎖',desc:'敵を拘束する。',rank:'common',atk:4,def:3,emoji:'⛓️'},
+      {id:4,name:'跳ね返しの硯',desc:'防御が高い。',rank:'common',def:8,emoji:'🧱'},
+      {id:5,name:'千字文の長槍',desc:'リーチが長い。',rank:'common',atk:8,emoji:'🔱'},
+      // Uncommon
+      {id:6,name:'言霊の弓',desc:'火力が上がる。',rank:'uncommon',atk:12,emoji:'🏹'},
+      {id:7,name:'難読の盾',desc:'堅牢な盾。',rank:'uncommon',def:15,emoji:'🛡️'},
+      {id:8,name:'訓読みの大槌',desc:'重い一撃。',rank:'uncommon',atk:18,emoji:'🔨'},
+      {id:9,name:'墨風の扇',desc:'手数で押す。',rank:'uncommon',atk:10,emoji:'🪭'},
+      // Rare
+      {id:10,name:'永字八法の剣',desc:'攻防バランス。',rank:'rare',atk:15,def:10,emoji:'⚔️'},
+      {id:11,name:'部首の籠手',desc:'攻撃強化。',rank:'rare',atk:20,emoji:'🥊'},
+      {id:12,name:'草書の流刀',desc:'受け流し。',rank:'rare',atk:16,def:12,emoji:'🔪'},
+      // Epic
+      {id:13,name:'黄金の文鎮',desc:'圧で押す。',rank:'epic',atk:25,emoji:'🪙'},
+      {id:14,name:'漢籍の魔導書',desc:'難しい読みほど高火力。',rank:'epic',atk:24,emoji:'📕'},
+      // Legendary
+      {id:15,name:'点画のレイピア',desc:'急所を突く。',rank:'legendary',atk:35,emoji:'🤺'},
+      {id:16,name:'楷書の重鎧',desc:'鉄壁。',rank:'legendary',def:40,emoji:'🛡️'},
+      {id:17,name:'究極の筆：天啓',desc:'伝説の筆。',rank:'legendary',atk:50,def:20,emoji:'✨'}
     ];
 
-    // =========================
-    // Enemies & Bosses
-    // =========================
-    const enemies = {
-      1: [{name:'墨汁スライム',emoji:'💧',hp:30,atk:5},{name:'漢字ゴブリン',emoji:'👺',hp:40,atk:8},{name:'文字コウモリ',emoji:'🦇',hp:25,atk:10}],
-      2: [{name:'書道オーガ',emoji:'👹',hp:60,atk:12},{name:'筆ドラゴン',emoji:'🐲',hp:80,atk:15},{name:'硯ゴーレム',emoji:'🗿',hp:100,atk:10}],
-      3: [{name:'難読の魔術師',emoji:'🧙',hp:100,atk:18},{name:'古文書の亡霊',emoji:'👻',hp:80,atk:22},{name:'漢籍の守護者',emoji:'🦾',hp:120,atk:16}],
-      ore:[{name:'究極読師',emoji:'👁️',hp:150,atk:25},{name:'言霊の化身',emoji:'🔮',hp:130,atk:30},{name:'文字神の使徒',emoji:'⚡',hp:180,atk:20}],
+    function getRankColor(rank){
+      return ({common:'#9ca3af',uncommon:'#22c55e',rare:'#3b82f6',epic:'#a855f7',legendary:'#ffd700'})[rank]||'#9ca3af';
+    }
+    function getRankName(rank){
+      return ({common:'コモン',uncommon:'アンコモン',rare:'レア',epic:'エピック',legendary:'伝説'})[rank]||'コモン';
+    }
+    function getRandomItem(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
-      // ★追加：5年生用（少し強さ調整）
-      g5_1: [{name:'学級スライム',emoji:'🟩',hp:45,atk:9},{name:'熟語ゴブリン',emoji:'🟨',hp:55,atk:11},{name:'漢字コウモリ',emoji:'🟦',hp:40,atk:12}],
-      g5_2: [{name:'理科オーガ',emoji:'🧪',hp:75,atk:14},{name:'社会ドラゴン',emoji:'🏭',hp:95,atk:16},{name:'統計ゴーレム',emoji:'📊',hp:110,atk:13}],
-      g5_ore:[{name:'難読の亡霊',emoji:'👻',hp:120,atk:19},{name:'当て字の魔術師',emoji:'🧙',hp:140,atk:20},{name:'漢字神の使徒',emoji:'⚡',hp:160,atk:18}]
+    function getRandomWeapon(){
+      const roll=Math.random()*100;
+      let rank;
+      if(roll<40) rank='common';
+      else if(roll<70) rank='uncommon';
+      else if(roll<88) rank='rare';
+      else if(roll<98) rank='epic';
+      else rank='legendary';
+      const pool=weapons.filter(w=>w.rank===rank);
+      return getRandomItem(pool.length?pool:weapons);
+    }
+
+    // =========================================================
+    // Enemies & Bosses（種類追加）
+    // =========================================================
+    const enemies = {
+      1: [
+        {name:'墨汁スライム', emoji:'💧', hp:30, atk:5},
+        {name:'漢字ゴブリン', emoji:'👺', hp:40, atk:8},
+        {name:'文字コウモリ', emoji:'🦇', hp:25, atk:10},
+        {name:'消しゴムスライム', emoji:'🧼', hp:34, atk:7},
+        {name:'にじみインク鳥', emoji:'🐦‍⬛', hp:28, atk:9}
+      ],
+      2: [
+        {name:'書道オーガ', emoji:'👹', hp:60, atk:12},
+        {name:'筆ドラゴン', emoji:'🐲', hp:80, atk:15},
+        {name:'硯ゴーレム', emoji:'🗿', hp:100, atk:10},
+        {name:'二度書きワイバーン', emoji:'🐉', hp:85, atk:16},
+        {name:'とめはね騎士', emoji:'🛡️', hp:70, atk:14}
+      ],
+      3: [
+        {name:'難読の魔術師', emoji:'🧙', hp:100, atk:18},
+        {name:'古文書の亡霊', emoji:'👻', hp:80, atk:22},
+        {name:'漢籍の守護者', emoji:'🦾', hp:120, atk:16},
+        {name:'誤読ミミック', emoji:'🧰', hp:95, atk:20},
+        {name:'再変換スフィンクス', emoji:'🦁', hp:115, atk:19}
+      ],
+      ore: [
+        {name:'究極読師', emoji:'👁️', hp:150, atk:25},
+        {name:'言霊の化身', emoji:'🔮', hp:130, atk:30},
+        {name:'文字神の使徒', emoji:'⚡', hp:180, atk:20},
+        {name:'当て字の魔竜', emoji:'🐲', hp:170, atk:26}
+      ],
+      // 5年生
+      g5_1: [
+        {name:'学級スライム',emoji:'🟩',hp:45,atk:9},
+        {name:'熟語ゴブリン',emoji:'🟨',hp:55,atk:11},
+        {name:'漢字コウモリ',emoji:'🟦',hp:40,atk:12},
+        {name:'消しゴムスライム',emoji:'🧼',hp:52,atk:12}
+      ],
+      g5_2: [
+        {name:'理科オーガ',emoji:'🧪',hp:75,atk:14},
+        {name:'社会ドラゴン',emoji:'🏭',hp:95,atk:16},
+        {name:'統計ゴーレム',emoji:'📊',hp:110,atk:13},
+        {name:'二度書きワイバーン',emoji:'🐉',hp:105,atk:17}
+      ],
+      g5_ore: [
+        {name:'難読の亡霊',emoji:'👻',hp:120,atk:19},
+        {name:'当て字の魔術師',emoji:'🧙',hp:140,atk:20},
+        {name:'漢字神の使徒',emoji:'⚡',hp:160,atk:18}
+      ]
     };
 
     const bosses = {
-      1:{name:'墨染めの大蛇',emoji:'🐍',hp:100,atk:15},
-      2:{name:'書道王オロチ',emoji:'🐉',hp:180,atk:22},
-      3:{name:'漢字帝ヤマタ',emoji:'👑',hp:280,atk:30},
-      ore:{name:'【究極】文字神カンジ',emoji:'🌟',hp:500,atk:40},
+      1: {name:'墨染めの大蛇', emoji:'🐍', hp:100, atk:15},
+      2: {name:'書道王オロチ', emoji:'🐉', hp:180, atk:22},
+      3: {name:'漢字帝ヤマタ', emoji:'👑', hp:280, atk:30},
+      ore:{name:'【究極】文字神カンジ', emoji:'🌟', hp:500, atk:40},
 
-      // ★追加：5年生ボス
       g5_1:{name:'【5年生Lv1】熟語ボス',emoji:'🦁',hp:160,atk:18},
       g5_2:{name:'【5年生Lv2】理社ボス',emoji:'🐲',hp:220,atk:22},
       g5_ore:{name:'【5年生Lv俺】難読王',emoji:'👑',hp:320,atk:28}
     };
 
-    // =========================
-    // Flick Input Layout (3列区切り)
-    // =========================
+    // =========================================================
+    // Flick Layout（3列区切り・サイズ調整）
+    // =========================================================
     const flickLayout = [
       ['あ','か','さ'],
       ['た','な','は'],
@@ -317,56 +407,53 @@
       'ら': {center:'ら',up:'る',down:'ろ',left:'り',right:'れ'},
       'わ': {center:'わ',up:'ん',down:'ー',left:'を',right:'〜'}
     };
-
     const dakutenMap = {'か':'が','き':'ぎ','く':'ぐ','け':'げ','こ':'ご','さ':'ざ','し':'じ','す':'ず','せ':'ぜ','そ':'ぞ','た':'だ','ち':'ぢ','つ':'づ','て':'で','と':'ど','は':'ば','ひ':'び','ふ':'ぶ','へ':'べ','ほ':'ぼ','う':'ゔ'};
     const handakutenMap = {'は':'ぱ','ひ':'ぴ','ふ':'ぷ','へ':'ぺ','ほ':'ぽ'};
     const smallMap = {'あ':'ぁ','い':'ぃ','う':'ぅ','え':'ぇ','お':'ぉ','や':'ゃ','ゆ':'ゅ','よ':'ょ','つ':'っ'};
 
-    // =========================
-    // Helpers
-    // =========================
-    function getRandomItem(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-
-    function getRandomWeapon(){
-      const roll=Math.random()*100;
-      let rank;
-      if(roll<40) rank='common';
-      else if(roll<70) rank='uncommon';
-      else if(roll<88) rank='rare';
-      else if(roll<98) rank='epic';
-      else rank='legendary';
-
-      const pool = weapons.filter(w=>w.rank===rank);
-      return getRandomItem(pool.length?pool:weapons);
-    }
-
-    function getRankColor(rank){
-      const colors={common:'#9ca3af',uncommon:'#22c55e',rare:'#3b82f6',epic:'#a855f7',legendary:'#ffd700'};
-      return colors[rank]||'#9ca3af';
-    }
-    function getRankName(rank){
-      const names={common:'コモン',uncommon:'アンコモン',rare:'レア',epic:'エピック',legendary:'伝説'};
-      return names[rank]||'コモン';
-    }
-
-    function calculateDamage(){
-      let base=gameState.playerATK;
-      if(gameState.equippedWeapon) base += gameState.equippedWeapon.atk||0;
-      base += gameState.combo*2;
-      return base;
-    }
-
+    // =========================================================
+    // Difficulty helpers
+    // =========================================================
     function getTimeLimitByDifficulty(d){
-      const timeLimits = {
-        1:10, 2:9, 3:8, ore:7,
-        g5_1:10, g5_2:9, g5_ore:7
-      };
+      const timeLimits = { 1:10,2:9,3:8,ore:7, g5_1:10,g5_2:9,g5_ore:7 };
       return timeLimits[d] ?? 10;
     }
 
+    // =========================================================
+    // Combat stats (3 weapon slots)
+    // =========================================================
+    function getEquippedStats(){
+      let atk = gameState.playerATK;
+      let def = gameState.playerDEF;
+      for(const w of gameState.equipped){
+        if(!w) continue;
+        atk += (w.atk||0);
+        def += (w.def||0);
+      }
+      return {atk, def};
+    }
+
+    function calculateDamage(){
+      const {atk} = getEquippedStats();
+      return atk + gameState.combo * 2;
+    }
+
+    // =========================================================
+    // Spawn / Questions (avoid immediate repeats)
+    // =========================================================
+    const recentQ = [];
+    function pickQuestion(list){
+      if(!list || !list.length) return null;
+      for(let i=0;i<18;i++){
+        const q=getRandomItem(list);
+        const k=q.kanji+'|'+q.reading;
+        if(!recentQ.includes(k)) return q;
+      }
+      return getRandomItem(list);
+    }
+
     function spawnEnemy(){
-      const diffKey = gameState.difficulty;
-      const enemy = { ...getRandomItem(enemies[diffKey]) };
+      const enemy = { ...getRandomItem(enemies[gameState.difficulty]) };
       gameState.currentEnemy=enemy;
       gameState.enemyHP=enemy.hp;
       gameState.enemyMaxHP=enemy.hp;
@@ -374,48 +461,29 @@
     }
 
     function spawnBoss(){
-      const diffKey = gameState.difficulty;
-      const boss = { ...bosses[diffKey] };
+      const boss = { ...bosses[gameState.difficulty] };
       gameState.currentEnemy=boss;
       gameState.enemyHP=boss.hp;
       gameState.enemyMaxHP=boss.hp;
       gameState.isBossBattle=true;
     }
 
-    // 出題重複の偏りを少し減らす（直近を避ける）
-    const recentQ = [];
-    function pickQuestion(list){
-      if(!list || list.length===0) return null;
-      for(let i=0;i<15;i++){
-        const q = getRandomItem(list);
-        const key = q.kanji + '|' + q.reading;
-        if(!recentQ.includes(key)) return q;
-      }
-      return getRandomItem(list);
-    }
-
     function getNewQuestion(){
-      const diffKey = gameState.difficulty;
-      const list = questions[diffKey];
+      const list = questions[gameState.difficulty];
       const q = pickQuestion(list);
       if(!q) return;
-      const key = q.kanji + '|' + q.reading;
-      recentQ.push(key);
-      while(recentQ.length>30) recentQ.shift();
+      const k=q.kanji+'|'+q.reading;
+      recentQ.push(k);
+      while(recentQ.length>35) recentQ.shift();
 
       gameState.currentQuestion=q;
       gameState.inputText='';
       startTimer();
     }
 
-    function syncInputDisplay(){
-      const el=document.getElementById('inputText');
-      if(el) el.textContent = gameState.inputText || '　';
-    }
-
-    // =========================
-    // Timer UI（renderしない）
-    // =========================
+    // =========================================================
+    // Timer UI (no full render)
+    // =========================================================
     function updateTimerUI(){
       const timeEl=document.getElementById('timeText');
       const barEl=document.getElementById('timeBarFill');
@@ -456,42 +524,105 @@
       }
     }
 
-    // =========================
-    // Render
-    // =========================
+    // =========================================================
+    // Effects (correct / wrong)
+    // =========================================================
+    function showFX(type, text){
+      const overlay=document.getElementById('fxOverlay');
+      const toast=document.getElementById('fxToast');
+      if(!overlay || !toast) return;
+
+      toast.className = `fxToast ${type==='good'?'fxGood':'fxBad'}`;
+      toast.textContent = text;
+
+      // clear sparks
+      overlay.innerHTML = '';
+      overlay.appendChild(toast);
+
+      overlay.style.display = 'block';
+
+      // sparks
+      const count = type==='good' ? 22 : 12;
+      for(let i=0;i<count;i++){
+        const s=document.createElement('div');
+        s.className='spark';
+        const x = 20 + Math.random()*60; // % width
+        const y = 18 + Math.random()*30; // % height
+        s.style.left = x + '%';
+        s.style.top  = y + '%';
+        s.style.transform = `translate(${(Math.random()*120-60)}px, ${(Math.random()*120-60)}px)`;
+        s.style.opacity = (type==='good' ? .95 : .75);
+        overlay.appendChild(s);
+      }
+
+      setTimeout(()=>{ overlay.style.display='none'; }, 520);
+    }
+
+    function shakeMessageBox(){
+      const box=document.getElementById('messageBox');
+      if(!box) return;
+      box.classList.remove('shake');
+      void box.offsetWidth;
+      box.classList.add('shake');
+    }
+
+    // =========================================================
+    // Render helpers
+    // =========================================================
+    function syncInputDisplay(){
+      const el=document.getElementById('inputText');
+      if(el) el.textContent = gameState.inputText || '　';
+    }
+
+    function setBattleInputMode(mode){
+      gameState.battleInputMode=mode;
+      render();
+    }
+    function onBattleKeyboardInput(val){
+      gameState.inputText=(val||'').toLowerCase();
+      syncInputDisplay();
+    }
+    function onBattleKeyboardKeydown(e){
+      if(e.key==='Enter'){
+        e.preventDefault();
+        submitAnswer();
+      }
+    }
+
+    // =========================================================
+    // Screens
+    // =========================================================
     function render(){
       if(gameState.screen!=='battle') stopTimer();
       const app=document.getElementById('app');
       if(!app) return;
 
       switch(gameState.screen){
-        case 'title': renderTitleScreen(app); break;
-        case 'difficulty': renderDifficultyScreen(app); break;
-        case 'battle': renderBattleScreen(app); break;
-        case 'victory': renderVictoryScreen(app); break;
-        case 'gameOver': renderGameOverScreen(app); break;
-        case 'weaponDrop': renderWeaponDropScreen(app); break;
-        case 'inventory': renderInventoryScreen(app); break;
-        case 'levelClear': renderLevelClearScreen(app); break;
-        default: renderTitleScreen(app);
+        case 'title': renderTitle(app); break;
+        case 'difficulty': renderDifficulty(app); break;
+        case 'battle': renderBattle(app); break;
+        case 'weaponDrop': renderWeaponDrop(app); break;
+        case 'inventory': renderInventory(app); break;
+        case 'levelClear': renderLevelClear(app); break;
+        case 'gameOver': renderGameOver(app); break;
+        default: renderTitle(app);
       }
     }
 
-    // =========================
-    // Screens
-    // =========================
-    function renderTitleScreen(container){
-      container.innerHTML=`
-        <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
-          <div class="text-center mb-8">
-            <h1 class="title-font text-6xl font-bold mb-4 float-anim" style="color:#ffd700;text-shadow:0 0 30px rgba(255,215,0,0.5);">漢字勇者</h1>
-            <p class="text-2xl text-gray-300">〜 読みの試練 〜</p>
+    function renderTitle(container){
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col items-center justify-center p-4 safePad" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
+          <div class="text-center mb-7">
+            <h1 class="title-font text-5xl sm:text-6xl font-bold mb-3 float-anim" style="color:#ffd700;text-shadow:0 0 30px rgba(255,215,0,.5);">
+              漢字勇者-読みの冒険乙
+            </h1>
+            <p class="text-xl text-gray-300">〜 読みで戦え！フリックもキーボードもOK 〜</p>
           </div>
 
-          <div class="mb-8"><div class="text-8xl float-anim" style="animation-delay:.5s;">⚔️📖</div></div>
+          <div class="mb-7"><div class="text-7xl float-anim" style="animation-delay:.45s;">⚔️📖✨</div></div>
 
-          <div class="w-full max-w-md mb-6">
-            <label class="block text-lg mb-2 text-gray-300">勇者の名前を入力（ここはキーボード）</label>
+          <div class="w-full max-w-md mb-5">
+            <label class="block text-lg mb-2 text-gray-300">勇者の名前（ここはキーボード）</label>
             <input type="text" id="playerNameInput"
               class="w-full px-4 py-3 text-xl rounded-xl bg-gray-800 border-2 border-gray-600 focus:border-yellow-500 focus:outline-none text-white"
               placeholder="名前を入力..."
@@ -499,157 +630,125 @@
           </div>
 
           <button onclick="startGame()"
-            class="px-12 py-4 text-2xl font-bold rounded-xl pulse-glow transition-transform hover:scale-105"
+            class="px-10 py-4 text-2xl font-black rounded-xl pulse-glow transition-transform hover:scale-105"
             style="background:linear-gradient(145deg,#ffd700,#ffaa00);color:#1a1a2e;">
             冒険を始める
           </button>
 
-          <p class="mt-8 text-gray-500 text-sm">バトル中の入力（キーボード/フリック）は難易度画面で切り替え</p>
+          <p class="mt-6 text-gray-500 text-sm">※ バトル入力（キーボード/フリック）は次の画面で切替</p>
         </div>
       `;
-      setTimeout(()=>{
-        const el=document.getElementById('playerNameInput');
-        if(el) el.focus();
-      },0);
+      setTimeout(()=>document.getElementById('playerNameInput')?.focus(),0);
     }
 
-    function renderDifficultyScreen(container){
-      // ★5年生レベル俺は「5年生Lv1 & Lv2クリア」で解放
+    function renderDifficulty(container){
       const canPlayG5Ore = gameState.clearedLevels.includes('g5_1') && gameState.clearedLevels.includes('g5_2');
-
-      // 既存の「レベル俺（旧）」は1-3で解放のまま
       const canPlayOldOre = [1,2,3].every(lv=>gameState.clearedLevels.includes(lv));
 
-      container.innerHTML=`
-        <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
-          <h2 class="title-font text-4xl font-bold mb-2" style="color:#ffd700;">難易度を選択</h2>
-          <p class="text-xl text-gray-400 mb-4">勇者 ${gameState.playerName||'勇者'} よ、挑戦する試練を選べ</p>
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col items-center justify-center p-4 safePad" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
+          <h2 class="title-font text-4xl font-black mb-2" style="color:#ffd700;">難易度を選択</h2>
+          <p class="text-lg text-gray-400 mb-4">勇者 ${escapeHtml(gameState.playerName||'勇者')} よ、試練を選べ</p>
 
-          <!-- バトル入力 -->
           <div class="mb-4 flex items-center gap-3 bg-black/30 border border-gray-700 rounded-2xl px-4 py-3">
-            <div class="text-sm text-gray-300 font-bold">バトル入力</div>
+            <div class="text-sm text-gray-300 font-black">バトル入力</div>
             <button onclick="setBattleInputMode('keyboard')"
-              class="px-3 py-2 rounded-xl border-2 ${gameState.battleInputMode==='keyboard'?'border-yellow-400 bg-yellow-900/30':'border-gray-600 bg-gray-800/40 hover:bg-gray-700/40'} text-sm font-bold">
+              class="px-3 py-2 rounded-xl border-2 ${gameState.battleInputMode==='keyboard'?'border-yellow-400 bg-yellow-900/30':'border-gray-600 bg-gray-800/40 hover:bg-gray-700/40'} text-sm font-black">
               ⌨️ キーボード
             </button>
             <button onclick="setBattleInputMode('flick')"
-              class="px-3 py-2 rounded-xl border-2 ${gameState.battleInputMode==='flick'?'border-yellow-400 bg-yellow-900/30':'border-gray-600 bg-gray-800/40 hover:bg-gray-700/40'} text-sm font-bold">
+              class="px-3 py-2 rounded-xl border-2 ${gameState.battleInputMode==='flick'?'border-yellow-400 bg-yellow-900/30':'border-gray-600 bg-gray-800/40 hover:bg-gray-700/40'} text-sm font-black">
               📱 フリック
+            </button>
+            <button onclick="goToInventory()" class="ml-2 px-3 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 text-sm font-black">
+              🎒 武器 (${gameState.weapons.length})
             </button>
           </div>
 
-          <!-- 5年生 -->
           <div class="w-full max-w-5xl mb-5">
-            <div class="text-lg font-bold text-cyan-300 mb-2">🏫 5年生モード</div>
-            <div class="grid grid-cols-3 gap-4">
-              <button onclick="selectDifficulty('g5_1')"
-                class="p-6 rounded-2xl border-2 border-cyan-500 bg-cyan-900/20 hover:bg-cyan-800/35 transition-all hover:scale-105 ${gameState.clearedLevels.includes('g5_1')?'ring-2 ring-yellow-400':''}">
-                <div class="text-4xl mb-2">📗</div>
-                <div class="text-2xl font-bold text-cyan-300">5年生 レベル1</div>
-                <div class="text-sm text-gray-400 mt-2">基本熟語（200問）</div>
-                <div class="text-xs text-gray-500 mt-1">10秒</div>
-                ${gameState.clearedLevels.includes('g5_1')?'<div class="text-yellow-400 mt-2">✓ クリア済</div>':''}
-              </button>
-
-              <button onclick="selectDifficulty('g5_2')"
-                class="p-6 rounded-2xl border-2 border-blue-500 bg-blue-900/20 hover:bg-blue-800/35 transition-all hover:scale-105 ${gameState.clearedLevels.includes('g5_2')?'ring-2 ring-yellow-400':''}">
-                <div class="text-4xl mb-2">📘</div>
-                <div class="text-2xl font-bold text-blue-300">5年生 レベル2</div>
-                <div class="text-sm text-gray-400 mt-2">理社語彙（200問）</div>
-                <div class="text-xs text-gray-500 mt-1">9秒</div>
-                ${gameState.clearedLevels.includes('g5_2')?'<div class="text-yellow-400 mt-2">✓ クリア済</div>':''}
-              </button>
-
-              <button onclick="${canPlayG5Ore ? "selectDifficulty('g5_ore')" : ''}"
-                class="p-6 rounded-2xl border-2 ${canPlayG5Ore?'border-yellow-500 bg-yellow-900/25 hover:bg-yellow-800/35 hover:scale-105':'border-gray-600 bg-gray-900/30 opacity-50 cursor-not-allowed'} transition-all">
-                <div class="text-4xl mb-2">${canPlayG5Ore?'👑':'🔒'}</div>
-                <div class="text-2xl font-bold ${canPlayG5Ore?'text-yellow-300':'text-gray-500'}">5年生 レベル俺</div>
-                <div class="text-sm text-gray-400 mt-2">${canPlayG5Ore?'難読漢字（50問）':'Lv1 & Lv2クリアで解放'}</div>
-                <div class="text-xs text-gray-500 mt-1">${canPlayG5Ore?'7秒':''}</div>
-                ${gameState.clearedLevels.includes('g5_ore')?'<div class="text-yellow-400 mt-2">✓ クリア済</div>':''}
-              </button>
+            <div class="text-lg font-black text-cyan-300 mb-2">🏫 5年生モード</div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              ${diffBtn('g5_1','📗','5年生 レベル1','基本熟語（大増量）','10秒')}
+              ${diffBtn('g5_2','📘','5年生 レベル2','理社語彙（大増量）','9秒')}
+              ${diffLockBtn('g5_ore', canPlayG5Ore, '👑','🔒','5年生 レベル俺','難読漢字（増量）','Lv1&Lv2クリアで解放','7秒')}
             </div>
           </div>
 
-          <!-- 旧モード（残しておく） -->
           <div class="w-full max-w-5xl">
-            <div class="text-lg font-bold text-yellow-200 mb-2">⚔️ 漢字勇者（旧）</div>
-            <div class="grid grid-cols-4 gap-4">
-              <button onclick="selectDifficulty(1)"
-                class="p-6 rounded-2xl border-2 border-green-500 bg-green-900/30 hover:bg-green-800/50 transition-all hover:scale-105 ${gameState.clearedLevels.includes(1)?'ring-2 ring-yellow-400':''}">
-                <div class="text-4xl mb-2">🌱</div>
-                <div class="text-2xl font-bold text-green-400">レベル1</div>
-                <div class="text-sm text-gray-400 mt-2">基本の漢字</div>
-                <div class="text-xs text-gray-500 mt-1">10秒</div>
-                ${gameState.clearedLevels.includes(1)?'<div class="text-yellow-400 mt-2">✓ クリア済</div>':''}
-              </button>
-
-              <button onclick="selectDifficulty(2)"
-                class="p-6 rounded-2xl border-2 border-blue-500 bg-blue-900/30 hover:bg-blue-800/50 transition-all hover:scale-105 ${gameState.clearedLevels.includes(2)?'ring-2 ring-yellow-400':''}">
-                <div class="text-4xl mb-2">⚔️</div>
-                <div class="text-2xl font-bold text-blue-400">レベル2</div>
-                <div class="text-sm text-gray-400 mt-2">中級の漢字</div>
-                <div class="text-xs text-gray-500 mt-1">9秒</div>
-                ${gameState.clearedLevels.includes(2)?'<div class="text-yellow-400 mt-2">✓ クリア済</div>':''}
-              </button>
-
-              <button onclick="selectDifficulty(3)"
-                class="p-6 rounded-2xl border-2 border-purple-500 bg-purple-900/30 hover:bg-purple-800/50 transition-all hover:scale-105 ${gameState.clearedLevels.includes(3)?'ring-2 ring-yellow-400':''}">
-                <div class="text-4xl mb-2">🔥</div>
-                <div class="text-2xl font-bold text-purple-400">レベル3</div>
-                <div class="text-sm text-gray-400 mt-2">難読漢字</div>
-                <div class="text-xs text-gray-500 mt-1">8秒</div>
-                ${gameState.clearedLevels.includes(3)?'<div class="text-yellow-400 mt-2">✓ クリア済</div>':''}
-              </button>
-
-              <button onclick="${canPlayOldOre ? "selectDifficulty('ore')" : ''}"
-                class="p-6 rounded-2xl border-2 ${canPlayOldOre?'border-yellow-500 bg-yellow-900/30 hover:bg-yellow-800/50 hover:scale-105':'border-gray-600 bg-gray-900/30 opacity-50 cursor-not-allowed'} transition-all">
-                <div class="text-4xl mb-2">${canPlayOldOre?'👑':'🔒'}</div>
-                <div class="text-2xl font-bold ${canPlayOldOre?'text-yellow-400':'text-gray-500'}">レベル俺</div>
-                <div class="text-sm text-gray-400 mt-2">${canPlayOldOre?'究極の試練':'Lv1-3クリアで解放'}</div>
-                <div class="text-xs text-gray-500 mt-1">${canPlayOldOre?'7秒':''}</div>
-              </button>
+            <div class="text-lg font-black text-yellow-200 mb-2">⚔️ 漢字勇者（旧）</div>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              ${diffBtn(1,'🌱','レベル1','基本の漢字','10秒')}
+              ${diffBtn(2,'⚔️','レベル2','中級の漢字','9秒')}
+              ${diffBtn(3,'🔥','レベル3','難読漢字','8秒')}
+              ${diffLockBtn('ore', canPlayOldOre, '👑','🔒','レベル俺','究極の試練','Lv1-3クリアで解放','7秒')}
             </div>
           </div>
-
-          <button onclick="goToInventory()"
-            class="mt-5 px-8 py-3 text-lg rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
-            🎒 武器一覧 (${gameState.weapons.length})
-          </button>
         </div>
       `;
     }
 
-    function renderBattleScreen(container){
+    function diffBtn(key, icon, title, desc, t){
+      const cleared = gameState.clearedLevels.includes(key);
+      const ring = cleared ? 'ring-2 ring-yellow-400' : '';
+      const onclick = `selectDifficulty(${typeof key==='number' ? key : `'${key}'`})`;
+      return `
+        <button onclick="${onclick}"
+          class="p-6 rounded-2xl border-2 border-gray-600 bg-gray-900/25 hover:bg-gray-800/35 transition-all hover:scale-[1.02] ${ring}">
+          <div class="text-4xl mb-2">${icon}</div>
+          <div class="text-2xl font-black text-white">${title}</div>
+          <div class="text-sm text-gray-400 mt-2">${desc}</div>
+          <div class="text-xs text-gray-500 mt-1">${t}</div>
+          ${cleared ? '<div class="text-yellow-400 mt-2 font-black">✓ クリア済</div>' : ''}
+        </button>
+      `;
+    }
+    function diffLockBtn(key, can, iconOpen, iconLock, title, desc, lockText, t){
+      const cleared = gameState.clearedLevels.includes(key);
+      const ring = cleared ? 'ring-2 ring-yellow-400' : '';
+      const onclick = can ? `selectDifficulty('${key}')` : '';
+      return `
+        <button onclick="${onclick}"
+          class="p-6 rounded-2xl border-2 ${can?'border-yellow-500 bg-yellow-900/20 hover:bg-yellow-800/30 hover:scale-[1.02]':'border-gray-600 bg-gray-900/25 opacity-50 cursor-not-allowed'} transition-all ${ring}">
+          <div class="text-4xl mb-2">${can?iconOpen:iconLock}</div>
+          <div class="text-2xl font-black ${can?'text-yellow-200':'text-gray-500'}">${title}</div>
+          <div class="text-sm text-gray-400 mt-2">${can?desc:lockText}</div>
+          <div class="text-xs text-gray-500 mt-1">${can?t:''}</div>
+          ${cleared ? '<div class="text-yellow-400 mt-2 font-black">✓ クリア済</div>' : ''}
+        </button>
+      `;
+    }
+
+    function renderBattle(container){
       const hpPercent=(gameState.playerHP/gameState.maxHP)*100;
       const enemyHpPercent=(gameState.enemyHP/gameState.enemyMaxHP)*100;
       const isLowHP=hpPercent<30;
       const isTimeWarning=gameState.timeRemaining<=3;
 
-      container.innerHTML=`
-        <div class="h-full w-full flex flex-row battle-screen">
+      const eq = gameState.equipped.filter(Boolean);
+      const eqLine = eq.length ? eq.map(w=>`${w.emoji}${w.name}`).join(' / ') : '';
+
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col md:flex-row battle-screen">
           <!-- Left -->
-          <div class="w-1/2 flex flex-col p-4">
+          <div class="md:w-1/2 w-full flex flex-col p-3 md:p-4">
             <div class="bg-black/40 rounded-xl p-3 mb-3">
               <div class="flex justify-between items-center mb-2">
-                <span class="text-lg font-bold">${gameState.playerName}</span>
+                <span class="text-lg font-black">${escapeHtml(gameState.playerName)}</span>
                 <span class="text-sm text-gray-400">コンボ: ${gameState.combo}x</span>
               </div>
               <div class="hp-bar"><div class="hp-fill ${isLowHP?'low':''}" style="width:${hpPercent}%"></div></div>
               <div class="flex justify-between text-sm mt-1">
                 <span>HP: ${gameState.playerHP}/${gameState.maxHP}</span>
-                <span>ATK: ${calculateDamage()}</span>
+                <span>ATK: ${calculateDamage()} / DEF: ${getEquippedStats().def}</span>
               </div>
-              ${gameState.equippedWeapon?`
-                <div class="mt-2 text-sm text-yellow-400">${gameState.equippedWeapon.emoji} ${gameState.equippedWeapon.name}</div>
-              `:''}
+              ${eqLine ? `<div class="mt-2 text-xs text-yellow-300 font-black">🧰 装備: ${escapeHtml(eqLine)}</div>` : ''}
             </div>
 
             <div class="flex-1 flex flex-col items-center justify-center">
               <div class="text-center mb-4">
                 <div class="enemy-sprite ${gameState.isBossBattle?'victory-glow':'float-anim'}" id="enemySprite">${gameState.currentEnemy.emoji}</div>
-                <div class="text-2xl font-bold mt-2 ${gameState.isBossBattle?'text-red-400':''}">${gameState.currentEnemy.name}</div>
-                ${gameState.isBossBattle?'<div class="text-red-500 text-sm">【BOSS】</div>':''}
+                <div class="text-2xl font-black mt-2 ${gameState.isBossBattle?'text-red-400':''}">${gameState.currentEnemy.name}</div>
+                ${gameState.isBossBattle?'<div class="text-red-500 text-sm font-black">【BOSS】</div>':''}
               </div>
 
               <div class="w-full max-w-xs">
@@ -663,43 +762,45 @@
             </div>
 
             <div class="bg-black/40 rounded-xl p-3 text-center min-h-[60px]" id="messageBox">
-              ${gameState.message||'漢字の読み方を入力せよ！'}
+              ${gameState.message || '漢字の読み方を入力せよ！'}
             </div>
           </div>
 
           <!-- Right -->
-          <div class="w-1/2 flex flex-col p-4 bg-black/20">
-            <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 mb-3 text-center border-2 border-gray-700">
+          <div class="md:w-1/2 w-full flex flex-col p-3 md:p-4 bg-black/20 overflow-y-auto safePad">
+            <!-- ★キーボードでも問題が見える：sticky -->
+            <div class="stickyTop bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-5 mb-3 text-center border-2 border-gray-700">
               <div class="flex justify-between items-center mb-2">
                 <div class="text-sm text-gray-400">この漢字の読み方は？</div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2">
                   <button onclick="pauseToDifficulty()"
-                    class="px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs font-bold">⏸ 中断</button>
-                  <div id="timeText" class="text-sm font-bold ${isTimeWarning?'text-red-500 time-warning':'text-yellow-400'}">⏱️ ${gameState.timeRemaining}秒</div>
+                    class="px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs font-black">⏸ 中断</button>
+                  <div id="timeText" class="text-sm font-black ${isTimeWarning?'text-red-500 time-warning':'text-yellow-400'}">⏱️ ${gameState.timeRemaining}秒</div>
                 </div>
               </div>
-              <div class="title-font text-5xl font-bold" style="color:#ffd700;">${gameState.currentQuestion.kanji}</div>
+              <div class="title-font text-5xl font-black" style="color:#ffd700;">${gameState.currentQuestion.kanji}</div>
               <div class="time-bar mt-4"><div id="timeBarFill" class="time-bar-fill ${isTimeWarning?'warning':''}" style="width:${(gameState.timeRemaining/gameState.timeLimit)*100}%"></div></div>
             </div>
 
             <div class="input-display flex items-center justify-between mb-3">
               <span id="inputText">${gameState.inputText||'　'}</span>
-              <button onclick="submitAnswer()" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-bold transition-all">決定</button>
+              <button onclick="submitAnswer()" class="px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-black transition-all">決定</button>
             </div>
 
-            ${gameState.battleInputMode==='keyboard'?`
-              <div class="bg-black/30 border border-gray-700 rounded-2xl p-4">
-                <div class="text-sm text-gray-400 mb-2">キーボードで入力（Enterで決定）</div>
+            ${gameState.battleInputMode==='keyboard' ? `
+              <div class="bg-black/30 border border-gray-700 rounded-2xl p-4 mb-3">
+                <div class="text-sm text-gray-400 mb-2">キーボード入力（Enterで決定）</div>
                 <input id="battleKeyboardInput"
                   class="w-full px-4 py-3 text-xl rounded-xl bg-gray-800 border-2 border-gray-600 focus:border-yellow-500 focus:outline-none text-white"
                   placeholder="よみを入力..."
-                  value="${gameState.inputText}"
+                  value="${escapeHtml(gameState.inputText)}"
                   oninput="onBattleKeyboardInput(this.value)"
                   onkeydown="onBattleKeyboardKeydown(event)">
               </div>
-            `:`
+              <div class="text-xs text-gray-500">※問題カードは上に固定（スクロールしても見える）</div>
+            ` : `
               <div class="flex-1 flex flex-col justify-center items-center">
-                ${renderFlickGridHTML("battle")}
+                ${renderFlickGridHTML()}
               </div>
             `}
           </div>
@@ -707,105 +808,105 @@
       `;
 
       syncInputDisplay();
+      updateTimerUI();
+
       if(gameState.battleInputMode==='keyboard'){
         const el=document.getElementById('battleKeyboardInput');
-        if(el) setTimeout(()=>el.focus(),0);
+        if(el) setTimeout(()=>el.focus({preventScroll:true}),0);
       }
-      updateTimerUI();
     }
 
-    function renderWeaponDropScreen(container){
-      const weapon=gameState.droppedWeapon;
-      container.innerHTML=`
-        <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
-          <h2 class="text-3xl font-bold mb-6 text-yellow-400">🎉 武器を獲得！</h2>
+    function renderWeaponDrop(container){
+      const w=gameState.droppedWeapon;
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col items-center justify-center p-4 safePad" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
+          <h2 class="text-3xl font-black mb-6 text-yellow-400">🎉 武器を獲得！</h2>
 
-          <div class="weapon-card ${weapon.rank} w-80 mb-6">
-            <div class="text-6xl mb-4">${weapon.emoji}</div>
-            <div class="text-sm mb-2" style="color:${getRankColor(weapon.rank)}">${getRankName(weapon.rank)}</div>
-            <div class="text-2xl font-bold mb-2">${weapon.name}</div>
-            <div class="text-gray-400 text-sm mb-4">${weapon.desc}</div>
-            <div class="flex justify-center gap-4 text-sm">
-              ${weapon.atk?`<span class="text-red-400">ATK +${weapon.atk}</span>`:''}
-              ${weapon.def?`<span class="text-blue-400">DEF +${weapon.def}</span>`:''}
+          <div class="weapon-card ${w.rank} w-80 mb-6">
+            <div class="text-6xl mb-4">${w.emoji}</div>
+            <div class="text-sm mb-2 font-black" style="color:${getRankColor(w.rank)}">${getRankName(w.rank)}</div>
+            <div class="text-2xl font-black mb-2">${w.name}</div>
+            <div class="text-gray-400 text-sm mb-4">${w.desc}</div>
+            <div class="flex justify-center gap-4 text-sm font-black">
+              ${w.atk?`<span class="text-red-300">ATK +${w.atk}</span>`:''}
+              ${w.def?`<span class="text-blue-300">DEF +${w.def}</span>`:''}
             </div>
           </div>
 
-          <div class="flex gap-4 flex-wrap justify-center">
-            <button onclick="equipNewWeapon()"
-              class="px-8 py-3 text-lg font-bold rounded-xl bg-yellow-600 hover:bg-yellow-500 transition-all">装備する</button>
+          <div class="w-full max-w-xl bg-black/30 border border-gray-700 rounded-2xl p-4 mb-4">
+            <div class="text-sm text-gray-300 font-black mb-2">装備スロット（3枠）</div>
+            <div class="grid grid-cols-3 gap-3">
+              ${[0,1,2].map(i=>{
+                const cur=gameState.equipped[i];
+                return `
+                  <button onclick="equipDroppedToSlot(${i})"
+                    class="p-3 rounded-xl border-2 ${cur?'border-yellow-500 bg-yellow-900/15':'border-gray-600 bg-gray-800/30 hover:bg-gray-700/30'} transition-all">
+                    <div class="text-xs text-gray-400 font-black mb-1">スロット${i+1}</div>
+                    <div class="text-sm font-black truncate">${cur?`${cur.emoji} ${cur.name}`:'（空）'}</div>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+            <div class="text-xs text-gray-500 mt-2">※「装備する」は、押したスロットに入ります（上で選んでね）</div>
+          </div>
 
+          <div class="flex gap-3 flex-wrap justify-center">
+            <button onclick="equipNewWeaponDefault()"
+              class="px-7 py-3 text-lg font-black rounded-xl bg-yellow-600 hover:bg-yellow-500 transition-all">
+              装備する（空き優先）
+            </button>
             <button onclick="continueAfterDrop()"
-              class="px-8 py-3 text-lg font-bold rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">続ける（持ち物に入れる）</button>
-
+              class="px-7 py-3 text-lg font-black rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">
+              続ける（持ち物に入れる）
+            </button>
             <button onclick="returnToDifficultyFromDrop()"
-              class="px-8 py-3 text-lg font-bold rounded-xl bg-blue-700 hover:bg-blue-600 transition-all">難易度選択へ戻る</button>
+              class="px-7 py-3 text-lg font-black rounded-xl bg-blue-700 hover:bg-blue-600 transition-all">
+              難易度選択へ戻る
+            </button>
           </div>
         </div>
       `;
     }
 
-    function renderVictoryScreen(container){
-      container.innerHTML=`
-        <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e3f1e 0%, #0a1a0a 100%);">
-          <div class="text-8xl mb-6 victory-glow">🏆</div>
-          <h2 class="title-font text-5xl font-bold mb-4 text-yellow-400">勝利！</h2>
-          <p class="text-2xl text-gray-300 mb-2">${gameState.playerName} はボスを倒した！</p>
-          <p class="text-xl text-gray-400 mb-8">クリア！</p>
-          <button onclick="goToDifficulty()" class="px-8 py-4 text-xl font-bold rounded-xl bg-yellow-600 hover:bg-yellow-500 transition-all">難易度選択へ</button>
-        </div>
-      `;
-    }
-
-    function renderGameOverScreen(container){
-      container.innerHTML=`
-        <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #3f1e1e 0%, #1a0a0a 100%);">
-          <div class="text-8xl mb-6">💀</div>
-          <h2 class="title-font text-5xl font-bold mb-4 text-red-400">敗北...</h2>
-          <p class="text-2xl text-gray-300 mb-8">${gameState.playerName} は力尽きた...</p>
-          <div class="flex gap-4">
-            <button onclick="retryBattle()" class="px-8 py-4 text-xl font-bold rounded-xl bg-red-600 hover:bg-red-500 transition-all">再挑戦</button>
-            <button onclick="goToDifficulty()" class="px-8 py-4 text-xl font-bold rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">難易度選択へ</button>
-          </div>
-        </div>
-      `;
-    }
-
-    function renderInventoryScreen(container){
-      container.innerHTML=`
-        <div class="h-full w-full flex flex-col p-4" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
+    function renderInventory(container){
+      const eq = gameState.equipped;
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col p-4 safePad" style="background: radial-gradient(ellipse at center, #1e1e3f 0%, #0a0a1a 100%);">
           <div class="flex justify-between items-center mb-4">
-            <h2 class="text-3xl font-bold text-yellow-400">🎒 武器一覧</h2>
-            <button onclick="goToDifficulty()" class="px-6 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">戻る</button>
+            <h2 class="text-3xl font-black text-yellow-400">🎒 武器一覧</h2>
+            <button onclick="goToDifficulty()" class="px-6 py-2 rounded-xl bg-gray-700 hover:bg-gray-600 transition-all font-black">戻る</button>
           </div>
 
-          ${gameState.equippedWeapon?`
-            <div class="mb-4 p-4 rounded-xl bg-yellow-900/30 border-2 border-yellow-500">
-              <div class="text-sm text-yellow-400 mb-2">装備中</div>
-              <div class="flex items-center gap-4">
-                <span class="text-4xl">${gameState.equippedWeapon.emoji}</span>
-                <div>
-                  <div class="font-bold">${gameState.equippedWeapon.name}</div>
-                  <div class="text-sm text-gray-400">
-                    ${gameState.equippedWeapon.atk?`ATK +${gameState.equippedWeapon.atk}`:''}
-                    ${gameState.equippedWeapon.def?`DEF +${gameState.equippedWeapon.def}`:''}
+          <div class="mb-4 p-4 rounded-2xl bg-black/30 border border-gray-700">
+            <div class="text-sm text-gray-300 font-black mb-3">装備スロット（3枠）</div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              ${[0,1,2].map(i=>{
+                const cur=eq[i];
+                return `
+                  <div class="p-3 rounded-xl border-2 ${cur?'border-yellow-500 bg-yellow-900/15':'border-gray-600 bg-gray-800/30'}">
+                    <div class="text-xs text-gray-400 font-black mb-1">スロット${i+1}</div>
+                    <div class="text-sm font-black truncate mb-2">${cur?`${cur.emoji} ${cur.name}`:'（空）'}</div>
+                    <button onclick="unequipSlot(${i})" class="px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-xs font-black ${cur?'':'opacity-40 pointer-events-none'}">
+                      外す
+                    </button>
                   </div>
-                </div>
-              </div>
+                `;
+              }).join('')}
             </div>
-          `:'<div class="mb-4 p-4 rounded-xl bg-gray-800 text-gray-400">武器未装備</div>'}
+            <div class="text-xs text-gray-500 mt-3">※ 下の武器をタップすると「空きスロットに装備」します</div>
+          </div>
 
           <div class="flex-1 overflow-auto">
-            ${gameState.weapons.length===0?`
+            ${gameState.weapons.length===0 ? `
               <div class="text-center text-gray-500 py-8">まだ武器を持っていません。<br>敵を倒して武器を集めよう！</div>
-            `:`
-              <div class="grid grid-cols-5 gap-3">
+            ` : `
+              <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 ${gameState.weapons.map((w,i)=>`
-                  <div class="weapon-card ${w.rank} cursor-pointer hover:scale-105 transition-all ${gameState.equippedWeapon?.id===w.id?'ring-2 ring-yellow-400':''}"
-                    onclick="equipWeapon(${i})">
+                  <div class="weapon-card ${w.rank} cursor-pointer hover:scale-[1.02] transition-all"
+                    onclick="equipFromInventory(${i})">
                     <div class="text-3xl mb-2">${w.emoji}</div>
-                    <div class="text-xs mb-1" style="color:${getRankColor(w.rank)}">${getRankName(w.rank)}</div>
-                    <div class="text-sm font-bold truncate">${w.name}</div>
+                    <div class="text-xs mb-1 font-black" style="color:${getRankColor(w.rank)}">${getRankName(w.rank)}</div>
+                    <div class="text-sm font-black truncate">${w.name}</div>
                     <div class="text-xs text-gray-400 mt-1">
                       ${w.atk?`ATK+${w.atk}`:''} ${w.def?`DEF+${w.def}`:''}
                     </div>
@@ -818,31 +919,39 @@
       `;
     }
 
-    function renderLevelClearScreen(container){
-      container.innerHTML=`
-        <div class="h-full w-full flex flex-col items-center justify-center p-4" style="background: radial-gradient(ellipse at center, #1e3f3f 0%, #0a1a1a 100%);">
+    function renderLevelClear(container){
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col items-center justify-center p-4 safePad" style="background: radial-gradient(ellipse at center, #1e3f3f 0%, #0a1a1a 100%);">
           <div class="text-6xl mb-4">⭐</div>
-          <h2 class="text-3xl font-bold mb-4 text-cyan-400">ステージクリア！</h2>
+          <h2 class="text-3xl font-black mb-4 text-cyan-300">ステージクリア！</h2>
           <p class="text-xl text-gray-300 mb-6">3体の敵を撃破！ボスが現れる...</p>
-          <button onclick="startBossBattle()" class="px-8 py-4 text-xl font-bold rounded-xl bg-red-600 hover:bg-red-500 transition-all pulse-glow">ボスに挑む！</button>
+          <button onclick="startBossBattle()" class="px-8 py-4 text-xl font-black rounded-xl bg-red-600 hover:bg-red-500 transition-all pulse-glow">
+            ボスに挑む！
+          </button>
         </div>
       `;
     }
 
-    // =========================
-    // Difficulty: battle input mode
-    // =========================
-    function setBattleInputMode(mode){ gameState.battleInputMode=mode; render(); }
-    function onBattleKeyboardInput(val){ gameState.inputText=(val||'').toLowerCase(); syncInputDisplay(); }
-    function onBattleKeyboardKeydown(e){ if(e.key==='Enter'){ e.preventDefault(); submitAnswer(); } }
+    function renderGameOver(container){
+      container.innerHTML = `
+        <div class="h-full w-full flex flex-col items-center justify-center p-4 safePad" style="background: radial-gradient(ellipse at center, #3f1e1e 0%, #1a0a0a 100%);">
+          <div class="text-8xl mb-6">💀</div>
+          <h2 class="title-font text-5xl font-black mb-4 text-red-300">敗北...</h2>
+          <p class="text-2xl text-gray-300 mb-8">${escapeHtml(gameState.playerName)} は力尽きた...</p>
+          <div class="flex gap-4 flex-wrap justify-center">
+            <button onclick="retryBattle()" class="px-8 py-4 text-xl font-black rounded-xl bg-red-600 hover:bg-red-500 transition-all">再挑戦</button>
+            <button onclick="goToDifficulty()" class="px-8 py-4 text-xl font-black rounded-xl bg-gray-700 hover:bg-gray-600 transition-all">難易度選択へ</button>
+          </div>
+        </div>
+      `;
+    }
 
-    // =========================
-    // Game Logic
-    // =========================
+    // =========================================================
+    // Navigation / Logic
+    // =========================================================
     function startGame(){
       const nameInput=document.getElementById('playerNameInput');
-      gameState.playerName=(nameInput?.value||'勇者').trim();
-      if(!gameState.playerName) gameState.playerName='勇者';
+      gameState.playerName=(nameInput?.value||'勇者').trim() || '勇者';
       gameState.screen='difficulty';
       render();
     }
@@ -856,8 +965,9 @@
       gameState.combo=0;
       gameState.message='';
       gameState.droppedWeapon=null;
+      gameState.isBossBattle=false;
 
-      recentQ.length = 0; // 難易度切替時は直近履歴リセット
+      recentQ.length=0;
 
       spawnEnemy();
       getNewQuestion();
@@ -867,37 +977,8 @@
 
     function goToDifficulty(){ stopTimer(); gameState.screen='difficulty'; render(); }
     function goToInventory(){ stopTimer(); gameState.screen='inventory'; render(); }
-    function equipWeapon(index){ gameState.equippedWeapon=gameState.weapons[index]; render(); }
 
-    function equipNewWeapon(){
-      if(gameState.droppedWeapon && !gameState.weapons.find(w=>w.id===gameState.droppedWeapon.id)){
-        gameState.weapons.push(gameState.droppedWeapon);
-      }
-      gameState.equippedWeapon=gameState.droppedWeapon;
-      continueAfterDrop();
-    }
-
-    function continueAfterDrop(){
-      if(gameState.droppedWeapon && !gameState.weapons.find(w=>w.id===gameState.droppedWeapon.id)){
-        gameState.weapons.push(gameState.droppedWeapon);
-      }
-      gameState.droppedWeapon=null;
-
-      if(!gameState.isBossBattle && gameState.defeatedCount>=3){
-        gameState.screen='levelClear';
-      }else{
-        if(!gameState.isBossBattle) spawnEnemy();
-        getNewQuestion();
-        gameState.screen='battle';
-      }
-      render();
-    }
-
-    function returnToDifficultyFromDrop(){
-      if(gameState.droppedWeapon && !gameState.weapons.find(w=>w.id===gameState.droppedWeapon.id)){
-        gameState.weapons.push(gameState.droppedWeapon);
-      }
-      gameState.droppedWeapon=null;
+    function pauseToDifficulty(){
       stopTimer();
       gameState.screen='difficulty';
       render();
@@ -925,56 +1006,316 @@
       render();
     }
 
-    function pauseToDifficulty(){
+    // =========================================================
+    // Weapon slot actions
+    // =========================================================
+    function ensureInInventory(w){
+      if(!w) return;
+      if(!gameState.weapons.find(x=>x.id===w.id)) gameState.weapons.push(w);
+    }
+
+    function equipDroppedToSlot(slot){
+      const w=gameState.droppedWeapon;
+      if(!w) return;
+      ensureInInventory(w);
+      gameState.equipped[slot]=w;
+      renderWeaponDrop(document.getElementById('app')); // stay
+    }
+
+    function equipNewWeaponDefault(){
+      const w=gameState.droppedWeapon;
+      if(!w) return;
+      ensureInInventory(w);
+
+      const empty = gameState.equipped.findIndex(x=>!x);
+      if(empty>=0) gameState.equipped[empty]=w;
+      else gameState.equipped[0]=w; // 全部埋まってたら1枠目を上書き
+
+      continueAfterDrop();
+    }
+
+    function equipFromInventory(index){
+      const w=gameState.weapons[index];
+      if(!w) return;
+      const empty = gameState.equipped.findIndex(x=>!x);
+      if(empty>=0) gameState.equipped[empty]=w;
+      else gameState.equipped[0]=w;
+      render();
+    }
+
+    function unequipSlot(slot){
+      gameState.equipped[slot]=null;
+      render();
+    }
+
+    // =========================================================
+    // Drop / Continue
+    // =========================================================
+    function continueAfterDrop(){
+      if(gameState.droppedWeapon) ensureInInventory(gameState.droppedWeapon);
+      gameState.droppedWeapon=null;
+
+      if(!gameState.isBossBattle && gameState.defeatedCount>=3){
+        gameState.screen='levelClear';
+      }else{
+        if(!gameState.isBossBattle) spawnEnemy();
+        getNewQuestion();
+        gameState.screen='battle';
+      }
+      render();
+    }
+
+    function returnToDifficultyFromDrop(){
+      if(gameState.droppedWeapon) ensureInInventory(gameState.droppedWeapon);
+      gameState.droppedWeapon=null;
       stopTimer();
       gameState.screen='difficulty';
       render();
     }
 
-    // =========================
-    // Flick Input
-    // =========================
-    let flickStartPos=null;
-    let currentFlickKey=null;
+    // =========================================================
+    // Answer / Battle
+    // =========================================================
+    function submitAnswer(){
+      stopTimer();
+      const answer=(gameState.inputText||'').toLowerCase();
+      const correct=(gameState.currentQuestion.reading||'').toLowerCase();
 
-    function startFlick(event,key){
-      if(!key) return;
-      event.preventDefault();
-      flickStartPos={x:event.clientX,y:event.clientY};
-      currentFlickKey=key;
-      const keyEl=event.target.closest('.flick-key');
-      if(keyEl) keyEl.classList.add('active');
+      if(answer===correct) handleCorrectAnswer();
+      else handleWrongAnswer();
     }
-    function moveFlick(event){
-      if(!flickStartPos) return;
-      event.preventDefault();
+
+    function handleTimeOut(){
+      gameState.combo=0;
+      const dmg=gameState.currentEnemy.atk;
+      // 防御で軽減
+      const def = getEquippedStats().def;
+      const final = Math.max(1, Math.round(dmg - def*0.15));
+      gameState.playerHP-=final;
+      gameState.message=`⏰ 時間切れ... 正解は「${gameState.currentQuestion.reading}」 ${final}ダメージを受けた！`;
+      shakeMessageBox();
+
+      if(gameState.playerHP<=0){
+        gameState.playerHP=0;
+        gameState.screen='gameOver';
+        render();
+        return;
+      }
+      getNewQuestion();
+      render();
     }
-    function endFlick(event,target){
-      if(!flickStartPos||!currentFlickKey){ flickStartPos=null; currentFlickKey=null; return; }
-      event.preventDefault();
 
-      const endPos={x:event.clientX,y:event.clientY};
-      const dx=endPos.x-flickStartPos.x;
-      const dy=endPos.y-flickStartPos.y;
-      const threshold=26;
+    function handleCorrectAnswer(){
+      gameState.combo++;
+      const dmg=calculateDamage();
+      gameState.enemyHP-=dmg;
 
-      let direction='center';
-      if(Math.abs(dx)>threshold||Math.abs(dy)>threshold){
-        if(Math.abs(dx)>Math.abs(dy)) direction=dx>0?'right':'left';
-        else direction=dy>0?'down':'up';
+      gameState.message=`✨ 正解！ ${dmg}ダメージ！ コンボ${gameState.combo}x`;
+      showFX('good', `✨ 正解！ +${dmg}`);
+
+      const enemySprite=document.getElementById('enemySprite');
+      if(enemySprite){
+        enemySprite.classList.add('damage-flash');
+        setTimeout(()=>enemySprite.classList.remove('damage-flash'),200);
       }
 
-      processFlickInput(currentFlickKey,direction,target);
-
-      document.querySelectorAll('.flick-key').forEach(el=>el.classList.remove('active'));
-      flickStartPos=null; currentFlickKey=null;
+      if(gameState.enemyHP<=0){
+        handleEnemyDefeat();
+        return;
+      }
+      getNewQuestion();
+      render();
     }
 
-    function processFlickInput(key,direction,target){
-      if(target!=='battle') return;
+    function handleWrongAnswer(){
+      gameState.combo=0;
+      const dmg=gameState.currentEnemy.atk;
+      const def = getEquippedStats().def;
+      const final = Math.max(1, Math.round(dmg - def*0.15));
+      gameState.playerHP-=final;
 
+      gameState.message=`❌ 不正解... 正解は「${gameState.currentQuestion.reading}」 ${final}ダメージ！`;
+      showFX('bad', `❌ 不正解…`);
+      shakeMessageBox();
+
+      if(gameState.playerHP<=0){
+        gameState.playerHP=0;
+        gameState.screen='gameOver';
+        render();
+        return;
+      }
+      getNewQuestion();
+      render();
+    }
+
+    function handleEnemyDefeat(){
+      gameState.totalDefeated++;
+
+      // ボス撃破 → クリア判定
+      if(gameState.isBossBattle){
+        const diffKey=gameState.difficulty;
+        if(!gameState.clearedLevels.includes(diffKey)) gameState.clearedLevels.push(diffKey);
+
+        // ボスは必ずドロップ
+        gameState.droppedWeapon=getRandomWeapon();
+        gameState.screen='weaponDrop';
+        render();
+        return;
+      }
+
+      // 通常撃破
+      gameState.defeatedCount++;
+
+      if(Math.random()<0.72){
+        gameState.droppedWeapon=getRandomWeapon();
+        gameState.screen='weaponDrop';
+        render();
+        return;
+      }
+
+      if(gameState.defeatedCount>=3){
+        gameState.screen='levelClear';
+        render();
+        return;
+      }
+
+      spawnEnemy();
+      getNewQuestion();
+      gameState.message='敵を倒した！次の敵が現れた...';
+      gameState.screen='battle';
+      render();
+    }
+
+    // =========================================================
+    // Flick input with popup preview
+    // =========================================================
+    let flickStartPos=null;
+    let currentFlickKey=null;
+    let currentDir='center';
+    let activePointerId=null;
+
+    function showFlickPopup(anchorEl, key){
+      const pop=document.getElementById('flickPopup');
+      if(!pop) return;
+
+      const rect=anchorEl.getBoundingClientRect();
+      // place above key (or near)
+      const cx=rect.left + rect.width/2;
+      const cy=rect.top  + rect.height/2;
+      const left = Math.max(8, Math.min(window.innerWidth-168, cx-80));
+      const top  = Math.max(8, Math.min(window.innerHeight-168, cy-170));
+
+      pop.style.left = left + 'px';
+      pop.style.top  = top  + 'px';
+      pop.style.display='block';
+
+      // fill chars
+      if(flickMap[key]){
+        setPopupChars(flickMap[key]);
+      }else{
+        setPopupChars({center:key, up:'', left:'', right:'', down:''});
+      }
+      setPopupSelection('center');
+    }
+
+    function hideFlickPopup(){
+      const pop=document.getElementById('flickPopup');
+      if(pop) pop.style.display='none';
+    }
+
+    function setPopupChars(map){
+      const c = document.getElementById('popC');
+      const u = document.getElementById('popUp');
+      const l = document.getElementById('popLeft');
+      const r = document.getElementById('popRight');
+      const d = document.getElementById('popDown');
+      if(c) c.textContent = map.center || '';
+      if(u) u.textContent = map.up || '';
+      if(l) l.textContent = map.left || '';
+      if(r) r.textContent = map.right || '';
+      if(d) d.textContent = map.down || '';
+    }
+
+    function setPopupSelection(dir){
+      const ids = {center:'popC', up:'popUp', left:'popLeft', right:'popRight', down:'popDown'};
+      Object.values(ids).forEach(id=>{
+        const el=document.getElementById(id);
+        if(el) el.classList.remove('sel');
+      });
+      const target=document.getElementById(ids[dir]||'popC');
+      if(target) target.classList.add('sel');
+    }
+
+    function startFlick(event, key){
+      if(!key) return;
+      if(gameState.battleInputMode!=='flick') return;
+      event.preventDefault();
+
+      activePointerId = event.pointerId;
+      const el = event.target.closest('.flick-key');
+      if(el) el.setPointerCapture?.(event.pointerId);
+
+      flickStartPos={x:event.clientX,y:event.clientY};
+      currentFlickKey=key;
+      currentDir='center';
+
+      // highlight key
+      if(el) el.classList.add('active');
+
+      // show popup preview for kana keys only
+      if(flickMap[key]){
+        showFlickPopup(el, key);
+      }else{
+        hideFlickPopup();
+      }
+      setPopupSelection('center');
+    }
+
+    function moveFlick(event){
+      if(activePointerId!==event.pointerId) return;
+      if(!flickStartPos || !currentFlickKey) return;
+      event.preventDefault();
+
+      const dx=event.clientX - flickStartPos.x;
+      const dy=event.clientY - flickStartPos.y;
+      const threshold=22;
+
+      let dir='center';
+      if(Math.abs(dx)>threshold || Math.abs(dy)>threshold){
+        if(Math.abs(dx)>Math.abs(dy)) dir = dx>0?'right':'left';
+        else dir = dy>0?'down':'up';
+      }
+      if(dir!==currentDir){
+        currentDir=dir;
+        setPopupSelection(dir);
+      }
+    }
+
+    function endFlick(event){
+      if(activePointerId!==event.pointerId) return;
+      if(!flickStartPos || !currentFlickKey){
+        cleanupFlick();
+        return;
+      }
+      event.preventDefault();
+
+      processFlickInput(currentFlickKey, currentDir);
+
+      cleanupFlick();
+    }
+
+    function cleanupFlick(){
+      document.querySelectorAll('.flick-key').forEach(el=>el.classList.remove('active'));
+      hideFlickPopup();
+      flickStartPos=null;
+      currentFlickKey=null;
+      currentDir='center';
+      activePointerId=null;
+    }
+
+    function processFlickInput(key, direction){
       if(key==='⌫'){
-        gameState.inputText=gameState.inputText.slice(0,-1);
+        gameState.inputText = gameState.inputText.slice(0,-1);
       }else if(key==='゛'){
         applyDakuten();
       }else if(key==='゜'){
@@ -982,10 +1323,10 @@
       }else if(key==='小'){
         applySmall();
       }else if(key==='ー'){
-        gameState.inputText+='ー';
+        gameState.inputText += 'ー';
       }else if(flickMap[key]){
-        const char=flickMap[key][direction]||flickMap[key].center;
-        if(char && char!=='（' && char!=='）' && char!=='〜') gameState.inputText+=char;
+        const char = flickMap[key][direction] || flickMap[key].center;
+        if(char && char!=='（' && char!=='）' && char!=='〜') gameState.inputText += char;
       }
       syncInputDisplay();
     }
@@ -1006,20 +1347,22 @@
       if(smallMap[last]) gameState.inputText=gameState.inputText.slice(0,-1)+smallMap[last];
     }
 
-    function renderFlickGridHTML(target){
+    function renderFlickGridHTML(){
+      const cells = flickLayout.flat();
       return `
         <div class="grid grid-cols-3 gap-2">
-          ${flickLayout.flat().map(key=>{
-            const isEmpty=!key;
-            const cls=isEmpty?'flick-key disabled':'flick-key';
-            const safeKey=key||'';
+          ${cells.map(key=>{
+            const isEmpty = !key;
+            const cls = isEmpty ? 'flick-key disabled' : 'flick-key';
+            const safeKey = key || '';
             return `
               <div class="${cls}"
                 ${isEmpty?'':`
+                  data-key="${safeKey}"
                   onpointerdown="startFlick(event, '${safeKey}')"
-                  onpointerup="endFlick(event, '${target}')"
-                  onpointerleave="endFlick(event, '${target}')"
                   onpointermove="moveFlick(event)"
+                  onpointerup="endFlick(event)"
+                  onpointerleave="endFlick(event)"
                 `}>
                 ${safeKey}
               </div>
@@ -1029,98 +1372,21 @@
       `;
     }
 
-    // =========================
-    // Answer / Battle
-    // =========================
-    function submitAnswer(){
-      stopTimer();
-      const answer=(gameState.inputText||'').toLowerCase();
-      const correct=(gameState.currentQuestion.reading||'').toLowerCase();
-
-      if(answer===correct) handleCorrectAnswer();
-      else handleWrongAnswer();
+    // =========================================================
+    // Utils
+    // =========================================================
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;");
     }
 
-    function handleTimeOut(){
-      gameState.combo=0;
-      const dmg=gameState.currentEnemy.atk;
-      gameState.playerHP-=dmg;
-      gameState.message=`⏰ 時間切れ... 正解は「${gameState.currentQuestion.reading}」 ${dmg}ダメージを受けた！`;
-
-      if(gameState.playerHP<=0){
-        gameState.playerHP=0;
-        gameState.screen='gameOver';
-      }else{
-        getNewQuestion();
-      }
-      render();
-    }
-
-    function handleCorrectAnswer(){
-      gameState.combo++;
-      const dmg=calculateDamage();
-      gameState.enemyHP-=dmg;
-      gameState.message=`✨ 正解！ ${dmg}ダメージ！ コンボ${gameState.combo}x`;
-
-      const enemySprite=document.getElementById('enemySprite');
-      if(enemySprite){
-        enemySprite.classList.add('damage-flash');
-        setTimeout(()=>enemySprite.classList.remove('damage-flash'),200);
-      }
-
-      if(gameState.enemyHP<=0) handleEnemyDefeat();
-      else { getNewQuestion(); render(); }
-    }
-
-    function handleWrongAnswer(){
-      gameState.combo=0;
-      const dmg=gameState.currentEnemy.atk;
-      gameState.playerHP-=dmg;
-      gameState.message=`❌ 不正解... 正解は「${gameState.currentQuestion.reading}」 ${dmg}ダメージを受けた！`;
-
-      if(gameState.playerHP<=0){
-        gameState.playerHP=0;
-        gameState.screen='gameOver';
-      }else{
-        getNewQuestion();
-      }
-      render();
-    }
-
-    function handleEnemyDefeat(){
-      gameState.totalDefeated++;
-
-      // ボス撃破
-      if(gameState.isBossBattle){
-        const diffKey = gameState.difficulty;
-        if(!gameState.clearedLevels.includes(diffKey)) gameState.clearedLevels.push(diffKey);
-
-        gameState.droppedWeapon=getRandomWeapon();
-        gameState.screen='weaponDrop';
-        render();
-        return;
-      }
-
-      // 通常敵撃破
-      gameState.defeatedCount++;
-
-      if(Math.random()<0.7){
-        gameState.droppedWeapon=getRandomWeapon();
-        gameState.screen='weaponDrop';
-      }else if(gameState.defeatedCount>=3){
-        gameState.screen='levelClear';
-      }else{
-        spawnEnemy();
-        getNewQuestion();
-        gameState.message='敵を倒した！次の敵が現れた...';
-        gameState.screen='battle';
-      }
-      render();
-    }
-
-    // =========================
+    // =========================================================
     // Init
-    // =========================
+    // =========================================================
     render();
   </script>
 </body>
