@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="ja" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>算数カートレース</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+    * { font-family: 'Zen Maru Gothic', sans-serif; }
+    body { box-sizing: border-box; }
+    .track-gradient { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 55%, #0f3460 100%); }
+
+    /* ====== レースビュー（擬似3D） ====== */
+    #race-view{
+      background: linear-gradient(180deg, #74c0ff 0%, #dff6ff 45%, #84e0a2 45%, #74c08a 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    /* 遠景の雲 */
+    .cloud {
+      position:absolute;
+      top: 8%;
+      width: 140px;
+      height: 50px;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.6);
+      filter: blur(0.5px);
+      animation: cloud-move linear infinite;
+    }
+    .cloud::before,.cloud::after{
+      content:"";
+      position:absolute;
+      background: rgba(255,255,255,0.6);
+      width: 70px;
+      height: 70px;
+      border-radius: 9999px;
+      top: -20px;
+      left: 20px;
+    }
+    .cloud::after{
+      width: 55px; height:55px;
+      top: -10px; left: 70px;
+    }
+    @keyframes cloud-move{ from{ transform: translateX(-220px);} to{ transform: translateX(calc(100vw + 220px)); } }
+
+    /* 路面 */
+    #road-wrap{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      perspective: 900px;
+      pointer-events:none;
+    }
+    #road{
+      width: min(92vw, 700px);
+      height: 125%;
+      transform-origin: bottom center;
+      transform: rotateX(55deg) translateY(25%);
+      border-radius: 20px 20px 0 0;
+      background:
+        /* センターライン */
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,0.0) 0px,
+          rgba(255,255,255,0.0) 14px,
+          rgba(255,255,255,0.7) 14px,
+          rgba(255,255,255,0.7) 22px,
+          rgba(255,255,255,0.0) 22px,
+          rgba(255,255,255,0.0) 44px
+        ),
+        linear-gradient(to bottom, #6a6a6a 0%, #555 45%, #777 100%);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+      position: relative;
+      overflow:hidden;
+    }
+    /* 路肩ライン */
+    #road::before,#road::after{
+      content:"";
+      position:absolute;
+      top:0; bottom:0;
+      width: 14px;
+      background: repeating-linear-gradient(
+        to bottom,
+        #ffd000 0px, #ffd000 10px,
+        #1d1d1d 10px, #1d1d1d 20px
+      );
+      opacity: 0.9;
+    }
+    #road::before{ left: 0; }
+    #road::after{ right: 0; }
+
+    /* コーナー演出（左右の芝が流れる） */
+    #grass{
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(circle at 20% 60%, rgba(0,0,0,0.15), transparent 40%),
+        radial-gradient(circle at 70% 70%, rgba(0,0,0,0.12), transparent 45%),
+        repeating-linear-gradient(to bottom, rgba(255,255,255,0.0) 0 18px, rgba(255,255,255,0.06) 18px 24px);
+      opacity: 0.25;
+      mix-blend-mode: overlay;
+      pointer-events:none;
+    }
+
+    /* 速度線 */
+    #speedlines{
+      position:absolute; inset:0;
+      background: repeating-linear-gradient(115deg, rgba(255,255,255,0.0) 0 22px, rgba(255,255,255,0.10) 22px 24px);
+      opacity: 0;
+      transition: opacity 120ms linear;
+      pointer-events:none;
+    }
+
+    /* ====== カート ====== */
+    .kart {
+      position:absolute;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      will-change: transform, left, top;
+      user-select:none;
+      pointer-events:none;
+      filter: drop-shadow(0 10px 10px rgba(0,0,0,0.35));
+    }
+    .kart-emoji { font-size: 2.2rem; line-height: 1; }
+    .kart-label {
+      font-size: 0.72rem;
+      color: white;
+      background: rgba(0,0,0,0.72);
+      padding: 2px 6px;
+      border-radius: 9999px;
+      margin-top: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    /* ドリフト火花 */
+    .spark {
+      position:absolute;
+      font-size: 1.0rem;
+      opacity: 0.95;
+      animation: spark-pop 350ms ease-out forwards;
+      pointer-events:none;
+    }
+    @keyframes spark-pop{
+      from{ transform: translateY(0) scale(0.8); opacity: 0.9; }
+      to{ transform: translateY(18px) scale(1.3); opacity: 0; }
+    }
+
+    /* ポップアップ/振動 */
+    @keyframes shake { 0%,100%{ transform: translateX(0);} 25%{ transform: translateX(-6px);} 75%{ transform: translateX(6px);} }
+    .shake { animation: shake 220ms ease-in-out; }
+
+    @keyframes glow {
+      0%,100%{ filter: drop-shadow(0 0 10px rgba(255,255,0,0.55)) drop-shadow(0 0 18px rgba(0,255,255,0.35)); }
+      50%{ filter: drop-shadow(0 0 16px rgba(255,255,0,0.75)) drop-shadow(0 0 24px rgba(255,0,255,0.35)); }
+    }
+    .glow { animation: glow 650ms ease-in-out infinite; }
+
+    /* モーダルの見た目 */
+    .modal-card{
+      box-shadow: 0 20px 80px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+
+    /* ボタンの押し心地 */
+    .press:active{ transform: scale(0.96); }
+
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+</head>
+
+<body class="h-full overflow-auto">
+<div id="app" class="h-full w-full track-gradient text-white">
+
+  <!-- タイトル画面 -->
+  <div id="title-screen" class="h-full flex flex-col items-center justify-center p-4">
+    <h1 id="game-title" class="text-4xl md:text-6xl font-black text-yellow-300 mb-3 text-center drop-shadow-lg">
+      🏎️ 算数カートレース 🏎️
+    </h1>
+    <p class="text-lg md:text-xl mb-6 text-cyan-200">1周ごとに算数！ 正解しないとレース再開できない！</p>
+
+    <div class="bg-white/10 backdrop-blur rounded-2xl p-5 mb-5 max-w-md w-full">
+      <h2 class="text-xl font-bold mb-3 text-center text-yellow-200">キャラクター</h2>
+      <div class="grid grid-cols-4 gap-3 mb-3" id="char-select"></div>
+      <p class="text-center text-sm text-gray-200">選択中: <span id="selected-char" class="text-2xl">🥸</span></p>
+    </div>
+
+    <div class="bg-white/10 backdrop-blur rounded-2xl p-5 mb-6 max-w-md w-full">
+      <h2 class="text-xl font-bold mb-3 text-center text-pink-200">カート</h2>
+      <div class="grid grid-cols-4 gap-3 mb-3" id="kart-select"></div>
+      <p class="text-center text-sm text-gray-200">選択中: <span id="selected-kart" class="text-2xl">🛒</span></p>
+    </div>
+
+    <div class="text-center text-sm text-gray-300 mb-4">
+      操作：↑加速 / ↓ブレーキ / ←→ハンドル / Shiftドリフト / Spaceアイテム
+    </div>
+
+    <button id="start-btn"
+      class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-2xl font-black py-4 px-12 rounded-full shadow-lg transform hover:scale-105 transition-all press">
+      🚀 レーススタート！
+    </button>
+  </div>
+
+  <!-- ゲーム画面 -->
+  <div id="game-screen" class="h-full hidden flex-col">
+
+    <!-- HUD -->
+    <div class="bg-black/80 p-3 flex flex-wrap gap-2 justify-between items-center">
+      <div class="text-base md:text-lg font-bold">
+        🏁 <span id="lap-display">1</span>/<span id="lap-total">10</span>周
+        <span class="mx-2">|</span>
+        🏆 <span id="position">1</span>位/5
+      </div>
+
+      <div class="flex flex-wrap gap-3 items-center text-sm md:text-base">
+        <div>⚡ <span id="player-speed">0</span></div>
+        <div>🌀 ドリフト: <span id="drift-meter">0</span>%</div>
+        <div>🎁 <span id="item-display">---</span></div>
+      </div>
+    </div>
+
+    <!-- レースビュー -->
+    <div id="race-view" class="flex-1 relative">
+      <!-- 雲 -->
+      <div class="cloud" style="left: 10%; animation-duration: 22s; top: 10%; opacity: .7;"></div>
+      <div class="cloud" style="left: 45%; animation-duration: 26s; top: 6%; opacity: .6;"></div>
+      <div class="cloud" style="left: 75%; animation-duration: 30s; top: 12%; opacity: .55;"></div>
+
+      <!-- 路面 -->
+      <div id="road-wrap">
+        <div id="road">
+          <div id="grass"></div>
+        </div>
+      </div>
+
+      <!-- 速度線 -->
+      <div id="speedlines"></div>
+
+      <!-- カート描画（HUD上に乗せる） -->
+      <div id="karts-container" class="absolute inset-0 w-full"></div>
+      <div id="sparks-layer" class="absolute inset-0 w-full pointer-events-none"></div>
+    </div>
+
+    <!-- コントロール -->
+    <div class="bg-black/70 p-3">
+      <div class="flex flex-wrap justify-center gap-3 mb-2">
+        <button id="btn-left"  class="bg-slate-600 hover:bg-slate-700 px-5 py-2 rounded-lg font-bold press">⬅️ 左</button>
+        <button id="btn-accel" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-bold press">⬆️ アクセル</button>
+        <button id="btn-brake" class="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-bold press">⬇️ ブレーキ</button>
+        <button id="btn-right" class="bg-slate-600 hover:bg-slate-700 px-5 py-2 rounded-lg font-bold press">➡️ 右</button>
+        <button id="btn-drift" class="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg font-bold press">🌀 ドリフト</button>
+        <button id="btn-item" class="bg-yellow-500 hover:bg-yellow-600 px-6 py-2 rounded-lg font-bold press">🎯 アイテム</button>
+      </div>
+      <p class="text-center text-xs md:text-sm text-gray-300">
+        ※PCはキーボード推奨：←→でハンドル / Shiftでドリフト / Spaceでアイテム
+      </p>
+    </div>
+  </div>
+
+  <!-- 算数問題モーダル -->
+  <div id="math-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+    <div class="modal-card bg-gradient-to-br from-purple-600 to-indigo-700 rounded-3xl p-7 max-w-md w-full text-center">
+      <h2 class="text-3xl font-black mb-3 text-yellow-200">📚 1周クリア！算数タイム！</h2>
+      <p class="text-sm text-white/90 mb-2">正解しないとレース再開できません。</p>
+
+      <div class="bg-white/15 rounded-2xl p-4 mb-4">
+        <div class="text-sm text-white/80 mb-1">問題</div>
+        <p id="math-question" class="text-4xl font-black">15 + 35 = ?</p>
+      </div>
+
+      <input type="number" id="math-answer"
+        class="w-full text-3xl text-center p-4 rounded-xl bg-white text-gray-800 mb-3"
+        placeholder="答えを入力" />
+
+      <button id="submit-answer"
+        class="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xl font-black py-3 px-8 rounded-full hover:scale-105 transition-transform w-full press">
+        回答する！
+      </button>
+
+      <div class="mt-4 text-sm text-gray-100">
+        ⏰ 制限時間: <span id="time-left" class="font-black">10</span>秒
+      </div>
+      <p id="math-feedback" class="mt-3 text-sm font-bold text-yellow-200"></p>
+    </div>
+  </div>
+
+  <!-- 結果画面 -->
+  <div id="result-screen" class="hidden h-full flex-col items-center justify-center p-4 bg-gradient-to-b from-purple-900 to-blue-900">
+    <h1 class="text-5xl font-black mb-4">🏁 レース終了！ 🏁</h1>
+    <div id="result-position" class="text-8xl mb-4">🥇</div>
+    <p id="result-text" class="text-3xl font-black text-yellow-300 mb-8">1位でゴール！</p>
+
+    <div class="bg-white/10 backdrop-blur rounded-2xl p-6 mb-8 max-w-md w-full">
+      <h3 class="text-xl font-black mb-4">📊 スタッツ</h3>
+      <p class="mb-2">正解した問題: <span id="correct-answers" class="font-black">0</span>問</p>
+      <p class="mb-2">使用アイテム: <span id="items-used" class="font-black">0</span>個</p>
+      <p>レースタイム: <span id="race-time" class="font-black">0:00</span></p>
+    </div>
+
+    <button id="retry-btn"
+      class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-2xl font-black py-4 px-12 rounded-full shadow-lg transform hover:scale-105 transition-all press">
+      🔄 もう一度プレイ
+    </button>
+  </div>
+
+</div>
+
+<script>
+/* =========================
+   ゲーム設定
+========================= */
+const characters = ['🥸','🥷🏿','💀','💰','🐜','🐰','🐷','🦇'];
+const karts      = ['🦏','🦀','🐄','🐖','🛒','🐓','🐜','🐇'];
+const itemsPool  = ['🍌','🍄','⭐','💣','🦑','🪶','🐢','👻'];
+
+/* =========================
+   DOM
+========================= */
+const titleScreen  = document.getElementById('title-screen');
+const gameScreen   = document.getElementById('game-screen');
+const resultScreen = document.getElementById('result-screen');
+const mathModal    = document.getElementById('math-modal');
+
+const kartsContainer = document.getElementById('karts-container');
+const sparksLayer    = document.getElementById('sparks-layer');
+const roadEl         = document.getElementById('road');
+const speedLinesEl   = document.getElementById('speedlines');
+
+const lapDisplay   = document.getElementById('lap-display');
+const lapTotalEl   = document.getElementById('lap-total');
+const posEl        = document.getElementById('position');
+const speedEl      = document.getElementById('player-speed');
+const driftMeterEl = document.getElementById('drift-meter');
+const itemDisplay  = document.getElementById('item-display');
+
+/* =========================
+   Element SDK（タイトルだけ可変）
+========================= */
+const defaultConfig = { game_title: '🏎️ 算数カートレース 🏎️' };
+let config = { ...defaultConfig };
+
+async function onConfigChange(newConfig){
+  config = { ...defaultConfig, ...newConfig };
+  document.getElementById('game-title').textContent = config.game_title;
+}
+function mapToCapabilities(){ return { recolorables:[], borderables:[], fontEditable:undefined, fontSizeable:undefined }; }
+function mapToEditPanelValues(cfg){
+  return new Map([['game_title', cfg.game_title || defaultConfig.game_title]]);
+}
+if(window.elementSdk){
+  window.elementSdk.init({ defaultConfig, onConfigChange, mapToCapabilities, mapToEditPanelValues });
+}
+
+/* =========================
+   ゲーム状態
+========================= */
+const gameState = {
+  screen: 'title',
+  selectedChar: characters[0],
+  selectedKart: karts[4],
+  totalLaps: 10,
+
+  players: [],
+  player: null,        // 人間プレイヤー参照（ソートで壊れないように固定）
+  pausedByQuiz: false,
+  quizLapTriggered: -1, // 何周目で出したか
+
+  // 入力
+  keys: { up:false, down:false, left:false, right:false, drift:false, item:false },
+
+  // スタッツ
+  correctAnswers: 0,
+  itemsUsed: 0,
+  startTime: 0,
+  gameActive: false,
+
+  // 疑似3Dの路面スクロール
+  roadScroll: 0
+};
+
+/* =========================
+   キャラ/カート選択UI
+========================= */
+function initCharacterSelect(){
+  const charSelect = document.getElementById('char-select');
+  charSelect.innerHTML = '';
+  characters.forEach((char, idx)=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'text-3xl p-2 rounded-lg bg-white/20 hover:bg-white/40 transition-all hover:scale-110 cursor-pointer';
+    btn.textContent = char;
+    if(idx===0) btn.classList.add('ring-4','ring-yellow-300');
+    btn.addEventListener('click', (e)=>{
+      e.preventDefault();
+      gameState.selectedChar = char;
+      document.getElementById('selected-char').textContent = char;
+      document.querySelectorAll('#char-select button').forEach(b=>b.classList.remove('ring-4','ring-yellow-300'));
+      btn.classList.add('ring-4','ring-yellow-300');
+    });
+    charSelect.appendChild(btn);
+  });
+}
+
+function initKartSelect(){
+  const kartSelect = document.getElementById('kart-select');
+  kartSelect.innerHTML = '';
+  karts.forEach((kart, idx)=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'text-3xl p-2 rounded-lg bg-white/20 hover:bg-white/40 transition-all hover:scale-110 cursor-pointer';
+    btn.textContent = kart;
+    if(kart===gameState.selectedKart || idx===0) btn.classList.add('ring-4','ring-pink-300');
+    btn.addEventListener('click', (e)=>{
+      e.preventDefault();
+      gameState.selectedKart = kart;
+      document.getElementById('selected-kart').textContent = kart;
+      document.querySelectorAll('#kart-select button').forEach(b=>b.classList.remove('ring-4','ring-pink-300'));
+      btn.classList.add('ring-4','ring-pink-300');
+    });
+    kartSelect.appendChild(btn);
+  });
+}
+
+/* =========================
+   物理・操作（アーケード風）
+========================= */
+const LANES = 3;                // 3レーン
+const LANE_Y = [0.64, 0.74, 0.84]; // 画面内Y（下側に集める）
+const LANE_X = [0.40, 0.50, 0.60]; // レーン中心X（パースっぽく少し狭めてもOK）
+
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+function lerp(a,b,t){ return a + (b-a)*t; }
+
+class Player {
+  constructor(char, kart, isAI=false){
+    this.char = char;
+    this.kart = kart;
+    this.isAI = isAI;
+
+    this.progress = 0;     // 0..100（周回内）
+    this.laps = 0;
+    this.finished = false;
+
+    // 速度系（単位：progress/秒）
+    this.speed = 0;
+    this.baseMaxSpeed = isAI ? 10.5 : 12.5;
+    this.maxSpeed = this.baseMaxSpeed;
+    this.accel = isAI ? 7.0 : 8.5;
+    this.brakePower = 12.0;
+    this.friction = 2.8;
+
+    // 操作系（レーン・ハンドル）
+    this.lane = 1;
+    this.lanePos = 1;      // 0..2（滑らか）
+    this.steerSpeed = isAI ? 2.2 : 4.0;
+
+    // ドリフト
+    this.drifting = false;
+    this.driftDir = 0;     // -1 or 1
+    this.driftCharge = 0;  // 0..1
+    this.boostTime = 0;    // 秒
+
+    // スタン/スピン
+    this.stunTime = 0;
+
+    // アイテム
+    this.currentItem = null;
+
+    // 描画
+    this.element = null;
+  }
+
+  giveItem(){
+    this.currentItem = itemsPool[Math.floor(Math.random()*itemsPool.length)];
+  }
+
+  useItem(){
+    if(!this.currentItem) return { used:false };
+    const item = this.currentItem;
+    this.currentItem = null;
+    return { used:true, item };
+  }
+
+  applyBoost(sec, extraMax){
+    this.boostTime = Math.max(this.boostTime, sec);
+    this.maxSpeed = Math.max(this.maxSpeed, this.baseMaxSpeed + extraMax);
+  }
+
+  spin(sec){
+    this.stunTime = Math.max(this.stunTime, sec);
+    this.speed *= 0.3;
+  }
+
+  update(dt){
+    if(this.finished) return;
+
+    // スタン
+    if(this.stunTime > 0){
+      this.stunTime -= dt;
+      this.speed = Math.max(0, this.speed - this.brakePower*dt*0.6);
+      // スタン中は操作効きづらい
+    }
+
+    // ブースト
+    if(this.boostTime > 0){
+      this.boostTime -= dt;
+      if(this.boostTime <= 0){
+        this.maxSpeed = this.baseMaxSpeed;
+      }
+    }else{
+      this.maxSpeed = this.baseMaxSpeed;
+    }
+
+    // 入力/AI
+    if(this.isAI){
+      // AI：適当にレーン変更しつつスピード維持
+      if(Math.random() < 0.007) this.lane = clamp(this.lane + (Math.random()<0.5?-1:1), 0, LANES-1);
+      const target = this.baseMaxSpeed * (0.72 + Math.random()*0.18);
+      if(this.speed < target) this.speed += this.accel*dt;
+      else this.speed -= this.friction*dt*0.9;
+
+      // AIはたまにアイテム獲得/使用（演出用）
+      if(!this.currentItem && Math.random()<0.01) this.giveItem();
+      if(this.currentItem && Math.random()<0.003) this.useItem();
+    }else{
+      // 人間：連続入力（押してる間じわじわ）
+      if(gameState.keys.up)   this.speed += this.accel*dt;
+      if(gameState.keys.down) this.speed -= this.brakePower*dt;
+
+      // 自然減速
+      if(!gameState.keys.up && !gameState.keys.down){
+        this.speed -= this.friction*dt;
+      }
+    }
+
+    // ドリフト処理（人間のみ）
+    if(!this.isAI){
+      const steering = (gameState.keys.right?1:0) - (gameState.keys.left?1:0);
+
+      if(gameState.keys.drift && steering !== 0 && this.speed > 3.5 && this.stunTime<=0){
+        if(!this.drifting){
+          this.drifting = true;
+          this.driftDir = steering;
+          this.driftCharge = 0;
+        }
+        // ドリフト中：少し最高速落ちるけどチャージ
+        this.speed = Math.max(0, this.speed - 0.6*dt);
+        this.driftCharge = clamp(this.driftCharge + dt*0.55, 0, 1);
+        // きゅっきゅ演出：火花
+        if(Math.random() < 0.25){
+          spawnSpark(this, this.driftCharge);
+        }
+      }else{
+        // ドリフト解除：ミニターボ
+        if(this.drifting){
+          const charge = this.driftCharge;
+          if(charge > 0.25){
+            const boostSec = charge > 0.75 ? 1.1 : (charge > 0.5 ? 0.8 : 0.55);
+            const extraMax = charge > 0.75 ? 4.0 : (charge > 0.5 ? 2.8 : 1.8);
+            this.applyBoost(boostSec, extraMax);
+          }
+        }
+        this.drifting = false;
+        this.driftDir = 0;
+        this.driftCharge = 0;
+      }
+
+      // レーン移動（ハンドル）
+      if(steering !== 0 && this.stunTime<=0){
+        const nextLane = clamp(this.lane + steering, 0, LANES-1);
+        this.lane = nextLane;
+      }
+    }
+
+    // レーンの滑らか移動
+    this.lanePos = lerp(this.lanePos, this.lane, clamp(dt*this.steerSpeed, 0, 1));
+
+    // 速度制限
+    this.speed = clamp(this.speed, 0, this.maxSpeed);
+
+    // 進行
+    this.progress += this.speed * dt;
+
+    // 周回判定
+    if(this.progress >= 100){
+      this.progress -= 100;
+      this.laps++;
+
+      // ゴール
+      if(this.laps >= gameState.totalLaps){
+        this.finished = true;
+      }
+    }
+  }
+
+  render(index){
+    if(!this.element){
+      this.element = document.createElement('div');
+      this.element.className = 'kart';
+      if(!this.isAI) this.element.classList.add('glow');
+      kartsContainer.appendChild(this.element);
+    }
+
+    // 画面上の見え方：自分は下、CPUは少し上に（擬似奥行き）
+    const depth = this.isAI ? (0.46 + index*0.07) : 0.86;
+    const laneX = lerp(LANE_X[0], LANE_X[2], this.lanePos/(LANES-1));
+
+    // 画面横揺れ（スピード感）
+    const wobble = Math.sin((performance.now()/1000)* (this.isAI?3.5:5.0) + index) * (this.speed/this.maxSpeed) * 3.0;
+
+    // 角度（ステア/ドリフト感）
+    const steer = (!this.isAI) ? ((gameState.keys.right?1:0) - (gameState.keys.left?1:0)) : 0;
+    const tilt = (this.drifting ? this.driftDir : steer) * 10;
+
+    // サイズ（奥は小さく）
+    const scale = lerp(0.75, 1.18, depth);
+
+    // 位置
+    const x = laneX * 100;
+    const y = (1 - depth) * 100;
+
+    this.element.style.left = `calc(${x}% + ${wobble}px)`;
+    this.element.style.top  = `${y}%`;
+    this.element.style.transform = `translate(-50%, -50%) rotate(${tilt}deg) scale(${scale})`;
+
+    const lapText = this.finished ? '🏁' : `L${this.laps+1}`;
+    this.element.innerHTML = `
+      <div class="kart-emoji">${this.kart}</div>
+      <div class="kart-label">${this.char} ${lapText}</div>
+    `;
+  }
+}
+
+/* ===== 火花 ===== */
+function spawnSpark(player, charge){
+  const sp = document.createElement('div');
+  sp.className = 'spark';
+  const sparks = charge > 0.75 ? '✨' : (charge > 0.5 ? '⚡' : '💥');
+
+  // だいたいカートの足元へ
+  const rect = document.getElementById('race-view').getBoundingClientRect();
+  const laneX = lerp(LANE_X[0], LANE_X[2], player.lanePos/(LANES-1));
+  const depth = 0.86; // 自分想定（十分っぽく見える）
+  const x = rect.left + rect.width * laneX + (Math.random()*12-6);
+  const y = rect.top + rect.height * (1 - depth) + 40 + (Math.random()*8);
+
+  sp.style.left = (x - rect.left) + 'px';
+  sp.style.top  = (y - rect.top) + 'px';
+  sp.textContent = sparks;
+  sparksLayer.appendChild(sp);
+  setTimeout(()=> sp.remove(), 380);
+}
+
+/* =========================
+   算数問題（周回ごと）
+========================= */
+let quizTimer = null;
+let timeLeft = 10;
+let currentQuiz = { q:'', a:0 };
+
+function makeMathProblem(lapIndex){
+  // lapIndex: 1..totalLaps-1 ぐらい
+  // 難易度：周が進むほど少し上げる（小学生向け想定）
+  const level = clamp(lapIndex, 1, 10);
+
+  const types = level <= 3 ? ['add','sub'] : (level <= 6 ? ['add','sub','mul'] : ['add','sub','mul','mix']);
+  const type = types[Math.floor(Math.random()*types.length)];
+
+  function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+  if(type==='add'){
+    const a = rand(10*level, 20*level);
+    const b = rand(5*level, 15*level);
+    return { q: `${a} + ${b}`, a: a+b };
+  }
+  if(type==='sub'){
+    let a = rand(15*level, 25*level);
+    let b = rand(5*level, 18*level);
+    if(b>a){ [a,b] = [b,a]; }
+    return { q: `${a} - ${b}`, a: a-b };
+  }
+  if(type==='mul'){
+    const a = rand(2, Math.min(9, 2+Math.floor(level/2)));
+    const b = rand(2, 9);
+    return { q: `${a} × ${b}`, a: a*b };
+  }
+  // mix（かけ算+たし算）
+  const a = rand(2, 9);
+  const b = rand(2, 9);
+  const c = rand(5, 20);
+  return { q: `${a} × ${b} + ${c}`, a: a*b + c };
+}
+
+function openQuiz(lapCompleted){
+  gameState.pausedByQuiz = true;
+  mathModal.classList.remove('hidden');
+
+  currentQuiz = makeMathProblem(lapCompleted);
+  document.getElementById('math-question').textContent = `${currentQuiz.q} = ?`;
+  document.getElementById('math-answer').value = '';
+  document.getElementById('math-feedback').textContent = '';
+
+  // タイマー
+  clearInterval(quizTimer);
+  timeLeft = 10;
+  document.getElementById('time-left').textContent = timeLeft;
+
+  quizTimer = setInterval(()=>{
+    timeLeft--;
+    document.getElementById('time-left').textContent = timeLeft;
+
+    if(timeLeft <= 0){
+      // タイムアウト：スピン + 新しい問題（ただし正解しないと再開できない）
+      clearInterval(quizTimer);
+      document.getElementById('math-feedback').textContent = '⏰ タイムアウト！スピン！次の問題に挑戦！';
+      gameState.player.spin(1.0);
+      setTimeout(()=> openQuiz(lapCompleted), 650);
+    }
+  }, 1000);
+
+  // すぐ入力できるように
+  setTimeout(()=> document.getElementById('math-answer').focus(), 50);
+}
+
+function closeQuizWithSuccess(){
+  clearInterval(quizTimer);
+  mathModal.classList.add('hidden');
+  gameState.pausedByQuiz = false;
+
+  // 正解ボーナス：ミニブースト
+  gameState.player.applyBoost(0.9, 3.2);
+}
+
+/* =========================
+   レース開始/終了
+========================= */
+function startGame(){
+  // 画面切替
+  gameState.screen = 'game';
+  titleScreen.classList.add('hidden');
+  resultScreen.classList.add('hidden');
+  gameScreen.classList.remove('hidden');
+
+  // 初期化
+  kartsContainer.innerHTML = '';
+  sparksLayer.innerHTML = '';
+  gameState.players = [];
+  gameState.roadScroll = 0;
+
+  const human = new Player(gameState.selectedChar, gameState.selectedKart, false);
+  gameState.player = human;
+  gameState.players.push(human);
+
+  // CPU 4台
+  const availableChars = characters.filter(c=>c!==gameState.selectedChar);
+  const availableKarts = karts.filter(k=>k!==gameState.selectedKart);
+
+  for(let i=0;i<4;i++){
+    const cpu = new Player(availableChars[i%availableChars.length], availableKarts[i%availableKarts.length], true);
+    // CPUは初期レーンをバラす
+    cpu.lane = i%LANES;
+    cpu.lanePos = cpu.lane;
+    cpu.speed = 3 + Math.random()*1.5;
+    gameState.players.push(cpu);
+  }
+
+  gameState.correctAnswers = 0;
+  gameState.itemsUsed = 0;
+  gameState.startTime = Date.now();
+  gameState.gameActive = true;
+  gameState.pausedByQuiz = false;
+  gameState.quizLapTriggered = -1;
+
+  lapTotalEl.textContent = gameState.totalLaps;
+  itemDisplay.textContent = '---';
+
+  lastT = performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+function endGame(){
+  gameState.gameActive = false;
+  gameScreen.classList.add('hidden');
+  resultScreen.classList.remove('hidden');
+
+  // 順位計算（ゴール時点）
+  const ranking = getRanking();
+  const myPos = ranking.findIndex(p => p === gameState.player) + 1;
+  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+
+  document.getElementById('result-position').textContent = medals[myPos-1] || '🏁';
+  document.getElementById('result-text').textContent = `${myPos}位でゴール！`;
+  document.getElementById('correct-answers').textContent = gameState.correctAnswers;
+  document.getElementById('items-used').textContent = gameState.itemsUsed;
+
+  const timeSeconds = Math.round((Date.now() - gameState.startTime)/1000);
+  const minutes = Math.floor(timeSeconds/60);
+  const seconds = timeSeconds%60;
+  document.getElementById('race-time').textContent = `${minutes}:${String(seconds).padStart(2,'0')}`;
+}
+
+/* =========================
+   ランキング・HUD
+========================= */
+function getRanking(){
+  // laps -> progress の順
+  return [...gameState.players].sort((a,b)=>{
+    if(a.laps !== b.laps) return b.laps - a.laps;
+    return b.progress - a.progress;
+  });
+}
+
+function updateHUD(){
+  const ranking = getRanking();
+  const myPos = ranking.findIndex(p => p === gameState.player) + 1;
+
+  posEl.textContent = myPos;
+  const currentLap = clamp(gameState.player.laps + 1, 1, gameState.totalLaps);
+  lapDisplay.textContent = currentLap;
+
+  // 表示速度：見た目用
+  const pct = Math.round((gameState.player.speed / gameState.player.maxSpeed) * 100);
+  speedEl.textContent = `${pct}%`;
+
+  driftMeterEl.textContent = Math.round(gameState.player.driftCharge*100);
+
+  // 速度線
+  const showLines = (pct >= 78 || gameState.player.boostTime > 0.1);
+  speedLinesEl.style.opacity = showLines ? 0.35 : 0;
+
+  // アイテム
+  itemDisplay.textContent = gameState.player.currentItem ? gameState.player.currentItem : '---';
+}
+
+/* =========================
+   ロードスクロール（スピード感）
+========================= */
+function updateRoadScroll(dt){
+  // speedに応じてセンターラインを流す
+  const s = gameState.player ? gameState.player.speed : 0;
+  gameState.roadScroll += s * dt * 28; // 調整値
+  roadEl.style.backgroundPosition = `0px ${gameState.roadScroll}px, 0px 0px`;
+}
+
+/* =========================
+   ループ
+========================= */
+let lastT = performance.now();
+function gameLoop(now){
+  if(!gameState.gameActive) return;
+  const dt = clamp((now - lastT)/1000, 0, 0.033);
+  lastT = now;
+
+  if(!gameState.pausedByQuiz){
+    // 更新
+    gameState.players.forEach(p => p.update(dt));
+
+    // 路面スクロール
+    updateRoadScroll(dt);
+
+    // 1周ごとに算数（人間だけ）
+    // lapsが増えた瞬間（前回トリガーと違うなら）出題
+    const lapsDone = gameState.player.laps;
+    if(lapsDone > gameState.quizLapTriggered && lapsDone > 0 && lapsDone < gameState.totalLaps){
+      gameState.quizLapTriggered = lapsDone;
+      openQuiz(lapsDone);
+    }
+
+    // 全員ゴールで終了
+    const allFinished = gameState.players.every(p => p.finished);
+    if(allFinished){
+      endGame();
+      return;
+    }
+  }
+
+  // 描画（ランキング順に上から奥へ見せる）
+  const ranking = getRanking();
+  ranking.forEach((p, idx)=> p.render(idx));
+
+  updateHUD();
+  requestAnimationFrame(gameLoop);
+}
+
+/* =========================
+   アイテム（簡易）
+========================= */
+function applyItemEffect(item){
+  const me = gameState.player;
+  // それっぽい「気分」だけでも出す（効果は軽め）
+  if(item === '🍄'){ me.applyBoost(0.9, 3.4); return '🍄 ブースト！'; }
+  if(item === '⭐'){ me.applyBoost(1.3, 4.2); return '⭐ 無敵っぽい加速！'; }
+  if(item === '🍌'){ // 一番近いCPUをちょい減速
+    const ranking = getRanking().filter(p=>p.isAI && !p.finished);
+    if(ranking[0]) ranking[0].spin(0.8);
+    return '🍌 前のCPUがスピン！';
+  }
+  if(item === '💣'){ // 周囲CPUを軽くスピン
+    gameState.players.filter(p=>p.isAI).forEach(p=>{ if(Math.random()<0.6) p.spin(0.6); });
+    return '💣 ドカーン！';
+  }
+  if(item === '🦑'){ // 自分の視界演出（HUDにメッセージだけ）
+    me.spin(0.35);
+    return '🦑 ちょっと視界が…（気分）';
+  }
+  if(item === '🪶'){ me.applyBoost(0.55, 2.2); return '🪶 ふわっと加速！'; }
+  if(item === '🐢'){ // 最後尾CPUをちょい妨害
+    const lastAI = getRanking().filter(p=>p.isAI).slice(-1)[0];
+    if(lastAI) lastAI.spin(1.0);
+    return '🐢 こうら命中！';
+  }
+  if(item === '👻'){ me.applyBoost(0.6, 2.6); return '👻 すり抜け気分！'; }
+  return '🎯 発動！';
+}
+
+/* =========================
+   イベント：UI
+========================= */
+document.getElementById('start-btn').onclick = () => startGame();
+document.getElementById('retry-btn').onclick = () => {
+  gameState.screen = 'title';
+  resultScreen.classList.add('hidden');
+  titleScreen.classList.remove('hidden');
+  gameState.gameActive = false;
+  clearInterval(quizTimer);
+  mathModal.classList.add('hidden');
+};
+
+document.getElementById('submit-answer').onclick = () => {
+  const input = document.getElementById('math-answer');
+  const v = Number(input.value);
+  const fb = document.getElementById('math-feedback');
+
+  if(Number.isNaN(v)){
+    fb.textContent = '数字を入れてね！';
+    input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
+    return;
+  }
+  if(v === currentQuiz.a){
+    gameState.correctAnswers++;
+    fb.textContent = '✅ 正解！ブースト！';
+    closeQuizWithSuccess();
+  }else{
+    fb.textContent = '❌ ちがう！もう一回！';
+    input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
+    // ちょいペナルティ：時間減らす
+    timeLeft = Math.max(1, timeLeft - 2);
+    document.getElementById('time-left').textContent = timeLeft;
+  }
+};
+
+/* =========================
+   入力：キーボード
+========================= */
+document.addEventListener('keydown', (e)=>{
+  if(gameState.screen !== 'game') return;
+
+  if(mathModal && !mathModal.classList.contains('hidden')){
+    // クイズ中：Enterで送信
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      document.getElementById('submit-answer').click();
+    }
+    return;
+  }
+
+  if(e.key === 'ArrowUp')    { e.preventDefault(); gameState.keys.up = true; }
+  if(e.key === 'ArrowDown')  { e.preventDefault(); gameState.keys.down = true; }
+  if(e.key === 'ArrowLeft')  { e.preventDefault(); gameState.keys.left = true; }
+  if(e.key === 'ArrowRight') { e.preventDefault(); gameState.keys.right = true; }
+  if(e.key === 'Shift')      { e.preventDefault(); gameState.keys.drift = true; }
+  if(e.key === ' ')          { e.preventDefault(); handleItemUse(); }
+});
+
+document.addEventListener('keyup', (e)=>{
+  if(e.key === 'ArrowUp')    gameState.keys.up = false;
+  if(e.key === 'ArrowDown')  gameState.keys.down = false;
+  if(e.key === 'ArrowLeft')  gameState.keys.left = false;
+  if(e.key === 'ArrowRight') gameState.keys.right = false;
+  if(e.key === 'Shift')      gameState.keys.drift = false;
+});
+
+function handleItemUse(){
+  if(!gameState.player || gameState.pausedByQuiz) return;
+
+  // 持ってなければ獲得（それっぽく）
+  if(!gameState.player.currentItem){
+    gameState.player.giveItem();
+    return;
+  }
+
+  const res = gameState.player.useItem();
+  if(res.used){
+    gameState.itemsUsed++;
+    const msg = applyItemEffect(res.item);
+    // HUDに一瞬だけメッセージ（itemDisplayを揺らす）
+    itemDisplay.textContent = msg;
+    itemDisplay.classList.remove('shake'); void itemDisplay.offsetWidth; itemDisplay.classList.add('shake');
+    setTimeout(()=> { itemDisplay.textContent = gameState.player.currentItem ? gameState.player.currentItem : '---'; }, 700);
+  }
+}
+
+/* =========================
+   入力：ボタン（スマホでも遊べる）
+========================= */
+function bindHold(btnId, keyName){
+  const b = document.getElementById(btnId);
+  const on = (e)=>{ e.preventDefault(); gameState.keys[keyName]=true; };
+  const off = (e)=>{ e.preventDefault(); gameState.keys[keyName]=false; };
+
+  b.addEventListener('mousedown', on);
+  b.addEventListener('touchstart', on, {passive:false});
+
+  b.addEventListener('mouseup', off);
+  b.addEventListener('mouseleave', off);
+  b.addEventListener('touchend', off);
+  b.addEventListener('touchcancel', off);
+}
+bindHold('btn-accel','up');
+bindHold('btn-brake','down');
+bindHold('btn-left','left');
+bindHold('btn-right','right');
+bindHold('btn-drift','drift');
+
+document.getElementById('btn-item').addEventListener('click', (e)=>{ e.preventDefault(); handleItemUse(); });
+
+/* =========================
+   初期化
+========================= */
+initCharacterSelect();
+initKartSelect();
+document.getElementById('selected-char').textContent = gameState.selectedChar;
+document.getElementById('selected-kart').textContent = gameState.selectedKart;
+
+</script>
+
+</body>
+</html>
